@@ -6,17 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
     "scheme": "instahelpminiapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/InstaHelp.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAF8EC",
-      "dark": {
-        "image": "./assets/images/InstaHelp.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#0B0B0C"
-      }
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true
@@ -24,7 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon.png",
-        "backgroundColor": "#FAFAF9"
+        "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -46,7 +41,8 @@
           "photosPermission": "Allow InstaHelp to attach one photo to your request when useful.",
           "cameraPermission": "Allow InstaHelp to capture a photo for your request."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

@@ -3,7 +3,6 @@ import {
   Image,
   Text,
   View,
-  useColorScheme,
   useWindowDimensions,
 } from "react-native";
 import Animated, {
@@ -103,8 +102,6 @@ function Particle({
 }
 
 export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
-  const scheme = useColorScheme();
-  const dark = scheme === "dark";
   const { width: screenWidth } = useWindowDimensions();
 
   const containerOpacity = useSharedValue(1);
@@ -377,7 +374,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
       style={[
         {
           flex: 1,
-          backgroundColor: dark ? "#0B0B0C" : "#FAF8EC",
+          backgroundColor: "#FFFFFF",
           alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 24,
@@ -396,7 +393,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
           height: screenWidth * 1.1,
           borderRadius: screenWidth,
           backgroundColor: ACCENT,
-          opacity: dark ? 0.07 : 0.18,
+          opacity: 0.18,
         }}
       />
       <View
@@ -409,7 +406,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
           height: screenWidth * 1.05,
           borderRadius: screenWidth,
           backgroundColor: ACCENT,
-          opacity: dark ? 0.05 : 0.12,
+          opacity: 0.12,
         }}
       />
       <View
@@ -557,12 +554,12 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
         >
           <View
             style={{
-              backgroundColor: dark ? "rgba(255,213,0,0.12)" : "rgba(255,213,0,0.18)",
+              backgroundColor: "rgba(255,213,0,0.18)",
               paddingHorizontal: 14,
               paddingVertical: 6,
               borderRadius: 999,
               borderWidth: 1,
-              borderColor: dark ? "rgba(255,213,0,0.28)" : "rgba(255,213,0,0.4)",
+              borderColor: "rgba(255,213,0,0.4)",
             }}
           >
             <Text
@@ -571,7 +568,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
                 fontWeight: "800",
                 letterSpacing: 1.6,
                 textTransform: "uppercase",
-                color: dark ? ACCENT : ACCENT_DEEP,
+                color: ACCENT_DEEP,
               }}
             >
               Premium concierge
@@ -587,7 +584,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
               fontSize: 16,
               fontWeight: "700",
               letterSpacing: 0.2,
-              color: dark ? "#fafafa" : "#1a1a1a",
+              color: "#1a1a1a",
             }}
           >
             Everyday help, instantly handled.
@@ -597,7 +594,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
               marginTop: 4,
               fontSize: 12,
               fontWeight: "500",
-              color: dark ? "#9ca3af" : "#6b7280",
+              color: "#6b7280",
               letterSpacing: 0.2,
             }}
           >
@@ -613,7 +610,7 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2100 }: Props) {
           width: 220,
           height: 3,
           borderRadius: 2,
-          backgroundColor: dark ? "rgba(255,213,0,0.15)" : "rgba(168,138,0,0.18)",
+          backgroundColor: "rgba(168,138,0,0.18)",
           overflow: "hidden",
         }}
       >

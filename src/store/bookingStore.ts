@@ -11,6 +11,8 @@ type BookingState = {
   appendFromServer: (rows: Booking[]) => void;
   /** Demo progression for mock / offline flows */
   advanceStatus: (id: string, status: BookingStatus) => void;
+  /** Patch any subset of fields on a booking by id. */
+  updateBooking: (id: string, patch: Partial<Booking>) => void;
 };
 
 export const useBookingStore = create<BookingState>()(
@@ -36,6 +38,18 @@ export const useBookingStore = create<BookingState>()(
               ? {
                   ...b,
                   status,
+                  updatedAt: new Date().toISOString(),
+                }
+              : b,
+          ),
+        })),
+      updateBooking: (id, patch) =>
+        set((s) => ({
+          localBookings: s.localBookings.map((b) =>
+            b.id === id
+              ? {
+                  ...b,
+                  ...patch,
                   updatedAt: new Date().toISOString(),
                 }
               : b,

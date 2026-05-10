@@ -4,12 +4,10 @@ import { ensureProfile } from "@/store/profileStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { useEffect } from "react";
-import { useColorScheme, View } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
-  const scheme = useColorScheme();
-  const dark = scheme === "dark";
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const phone = useAuthStore((s) => s.phone);
@@ -29,11 +27,11 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: dark ? "#ffd500" : "#a88a00",
-          tabBarInactiveTintColor: dark ? "#6b6b6b" : "#9ca3af",
+          tabBarActiveTintColor: "#a88a00",
+          tabBarInactiveTintColor: "#9ca3af",
           tabBarStyle: {
-            borderTopColor: dark ? "#1f1f22" : "#ececec",
-            backgroundColor: dark ? "#0b0b0c" : "#ffffff",
+            borderTopColor: "#ececec",
+            backgroundColor: "#ffffff",
             height: TAB_BAR_BASE_HEIGHT + bottomInset,
             paddingBottom: bottomInset,
             paddingTop: 6,

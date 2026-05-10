@@ -80,13 +80,29 @@ export async function refreshBookingsFromServer(): Promise<Booking[]> {
   return useBookingStore.getState().localBookings;
 }
 
-/** Optional demo helper: move a booking one step for QA */
+const STATUS_ORDER: BookingStatus[] = [
+  "pending",
+  "assigned",
+  "on_the_way",
+  "completed",
+];
+
+/** Move a booking one step forward (no-op if already completed). */
 export function demoAdvance(bookingId: string) {
-  const order: BookingStatus[] = ["pending", "assigned", "on_the_way", "completed"];
   const list = useBookingStore.getState().localBookings;
   const b = list.find((x) => x.id === bookingId);
   if (!b) return;
-  const idx = order.indexOf(b.status);
-  if (idx < 0 || idx >= order.length - 1) return;
-  useBookingStore.getState().advanceStatus(bookingId, order[idx + 1]);
+  const idx = STATUS_ORDER.indexOf(b.status);
+  if (idx < 0 || idx >= STATUS_ORDER.length - 1) return;
+  useBookingStore.getState().advanceStatus(bookingId, STATUS_ORDER[idx + 1]);
+}
+
+/** Jump a booking to a specific status (used by the simulator screen). */
+export function demoSetStatus(bookingId: string, status: BookingStatus) {
+  useBookingStore.getState().advanceStatus(bookingId, status);
+}
+
+/** Reset a booking back to the initial pending state. */
+export function demoReset(bookingId: string) {
+  useBookingStore.getState().advanceStatus(bookingId, "pending");
 }

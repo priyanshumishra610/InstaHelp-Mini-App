@@ -1,16 +1,24 @@
 import { StatusTimeline } from "@/components/booking/StatusTimeline";
-import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { demoAdvance } from "@/services/bookingService";
 import { useMergedBookings } from "@/hooks/useMergedBookings";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
+type ActionItem = {
+  key: string;
+  title: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  highlight?: boolean;
+};
+
 export function BookingDetailScreen() {
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const merged = useMergedBookings();
 
@@ -36,6 +44,105 @@ export function BookingDetailScreen() {
       </Screen>
     );
   }
+
+  const isCompleted = booking.status === "completed";
+
+  const phaseCard: ActionItem | null =
+    booking.status === "assigned"
+      ? {
+          key: "phase-assigned",
+          title: "Open assignment view",
+          subtitle:
+            "See the assigned pro, ETA window and prep checklist.",
+          icon: "person-add",
+          highlight: true,
+          onPress: () =>
+            router.push({
+              pathname: "/booking/assigned/[id]",
+              params: { id: booking.id },
+            }),
+        }
+      : booking.status === "on_the_way"
+        ? {
+            key: "phase-otw",
+            title: "Open live tracking",
+            subtitle:
+              "Live ETA, trip overview and one-tap call to your pro.",
+            icon: "navigate",
+            highlight: true,
+            onPress: () =>
+              router.push({
+                pathname: "/booking/on-the-way/[id]",
+                params: { id: booking.id },
+              }),
+          }
+        : booking.status === "completed"
+          ? {
+              key: "phase-completed",
+              title: "View completion summary",
+              subtitle:
+                "Recap, rating prompt, receipt and book-again shortcut.",
+              icon: "trophy",
+              highlight: true,
+              onPress: () =>
+                router.push({
+                  pathname: "/booking/completed/[id]",
+                  params: { id: booking.id },
+                }),
+            }
+          : null;
+
+  const actions: ActionItem[] = [
+    isCompleted
+      ? {
+          key: "rate",
+          title: booking.rating ? "Update your rating" : "Rate this booking",
+          subtitle: booking.rating
+            ? `You rated ${booking.rating.stars}/5. Tap to edit.`
+            : "Tell us how the concierge experience went.",
+          icon: "star",
+          highlight: !booking.rating,
+          onPress: () =>
+            router.push({
+              pathname: "/booking/rate/[id]",
+              params: { id: booking.id },
+            }),
+        }
+      : {
+          key: "reschedule",
+          title: "Reschedule",
+          subtitle: "Change the preferred time or update notes for the pro.",
+          icon: "calendar-outline",
+          onPress: () =>
+            router.push({
+              pathname: "/booking/reschedule/[id]",
+              params: { id: booking.id },
+            }),
+        },
+    {
+      key: "receipt",
+      title: "View receipt",
+      subtitle: "Full summary you can share or copy as text.",
+      icon: "receipt-outline",
+      onPress: () =>
+        router.push({
+          pathname: "/booking/receipt/[id]",
+          params: { id: booking.id },
+        }),
+    },
+    {
+      key: "simulate",
+      title: "Simulate next status",
+      subtitle:
+        "Step the booking through pending, assigned, on the way, completed.",
+      icon: "play-skip-forward",
+      onPress: () =>
+        router.push({
+          pathname: "/booking/simulate/[id]",
+          params: { id: booking.id },
+        }),
+    },
+  ];
 
   return (
     <Screen>
@@ -120,18 +227,66 @@ export function BookingDetailScreen() {
           </Pressable>
         </View>
 
-        {__DEV__ ? (
-          <View className="mt-6">
-            <Button
-              variant="outline"
-              onPress={() => {
-                demoAdvance(booking.id);
-              }}
+        <Text className="mb-3 mt-7 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
+          Manage this booking
+        </Text>
+        <View className="gap-3">
+          {phaseCard ? (
+            <Pressable
+              onPress={phaseCard.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={phaseCard.title}
+              className="flex-row items-center gap-3 rounded-2xl border border-accent bg-accent/10 p-4 active:opacity-90"
             >
-              Simulate next status (dev only)
-            </Button>
-          </View>
-        ) : null}
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
+                <Ionicons name={phaseCard.icon} size={18} color="#1a1a1a" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-bold text-neutral-900 dark:text-white">
+                  {phaseCard.title}
+                </Text>
+                <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {phaseCard.subtitle}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+            </Pressable>
+          ) : null}
+          {actions.map((a) => (
+            <Pressable
+              key={a.key}
+              onPress={a.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={a.title}
+              className={`flex-row items-center gap-3 rounded-2xl border p-4 active:opacity-90 ${
+                a.highlight
+                  ? "border-accent bg-accent/10"
+                  : "border-brand-line bg-white dark:border-brand-lineDark dark:bg-brand-cardDark"
+              }`}
+            >
+              <View
+                className={`h-10 w-10 items-center justify-center rounded-full ${
+                  a.highlight ? "bg-accent" : "bg-accent/15"
+                }`}
+              >
+                <Ionicons
+                  name={a.icon}
+                  size={18}
+                  color={a.highlight ? "#1a1a1a" : "#a88a00"}
+                />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-bold text-neutral-900 dark:text-white">
+                  {a.title}
+                </Text>
+                <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {a.subtitle}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </Screen>
   );

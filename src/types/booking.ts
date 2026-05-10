@@ -1,5 +1,11 @@
 export type BookingStatus = "pending" | "assigned" | "on_the_way" | "completed";
 
+export type BookingRating = {
+  stars: 1 | 2 | 3 | 4 | 5;
+  comment?: string;
+  ratedAt: string;
+};
+
 export type Booking = {
   id: string;
   serviceId: string;
@@ -11,6 +17,7 @@ export type Booking = {
   status: BookingStatus;
   createdAt: string;
   updatedAt: string;
+  rating?: BookingRating;
 };
 
 export const BOOKING_STATUS_ORDER: BookingStatus[] = [

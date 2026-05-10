@@ -16,12 +16,12 @@ module.exports = {
         },
         brand: {
           ink: "#0f0f10",
-          paper: "#fafaf9",
-          paperDark: "#0b0b0c",
+          paper: "#ffffff",
+          paperDark: "#ffffff",
           card: "#ffffff",
-          cardDark: "#161617",
+          cardDark: "#ffffff",
           line: "#ececec",
-          lineDark: "#262628",
+          lineDark: "#ececec",
         },
         status: {
           pendingBg: "#fff5b8",
@@ -34,8 +34,8 @@ module.exports = {
           doneFg: "#065f46",
         },
         surface: {
-          DEFAULT: "#FAFAF9",
-          dark: "#0B0B0C",
+          DEFAULT: "#FFFFFF",
+          dark: "#FFFFFF",
         },
       },
       fontFamily: {

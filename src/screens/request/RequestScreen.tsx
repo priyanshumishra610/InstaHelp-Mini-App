@@ -2,6 +2,7 @@ import { serviceRequestSchema } from "@/api/schemas/serviceRequest";
 import { QUICK_SERVICES } from "@/constants/quickServices";
 import { ServiceIcon } from "@/components/service/ServiceIcon";
 import { Button } from "@/components/ui/Button";
+import { DateTimePickerField } from "@/components/ui/DateTimePickerField";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
@@ -197,6 +198,15 @@ export function RequestScreen() {
                       </Pressable>
                     );
                   })}
+                </View>
+                <View className="mt-3">
+                  <DateTimePickerField
+                    label="Pick exact time"
+                    value={
+                      value && !TIME_PRESETS.includes(value) ? value : undefined
+                    }
+                    onPick={(formatted) => onChange(formatted)}
+                  />
                 </View>
               </FormField>
             )}

@@ -1,14 +1,11 @@
 import { useAuthStore } from "@/store/authStore";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
 
 export default function AuthLayout() {
   const router = useRouter();
   const segments = useSegments();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const scheme = useColorScheme();
-  const dark = scheme === "dark";
 
   useEffect(() => {
     if (!segments.length) return;
@@ -21,7 +18,7 @@ export default function AuthLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: dark ? "#0B0B0C" : "#FAFAF7" },
+        contentStyle: { backgroundColor: "#FFFFFF" },
       }}
     >
       <Stack.Screen name="phone" />
