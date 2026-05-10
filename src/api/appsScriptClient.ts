@@ -1,0 +1,66 @@
+import type { Booking } from "@/types/booking";
+import type { UserProfile } from "@/types/user";
+
+import { APPS_SCRIPT_URL } from "./env";
+
+export type ApiEnvelope<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+
+async function postJson<T>(body: Record<string, unknown>): Promise<ApiEnvelope<T>> {
+  if (!APPS_SCRIPT_URL) {
+    return { ok: false, error: "Missing EXPO_PUBLIC_APPS_SCRIPT_URL" };
+  }
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const json = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: typeof json === "object" && json && "error" in json
+          ? String((json as { error?: unknown }).error)
+          : `Request failed (${res.status})`,
+      };
+    }
+    if (json && typeof json === "object" && "ok" in json) {
+      return json as ApiEnvelope<T>;
+    }
+    return { ok: false, error: "Unexpected response shape" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Network error" };
+  }
+}
+
+export type CreateBookingPayload = {
+  phone: string;
+  serviceId: string;
+  serviceLabel: string;
+  description: string;
+  preferredTime: string;
+  notes?: string;
+  imageBase64?: string | null;
+};
+
+export async function apiCreateBooking(payload: CreateBookingPayload) {
+  return postJson<Booking>({ action: "createBooking", ...payload });
+}
+
+export async function apiGetBookings(phone: string) {
+  return postJson<Booking[]>({ action: "getBookings", phone });
+}
+
+export async function apiGetUserProfile(phone: string) {
+  return postJson<UserProfile>({ action: "getUserProfile", phone });
+}
+
+export type UpdateProfilePayload = Pick<UserProfile, "name" | "addresses" | "favorites"> & {
+  phone: string;
+};
+
+export async function apiUpdateProfile(payload: UpdateProfilePayload) {
+  return postJson<UserProfile>({ action: "updateProfile", ...payload });
+}

@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "InstaHelp",
+    "slug": "instahelp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/app-icon.png",
+    "scheme": "instahelpminiapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/InstaHelp.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF8EC",
+      "dark": {
+        "image": "./assets/images/InstaHelp.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#0B0B0C"
+      }
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/app-icon.png",
+        "backgroundColor": "#FAFAF9"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.priyanshum567.instahelp"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/InstaHelp.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow InstaHelp to attach one photo to your request when useful.",
+          "cameraPermission": "Allow InstaHelp to capture a photo for your request."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
