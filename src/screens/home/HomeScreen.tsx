@@ -8,6 +8,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
 import { openWhatsApp } from "@/utils/whatsapp";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -141,25 +142,57 @@ function FastestPathImageSlider() {
 
   return (
     <View className="overflow-hidden rounded-2xl border border-accent-tint/60 bg-white p-2">
-      <Animated.View
-        className="flex-row items-center"
-        style={[{ width: 760, gap: 8 }, scrollerStyle]}
-      >
-        {[...FASTEST_PATH_SLIDER_IMAGES, ...FASTEST_PATH_SLIDER_IMAGES].map(
-          (source, index) => (
-            <View
-              key={`fastest-path-slider-${index}`}
-              className="h-16 w-24 overflow-hidden rounded-xl border border-white/70 bg-accent-soft"
-            >
-              <Image
-                source={source}
-                resizeMode="cover"
-                style={{ width: "100%", height: "100%", opacity: 0.92 }}
-              />
-            </View>
-          ),
-        )}
-      </Animated.View>
+      <View className="relative overflow-hidden rounded-xl">
+        <Animated.View
+          className="flex-row items-center"
+          style={[{ width: 760, gap: 8 }, scrollerStyle]}
+        >
+          {[...FASTEST_PATH_SLIDER_IMAGES, ...FASTEST_PATH_SLIDER_IMAGES].map(
+            (source, index) => (
+              <View
+                key={`fastest-path-slider-${index}`}
+                className="h-16 w-24 overflow-hidden rounded-xl border border-white/70 bg-accent-soft"
+              >
+                <Image
+                  source={source}
+                  resizeMode="cover"
+                  style={{ width: "100%", height: "100%", opacity: 0.92 }}
+                />
+              </View>
+            ),
+          )}
+        </Animated.View>
+        <LinearGradient
+          pointerEvents="none"
+          colors={["#ffffff", "rgba(255,255,255,0.55)", "rgba(255,255,255,0)"]}
+          locations={[0, 0.42, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: 80,
+            zIndex: 10,
+          }}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.55)", "#ffffff"]}
+          locations={[0, 0.58, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={{
+            position: "absolute",
+            right: 0,
+            top: 0,
+            bottom: 0,
+            width: 80,
+            zIndex: 10,
+          }}
+        />
+      </View>
     </View>
   );
 }
@@ -412,20 +445,43 @@ export function HomeScreen() {
                 Pick a topic and we'll open WhatsApp with your message ready
                 to send.
               </Text>
-              <View className="mt-4 flex-row flex-wrap gap-2">
-                {TOPICS.map((t) => (
-                  <Pressable
-                    key={t.id}
-                    onPress={() => sendTopic(t.message)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Open WhatsApp about ${t.label}`}
-                    className="rounded-full border border-neutral-900/10 bg-white px-4 py-2.5 active:bg-neutral-50"
-                  >
-                    <Text className="text-[13px] font-bold text-neutral-900">
-                      {t.label}
-                    </Text>
-                  </Pressable>
-                ))}
+              <View className="mt-4 gap-2">
+                <View className="flex-row gap-2">
+                  {TOPICS.slice(0, 3).map((t) => (
+                    <Pressable
+                      key={t.id}
+                      onPress={() => sendTopic(t.message)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open WhatsApp about ${t.label}`}
+                      className="min-h-[52px] flex-1 items-center justify-center rounded-2xl border border-neutral-900/10 bg-white px-2 py-2.5 active:bg-neutral-50"
+                    >
+                      <Text
+                        className="text-center text-[12px] font-bold leading-4 text-neutral-900"
+                        numberOfLines={2}
+                      >
+                        {t.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                <View className="flex-row gap-2">
+                  {TOPICS.slice(3, 6).map((t) => (
+                    <Pressable
+                      key={t.id}
+                      onPress={() => sendTopic(t.message)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open WhatsApp about ${t.label}`}
+                      className="min-h-[52px] flex-1 items-center justify-center rounded-2xl border border-neutral-900/10 bg-white px-2 py-2.5 active:bg-neutral-50"
+                    >
+                      <Text
+                        className="text-center text-[12px] font-bold leading-4 text-neutral-900"
+                        numberOfLines={2}
+                      >
+                        {t.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
               </View>
             </View>
           </Animated.View>
