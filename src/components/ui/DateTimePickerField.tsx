@@ -105,10 +105,10 @@ export function DateTimePickerField({ value, onPick, label }: Props) {
         onPress={start}
         accessibilityRole="button"
         accessibilityLabel={label ?? "Pick a date and time"}
-        className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white px-4 py-3 active:bg-accent/5 dark:border-brand-lineDark dark:bg-brand-cardDark"
+        className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white px-4 py-3 active:bg-neutral-100 dark:border-brand-lineDark dark:bg-brand-cardDark"
       >
-        <View className="h-9 w-9 items-center justify-center rounded-full bg-accent/15">
-          <Ionicons name="time-outline" size={16} color="#a88a00" />
+        <View className="h-9 w-9 items-center justify-center rounded-full bg-accent">
+          <Ionicons name="time-outline" size={16} color="#ffffff" />
         </View>
         <View className="flex-1">
           <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
@@ -125,7 +125,7 @@ export function DateTimePickerField({ value, onPick, label }: Props) {
             {value || "Tap to open the clock"}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+        <Ionicons name="chevron-forward" size={18} color="#004aad" />
       </Pressable>
 
       {Platform.OS === "android" && open ? (

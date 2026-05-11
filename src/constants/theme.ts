@@ -1,2 +1,11 @@
-export const ACCENT = "#ffd500";
+export const ACCENT = "#004aad";
+export const ACCENT_DEEP = "#003a85";
+export const ACCENT_TINT = "#e0eaff";
+export const BRAND_BLUE = "#004aad";
+export const BRAND_SKY = "#3b82f6";
+export const BRAND_GOLD = "#ffd500";
+export const BRAND_GOLD_DEEP = "#b88a00";
+export const BRAND_GOLD_SOFT = "#fff8e1";
+export const INK = "#000000";
+export const PAPER = "#ffffff";
 export const RADIUS_LG = 16;

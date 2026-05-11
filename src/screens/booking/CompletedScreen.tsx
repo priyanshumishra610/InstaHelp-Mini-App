@@ -73,10 +73,10 @@ function CheckBadge() {
           width: 72,
           height: 72,
           borderRadius: 36,
-          backgroundColor: "#10b981",
+          backgroundColor: "#004aad",
           alignItems: "center",
           justifyContent: "center",
-          shadowColor: "#10b981",
+          shadowColor: "#004aad",
           shadowOpacity: 0.3,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 8 },
@@ -104,8 +104,8 @@ export function CompletedScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-            <Ionicons name="trophy-outline" size={26} color="#a88a00" />
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+            <Ionicons name="trophy-outline" size={26} color="#ffffff" />
           </View>
           <Text className="mt-4 text-center text-base font-bold text-neutral-900">
             Booking not found
@@ -129,9 +129,9 @@ export function CompletedScreen() {
         className="flex-1 px-5"
         contentContainerStyle={{ paddingBottom: 60 }}
       >
-        <View className="mt-4 items-center rounded-3xl border border-emerald-100 bg-emerald-50 p-6">
+        <View className="mt-4 items-center rounded-3xl border border-accent-tint bg-accent-soft p-6">
           <CheckBadge />
-          <Text className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-700">
+          <Text className="mt-4 text-[11px] font-bold uppercase tracking-[0.16em] text-accent-deep">
             Job complete
           </Text>
           <Text
@@ -177,7 +177,7 @@ export function CompletedScreen() {
           className={`mt-5 overflow-hidden rounded-3xl p-5 ${
             booking.rating
               ? "border border-brand-line bg-white"
-              : "bg-accent shadow-glow"
+              : "bg-accent "
           }`}
         >
           {booking.rating ? (
@@ -209,18 +209,18 @@ export function CompletedScreen() {
             </>
           ) : (
             <View className="flex-row items-center gap-3">
-              <View className="h-12 w-12 items-center justify-center rounded-full bg-accent-foreground/15">
-                <Ionicons name="star" size={22} color="#1a1a1a" />
+              <View className="h-12 w-12 items-center justify-center rounded-full bg-white/15">
+                <Ionicons name="star" size={22} color="#ffffff" />
               </View>
               <View className="flex-1">
                 <Text className="text-base font-extrabold text-accent-foreground">
                   Rate this booking
                 </Text>
-                <Text className="text-xs font-medium text-accent-foreground/80">
+                <Text className="text-xs font-medium text-white/85">
                   30 seconds, helps the next member.
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#1a1a1a" />
+              <Ionicons name="chevron-forward" size={20} color="#ffffff" />
             </View>
           )}
         </Pressable>
@@ -233,10 +233,10 @@ export function CompletedScreen() {
                 params: { id: booking.id },
               })
             }
-            className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white p-4 active:bg-accent/5"
+            className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white p-4 active:bg-neutral-100"
           >
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-accent/15">
-              <Ionicons name="receipt-outline" size={18} color="#a88a00" />
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
+              <Ionicons name="receipt-outline" size={18} color="#ffffff" />
             </View>
             <View className="flex-1">
               <Text className="text-sm font-bold text-neutral-900">
@@ -246,7 +246,7 @@ export function CompletedScreen() {
                 Share or copy the booking summary.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+            <Ionicons name="chevron-forward" size={18} color="#004aad" />
           </Pressable>
 
           <Pressable
@@ -260,10 +260,10 @@ export function CompletedScreen() {
                 },
               })
             }
-            className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white p-4 active:bg-accent/5"
+            className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white p-4 active:bg-neutral-100"
           >
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-accent/15">
-              <Ionicons name="refresh" size={18} color="#a88a00" />
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
+              <Ionicons name="refresh" size={18} color="#ffffff" />
             </View>
             <View className="flex-1">
               <Text className="text-sm font-bold text-neutral-900">
@@ -273,7 +273,7 @@ export function CompletedScreen() {
                 Re-run this exact request with one tap.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+            <Ionicons name="chevron-forward" size={18} color="#004aad" />
           </Pressable>
 
           <Pressable
@@ -306,8 +306,8 @@ function SummaryStat({
 }) {
   return (
     <View className="flex-1 rounded-2xl border border-brand-line bg-white p-4">
-      <View className="h-8 w-8 items-center justify-center rounded-full bg-accent/15">
-        <Ionicons name={icon} size={16} color="#a88a00" />
+      <View className="h-8 w-8 items-center justify-center rounded-full bg-accent">
+        <Ionicons name={icon} size={16} color="#ffffff" />
       </View>
       <Text className="mt-3 text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">
         {label}

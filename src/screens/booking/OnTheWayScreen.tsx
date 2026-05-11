@@ -72,7 +72,7 @@ function PulsingDot() {
             width: 12,
             height: 12,
             borderRadius: 6,
-            backgroundColor: "#10b981",
+            backgroundColor: "#ffffff",
           },
           ringStyle,
         ]}
@@ -82,7 +82,7 @@ function PulsingDot() {
           width: 8,
           height: 8,
           borderRadius: 4,
-          backgroundColor: "#10b981",
+          backgroundColor: "#ffffff",
         }}
       />
     </View>
@@ -110,7 +110,7 @@ function ProgressBar({ percent }: { percent: number }) {
           {
             height: "100%",
             borderRadius: 999,
-            backgroundColor: "#ffd500",
+            backgroundColor: "#3b82f6",
           },
           style,
         ]}
@@ -146,8 +146,8 @@ export function OnTheWayScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-            <Ionicons name="navigate-outline" size={26} color="#a88a00" />
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+            <Ionicons name="navigate-outline" size={26} color="#ffffff" />
           </View>
           <Text className="mt-4 text-center text-base font-bold text-neutral-900">
             Booking not found
@@ -182,11 +182,11 @@ export function OnTheWayScreen() {
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
           <View
             pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/30"
+            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
           />
           <View className="flex-row items-center gap-2">
             <PulsingDot />
-            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground/80">
+            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/85">
               Live · On the way
             </Text>
           </View>
@@ -196,7 +196,7 @@ export function OnTheWayScreen() {
           >
             Arriving in ~{eta} min{eta === 1 ? "" : "s"}
           </Text>
-          <Text className="mt-1 text-sm text-accent-foreground/80">
+          <Text className="mt-1 text-sm text-white/90">
             {vendor.name.split(" ")[0]} is heading to your location now.
           </Text>
           <ProgressBar percent={percentDone} />
@@ -308,7 +308,7 @@ export function OnTheWayScreen() {
                 params: { id: booking.id },
               })
             }
-            className="flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3.5 active:bg-accent/5"
+            className="flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3.5 active:bg-neutral-100"
           >
             <Ionicons name="document-text-outline" size={16} color="#525252" />
             <Text className="text-sm font-bold text-neutral-800">
@@ -332,8 +332,8 @@ function Tip({
 }) {
   return (
     <View className="flex-row items-start gap-3">
-      <View className="h-8 w-8 items-center justify-center rounded-full bg-accent/15">
-        <Ionicons name={icon} size={16} color="#a88a00" />
+      <View className="h-8 w-8 items-center justify-center rounded-full bg-accent">
+        <Ionicons name={icon} size={16} color="#ffffff" />
       </View>
       <View className="flex-1">
         <Text className="text-sm font-bold text-neutral-900">{title}</Text>

@@ -15,8 +15,11 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 
 type Filter = "all" | "active" | "completed";
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: "all", label: "All" },
@@ -94,16 +97,17 @@ export function BookingsScreen() {
     <Screen>
       <ScrollView
         className="flex-1 px-5"
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 160 }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#a88a00"
+            tintColor="#004aad"
           />
         }
       >
-        <View className="pt-2">
+        <Animated.View entering={FadeInUp.duration(380)} className="pt-2">
           <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-deep dark:text-accent">
             Activity
           </Text>
@@ -113,83 +117,128 @@ export function BookingsScreen() {
           <Text className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Live status for every request InstaHelp is handling for you.
           </Text>
-        </View>
+        </Animated.View>
 
         {!isPending && !isError && rows.length > 0 ? (
-          <View className="mt-5 overflow-hidden rounded-3xl bg-accent p-5">
-            <View
-              pointerEvents="none"
-              className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/30"
-            />
-            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground/70">
-              This account
-            </Text>
-            <Text className="mt-1 text-2xl font-extrabold text-accent-foreground">
-              {stats.total} request{stats.total === 1 ? "" : "s"}
-            </Text>
-            <View className="mt-4 flex-row gap-3">
-              <StatPill label="Active" value={stats.active} />
-              <StatPill label="Completed" value={stats.completed} />
-              <StatPill label="Rated" value={stats.rated} />
-            </View>
-          </View>
-        ) : null}
+          <>
+            <Animated.View
+              entering={FadeInUp.duration(420).delay(60)}
+              className="mt-6 overflow-hidden rounded-[28px] bg-accent p-6 shadow-sm"
+            >
+              <View
+                pointerEvents="none"
+                className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-brand-blue"
+              />
+              <View
+                pointerEvents="none"
+                className="absolute -bottom-16 -left-8 h-32 w-32 rounded-full bg-accent-deep/40"
+              />
 
-        {!isPending && !isError && rows.length > 0 ? (
-          <View className="mt-5 flex-row gap-2">
-            {FILTERS.map((f) => {
-              const on = filter === f.id;
-              const count =
-                f.id === "all"
-                  ? stats.total
-                  : f.id === "active"
-                    ? stats.active
-                    : stats.completed;
-              return (
-                <Pressable
-                  key={f.id}
-                  onPress={() => setFilter(f.id)}
-                  className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-2xl border px-3 py-2.5 ${
-                    on
-                      ? "border-accent bg-accent"
-                      : "border-brand-line bg-white dark:border-brand-lineDark dark:bg-brand-cardDark"
-                  }`}
-                >
-                  <Text
-                    className={`text-[13px] font-bold ${
-                      on
-                        ? "text-accent-foreground"
-                        : "text-neutral-700 dark:text-neutral-200"
-                    }`}
-                  >
-                    {f.label}
+              <View className="flex-row items-center gap-4">
+                <View className="h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-white/35 bg-white/10">
+                  <Ionicons name="pulse" size={30} color="#ffffff" />
+                </View>
+                <View className="min-w-0 flex-1">
+                  <Text className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">
+                    Summary
                   </Text>
-                  <View
-                    className={`rounded-full px-1.5 py-0.5 ${
-                      on
-                        ? "bg-accent-foreground/15"
-                        : "bg-neutral-100 dark:bg-neutral-800"
-                    }`}
-                  >
-                    <Text
-                      className={`text-[10px] font-bold ${
+                  <Text className="mt-1 text-3xl font-extrabold text-accent-foreground">
+                    {stats.total}
+                  </Text>
+                  <Text className="mt-0.5 text-xs text-white/85">
+                    request{stats.total === 1 ? "" : "s"} on file
+                  </Text>
+                </View>
+              </View>
+
+              <View className="mt-4 flex-row items-center gap-2">
+                <Ionicons name="sync-outline" size={12} color="#ffd500" />
+                <Text className="text-[11px] font-semibold text-white/90">
+                  Pull down anytime to refresh
+                </Text>
+              </View>
+            </Animated.View>
+
+            <Animated.View
+              entering={FadeInUp.duration(420).delay(120)}
+              className="mt-5 overflow-hidden rounded-2xl bg-neutral-50 py-4 dark:bg-neutral-900"
+            >
+              <View className="flex-row items-stretch">
+                <StatStripCell
+                  label="Active"
+                  value={stats.active}
+                  icon="pulse"
+                />
+                <StatDivider />
+                <StatStripCell
+                  label="Done"
+                  value={stats.completed}
+                  icon="checkmark-done"
+                />
+                <StatDivider />
+                <StatStripCell
+                  label="Rated"
+                  value={stats.rated}
+                  icon="star-outline"
+                />
+              </View>
+            </Animated.View>
+
+            <Animated.View
+              entering={FadeInUp.duration(420).delay(180)}
+              className="mt-6"
+            >
+              <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
+                Show
+              </Text>
+              <View className="flex-row rounded-2xl bg-neutral-100 p-1 dark:bg-neutral-800">
+                {FILTERS.map((f) => {
+                  const on = filter === f.id;
+                  const count =
+                    f.id === "all"
+                      ? stats.total
+                      : f.id === "active"
+                        ? stats.active
+                        : stats.completed;
+                  return (
+                    <Pressable
+                      key={f.id}
+                      onPress={() => setFilter(f.id)}
+                      className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 ${
                         on
-                          ? "text-accent-foreground"
-                          : "text-neutral-500 dark:text-neutral-300"
+                          ? "bg-white shadow-sm dark:bg-neutral-950"
+                          : ""
                       }`}
                     >
-                      {count}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
+                      <Text
+                        className={`text-[13px] font-bold ${
+                          on
+                            ? "text-accent dark:text-accent"
+                            : "text-neutral-600 dark:text-neutral-300"
+                        }`}
+                      >
+                        {f.label}
+                      </Text>
+                      <Text
+                        className={`text-[10px] font-bold tabular-nums ${
+                          on
+                            ? "text-neutral-500 dark:text-neutral-400"
+                            : "text-neutral-400 dark:text-neutral-500"
+                        }`}
+                      >
+                        {count}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          </>
         ) : null}
 
         {isPending ? (
           <View className="mt-12 items-center">
-            <ActivityIndicator color="#a88a00" />
+            <ActivityIndicator color="#004aad" />
           </View>
         ) : isError ? (
           <EmptyState
@@ -224,70 +273,116 @@ export function BookingsScreen() {
             subtitle={filterEmptyCopy[filter].subtitle}
           />
         ) : (
-          <View className="mt-5 gap-3">
-            {filtered.map((b) => (
-              <Pressable
-                key={b.id}
-                onPress={() =>
-                  router.push({
-                    pathname: "/booking/[id]",
-                    params: { id: b.id },
-                  })
-                }
-                className="rounded-2xl border border-brand-line bg-white p-4 active:bg-accent/5 dark:border-brand-lineDark dark:bg-brand-cardDark"
-              >
-                <View className="flex-row items-start justify-between gap-2">
-                  <Text className="flex-1 text-base font-bold text-neutral-900 dark:text-white">
-                    {b.serviceLabel}
-                  </Text>
-                  <StatusBadge status={b.status} />
-                </View>
-                <Text
-                  className="mt-2 text-sm text-neutral-600 dark:text-neutral-300"
-                  numberOfLines={3}
-                >
-                  {b.description}
-                </Text>
-                <View className="mt-3 flex-row flex-wrap items-center gap-x-3 gap-y-1">
-                  <View className="flex-row items-center gap-1.5">
-                    <Ionicons name="time-outline" size={12} color="#737373" />
-                    <Text className="text-xs text-neutral-500">
-                      {b.preferredTime || "Flexible"}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-1.5">
-                    <Ionicons name="ellipse" size={5} color="#a3a3a3" />
-                    <Text className="text-xs text-neutral-500">
-                      Updated {formatRelative(b.updatedAt)}
-                    </Text>
-                  </View>
-                  {b.rating ? (
-                    <View className="flex-row items-center gap-1">
-                      <Ionicons name="star" size={12} color="#ffd500" />
-                      <Text className="text-xs font-bold text-neutral-700 dark:text-neutral-200">
-                        {b.rating.stars}/5
-                      </Text>
+          <Animated.View
+            entering={FadeInUp.duration(420).delay(240)}
+            className="mt-5"
+          >
+            <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
+              Timeline
+            </Text>
+            <View className="overflow-hidden rounded-2xl bg-neutral-50 dark:bg-neutral-900">
+              {filtered.map((b, i, arr) => (
+                <View key={b.id}>
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/booking/[id]",
+                        params: { id: b.id },
+                      })
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`${b.serviceLabel}, ${b.status}`}
+                    className="flex-row items-start gap-3 px-4 py-4 active:bg-neutral-200/50 dark:active:bg-neutral-800"
+                  >
+                    <View className="mt-0.5 h-10 w-10 items-center justify-center rounded-full bg-accent-soft dark:bg-accent/25">
+                      <Ionicons name="receipt-outline" size={18} color="#004aad" />
                     </View>
+                    <View className="min-w-0 flex-1">
+                      <View className="flex-row items-start justify-between gap-2">
+                        <Text
+                          className="min-w-0 flex-1 text-[15px] font-semibold text-neutral-900 dark:text-white"
+                          numberOfLines={2}
+                        >
+                          {b.serviceLabel}
+                        </Text>
+                        <StatusBadge
+                          status={b.status}
+                          className="shrink-0"
+                        />
+                      </View>
+                      <Text
+                        className="mt-1 text-sm leading-5 text-neutral-600 dark:text-neutral-300"
+                        numberOfLines={2}
+                      >
+                        {b.description}
+                      </Text>
+                      <View className="mt-2 flex-row flex-wrap items-center gap-x-3 gap-y-1">
+                        <View className="flex-row items-center gap-1.5">
+                          <Ionicons name="time-outline" size={12} color="#737373" />
+                          <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {b.preferredTime || "Flexible"}
+                          </Text>
+                        </View>
+                        <View className="flex-row items-center gap-1.5">
+                          <Ionicons name="ellipse" size={5} color="#a3a3a3" />
+                          <Text className="text-xs text-neutral-500 dark:text-neutral-400">
+                            Updated {formatRelative(b.updatedAt)}
+                          </Text>
+                        </View>
+                        {b.rating ? (
+                          <View className="flex-row items-center gap-1">
+                            <Ionicons name="star" size={12} color="#ffd500" />
+                            <Text className="text-xs font-bold text-neutral-700 dark:text-neutral-200">
+                              {b.rating.stars}/5
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    </View>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color="#c4c4c4"
+                      style={{ marginTop: 2 }}
+                    />
+                  </Pressable>
+                  {i < arr.length - 1 ? (
+                    <View className="ml-[54px] mr-4 h-px bg-neutral-200/90 dark:bg-neutral-700/90" />
                   ) : null}
                 </View>
-              </Pressable>
-            ))}
-          </View>
+              ))}
+            </View>
+          </Animated.View>
         )}
       </ScrollView>
     </Screen>
   );
 }
 
-function StatPill({ label, value }: { label: string; value: number }) {
+function StatStripCell({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number;
+  icon: IoniconName;
+}) {
   return (
-    <View className="flex-1 rounded-2xl bg-accent-foreground/10 px-3 py-2">
-      <Text className="text-2xl font-extrabold text-accent-foreground">
+    <View className="min-w-0 flex-1 items-center px-1 py-0.5">
+      <Ionicons name={icon} size={13} color="#737373" />
+      <Text className="mt-1.5 text-2xl font-extrabold tabular-nums text-neutral-900 dark:text-white">
         {value}
       </Text>
-      <Text className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-accent-foreground/70">
+      <Text className="mt-0.5 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-neutral-500 dark:text-neutral-400">
         {label}
       </Text>
     </View>
+  );
+}
+
+function StatDivider() {
+  return (
+    <View className="my-2 w-px self-stretch bg-neutral-200/90 dark:bg-neutral-700/90" />
   );
 }

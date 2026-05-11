@@ -31,8 +31,8 @@ export function AssignedScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-            <Ionicons name="person-add-outline" size={26} color="#a88a00" />
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+            <Ionicons name="person-add-outline" size={26} color="#ffffff" />
           </View>
           <Text className="mt-4 text-center text-base font-bold text-neutral-900">
             Booking not found
@@ -63,13 +63,13 @@ export function AssignedScreen() {
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
           <View
             pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/30"
+            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
           />
           <View className="flex-row items-center gap-2">
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-accent-foreground/15">
-              <Ionicons name="person-add" size={18} color="#1a1a1a" />
+            <View className="h-9 w-9 items-center justify-center rounded-full bg-white/15">
+              <Ionicons name="person-add" size={18} color="#ffffff" />
             </View>
-            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground/70">
+            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
               Vendor assigned
             </Text>
           </View>
@@ -79,7 +79,7 @@ export function AssignedScreen() {
           >
             {booking.serviceLabel}
           </Text>
-          <Text className="mt-1 text-sm text-accent-foreground/80">
+          <Text className="mt-1 text-sm text-white/90">
             We matched a verified pro for your request. They are prepping
             and will roll out shortly.
           </Text>
@@ -122,13 +122,13 @@ export function AssignedScreen() {
               <View key={i} className="flex-row items-center gap-3">
                 <View
                   className={`h-6 w-6 items-center justify-center rounded-full ${
-                    c.done ? "bg-emerald-100" : "bg-neutral-100"
+                    c.done ? "bg-accent" : "bg-neutral-100"
                   }`}
                 >
                   <Ionicons
                     name={c.done ? "checkmark" : "ellipse-outline"}
                     size={14}
-                    color={c.done ? "#059669" : "#a3a3a3"}
+                    color={c.done ? "#ffffff" : "#a3a3a3"}
                   />
                 </View>
                 <Text
@@ -162,10 +162,10 @@ export function AssignedScreen() {
                 params: { id: booking.id },
               })
             }
-            className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white p-4 active:bg-accent/5"
+            className="flex-row items-center gap-3 rounded-2xl border border-brand-line bg-white p-4 active:bg-neutral-100"
           >
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-accent/15">
-              <Ionicons name="calendar-outline" size={18} color="#a88a00" />
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
+              <Ionicons name="calendar-outline" size={18} color="#ffffff" />
             </View>
             <View className="flex-1">
               <Text className="text-sm font-bold text-neutral-900">
@@ -175,7 +175,7 @@ export function AssignedScreen() {
                 Change the preferred time before they roll out.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+            <Ionicons name="chevron-forward" size={18} color="#004aad" />
           </Pressable>
 
           <Pressable

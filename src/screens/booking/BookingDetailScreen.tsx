@@ -31,8 +31,8 @@ export function BookingDetailScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-            <Ionicons name="search" size={26} color="#a88a00" />
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+            <Ionicons name="search" size={26} color="#ffffff" />
           </View>
           <Text className="mt-4 text-center text-base font-bold text-neutral-900 dark:text-white">
             Booking not found
@@ -153,9 +153,9 @@ export function BookingDetailScreen() {
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
           <View
             pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/30"
+            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
           />
-          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground/70">
+          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
             Booking
           </Text>
           <Text className="mt-1 text-2xl font-extrabold text-accent-foreground">
@@ -183,14 +183,14 @@ export function BookingDetailScreen() {
             {booking.description}
           </Text>
           <View className="mt-4 flex-row items-center gap-2">
-            <Ionicons name="time-outline" size={14} color="#a88a00" />
+            <Ionicons name="time-outline" size={14} color="#004aad" />
             <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
               Preferred time · {booking.preferredTime || "Flexible"}
             </Text>
           </View>
           {booking.notes ? (
             <View className="mt-2 flex-row items-start gap-2">
-              <Ionicons name="document-text-outline" size={14} color="#a88a00" />
+              <Ionicons name="document-text-outline" size={14} color="#004aad" />
               <Text className="flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300">
                 Notes · {booking.notes}
               </Text>
@@ -236,10 +236,10 @@ export function BookingDetailScreen() {
               onPress={phaseCard.onPress}
               accessibilityRole="button"
               accessibilityLabel={phaseCard.title}
-              className="flex-row items-center gap-3 rounded-2xl border border-accent bg-accent/10 p-4 active:opacity-90"
+              className="flex-row items-center gap-3 rounded-2xl border border-accent bg-white p-4 active:opacity-90"
             >
               <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
-                <Ionicons name={phaseCard.icon} size={18} color="#1a1a1a" />
+                <Ionicons name={phaseCard.icon} size={18} color="#ffffff" />
               </View>
               <View className="flex-1">
                 <Text className="text-sm font-bold text-neutral-900 dark:text-white">
@@ -249,7 +249,7 @@ export function BookingDetailScreen() {
                   {phaseCard.subtitle}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+              <Ionicons name="chevron-forward" size={18} color="#004aad" />
             </Pressable>
           ) : null}
           {actions.map((a) => (
@@ -260,20 +260,16 @@ export function BookingDetailScreen() {
               accessibilityLabel={a.title}
               className={`flex-row items-center gap-3 rounded-2xl border p-4 active:opacity-90 ${
                 a.highlight
-                  ? "border-accent bg-accent/10"
+                  ? "border-accent bg-white"
                   : "border-brand-line bg-white dark:border-brand-lineDark dark:bg-brand-cardDark"
               }`}
             >
               <View
                 className={`h-10 w-10 items-center justify-center rounded-full ${
-                  a.highlight ? "bg-accent" : "bg-accent/15"
+                  a.highlight ? "bg-accent" : "bg-accent"
                 }`}
               >
-                <Ionicons
-                  name={a.icon}
-                  size={18}
-                  color={a.highlight ? "#1a1a1a" : "#a88a00"}
-                />
+                <Ionicons name={a.icon} size={18} color="#ffffff" />
               </View>
               <View className="flex-1">
                 <Text className="text-sm font-bold text-neutral-900 dark:text-white">
@@ -283,7 +279,7 @@ export function BookingDetailScreen() {
                   {a.subtitle}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#a88a00" />
+              <Ionicons name="chevron-forward" size={18} color="#004aad" />
             </Pressable>
           ))}
         </View>

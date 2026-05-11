@@ -46,8 +46,8 @@ export function SimulateStatusScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-            <Ionicons name="alert-circle" size={26} color="#a88a00" />
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+            <Ionicons name="alert-circle" size={26} color="#ffffff" />
           </View>
           <Text className="mt-4 text-center text-base font-bold text-neutral-900 dark:text-white">
             Booking not found
@@ -78,9 +78,9 @@ export function SimulateStatusScreen() {
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
           <View
             pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/30"
+            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
           />
-          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground/70">
+          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
             Status simulator
           </Text>
           <Text
@@ -92,7 +92,7 @@ export function SimulateStatusScreen() {
           <View className="mt-3">
             <StatusBadge status={booking.status} />
           </View>
-          <Text className="mt-3 text-sm text-accent-foreground/80">
+          <Text className="mt-3 text-sm text-white/90">
             Manually move this booking through the lifecycle to preview how
             tracking, notifications, and the timeline behave.
           </Text>
@@ -152,8 +152,8 @@ export function SimulateStatusScreen() {
                 accessibilityLabel={`Set status to ${BOOKING_STATUS_LABEL[s]}`}
                 className={`flex-row items-center gap-3 rounded-2xl border p-4 ${
                   active
-                    ? "border-accent bg-accent/15"
-                    : "border-brand-line bg-white active:bg-accent/5 dark:border-brand-lineDark dark:bg-brand-cardDark"
+                    ? "border-accent bg-accent"
+                    : "border-brand-line bg-white active:bg-neutral-100 dark:border-brand-lineDark dark:bg-brand-cardDark"
                 }`}
               >
                 <View
@@ -161,14 +161,14 @@ export function SimulateStatusScreen() {
                     active
                       ? "bg-accent"
                       : past
-                        ? "bg-accent/15"
+                        ? "bg-accent"
                         : "bg-neutral-100 dark:bg-neutral-800"
                   }`}
                 >
                   <Ionicons
                     name={STATUS_ICONS[s]}
                     size={18}
-                    color={active ? "#1a1a1a" : past ? "#a88a00" : "#737373"}
+                    color={active ? "#ffffff" : past ? "#ffffff" : "#737373"}
                   />
                 </View>
                 <View className="flex-1">
@@ -176,29 +176,33 @@ export function SimulateStatusScreen() {
                     <Text
                       className={`text-sm font-bold ${
                         active
-                          ? "text-neutral-900 dark:text-white"
+                          ? "text-white"
                           : "text-neutral-700 dark:text-neutral-200"
                       }`}
                     >
                       {BOOKING_STATUS_LABEL[s]}
                     </Text>
                     {active ? (
-                      <View className="rounded-full bg-accent px-2 py-0.5">
-                        <Text className="text-[9px] font-extrabold uppercase tracking-wider text-accent-foreground">
+                      <View className="rounded-full bg-white/20 px-2 py-0.5">
+                        <Text className="text-[9px] font-extrabold uppercase tracking-wider text-white">
                           Current
                         </Text>
                       </View>
                     ) : null}
                   </View>
                   <Text
-                    className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400"
+                    className={`mt-0.5 text-xs ${
+                      active
+                        ? "text-white/85"
+                        : "text-neutral-500 dark:text-neutral-400"
+                    }`}
                     numberOfLines={2}
                   >
                     {STATUS_DESCRIPTIONS[s]}
                   </Text>
                 </View>
                 {active ? (
-                  <Ionicons name="checkmark" size={18} color="#a88a00" />
+                  <Ionicons name="checkmark" size={18} color="#ffffff" />
                 ) : (
                   <Ionicons name="chevron-forward" size={16} color="#a3a3a3" />
                 )}

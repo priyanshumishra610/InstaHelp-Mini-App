@@ -9,6 +9,7 @@ type ProfileState = {
   profile: UserProfile | null;
   setProfile: (p: UserProfile | null) => void;
   upsertAddress: (address: SavedAddress) => void;
+  removeAddress: (addressId: string) => void;
   toggleFavorite: (serviceId: string) => void;
 };
 
@@ -37,6 +38,16 @@ export const useProfileStore = create<ProfileState>()(
             profile: {
               ...s.profile,
               addresses: [...others, address],
+            },
+          };
+        }),
+      removeAddress: (addressId) =>
+        set((s) => {
+          if (!s.profile) return s;
+          return {
+            profile: {
+              ...s.profile,
+              addresses: s.profile.addresses.filter((a) => a.id !== addressId),
             },
           };
         }),

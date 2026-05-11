@@ -76,8 +76,8 @@ export function ReceiptScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-            <Ionicons name="receipt-outline" size={26} color="#a88a00" />
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+            <Ionicons name="receipt-outline" size={26} color="#ffffff" />
           </View>
           <Text className="mt-4 text-center text-base font-bold text-neutral-900 dark:text-white">
             Booking not found
@@ -127,9 +127,9 @@ export function ReceiptScreen() {
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
           <View
             pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/30"
+            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
           />
-          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-foreground/70">
+          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
             Receipt
           </Text>
           <Text
@@ -138,7 +138,7 @@ export function ReceiptScreen() {
           >
             {booking.serviceLabel}
           </Text>
-          <Text className="mt-1 text-xs font-mono text-accent-foreground/70">
+          <Text className="mt-1 text-xs font-mono text-white/85">
             {booking.id}
           </Text>
           <View className="mt-3">
@@ -222,24 +222,24 @@ export function ReceiptScreen() {
             onPress={onShare}
             className="flex-row items-center justify-center gap-2 rounded-2xl bg-accent py-3.5 active:opacity-90"
           >
-            <Ionicons name="share-outline" size={18} color="#1a1a1a" />
+            <Ionicons name="share-outline" size={18} color="#ffffff" />
             <Text className="text-sm font-bold text-accent-foreground">
               Share receipt
             </Text>
           </Pressable>
           <Pressable
             onPress={onCopy}
-            className="flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3.5 active:bg-accent/5 dark:border-brand-lineDark dark:bg-brand-cardDark"
+            className="flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3.5 active:bg-neutral-100 dark:border-brand-lineDark dark:bg-brand-cardDark"
           >
             <Ionicons
               name={copied ? "checkmark" : "copy-outline"}
               size={18}
-              color={copied ? "#16a34a" : "#525252"}
+              color={copied ? "#004aad" : "#525252"}
             />
             <Text
               className={`text-sm font-bold ${
                 copied
-                  ? "text-emerald-600"
+                  ? "text-accent-deep"
                   : "text-neutral-800 dark:text-neutral-100"
               }`}
             >

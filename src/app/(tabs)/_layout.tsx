@@ -1,9 +1,10 @@
 import { TAB_BAR_BASE_HEIGHT, WhatsAppFab } from "@/components/support/WhatsAppFab";
+import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
 import { useAuthStore } from "@/store/authStore";
-import { ensureProfile } from "@/store/profileStore";
+import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,10 +12,21 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const phone = useAuthStore((s) => s.phone);
+  const favoriteServiceIds = useProfileStore((s) => s.profile?.favorites);
+  const profileName = useProfileStore((s) => s.profile?.name) ?? null;
+  const notificationPersona = useProfileStore((s) =>
+    s.profile?.role === "business" ? "business" : "consumer",
+  );
+  const notificationInterests = useMemo(
+    () => favoriteServiceIds ?? [],
+    [favoriteServiceIds],
+  );
 
   useEffect(() => {
     if (phone) ensureProfile(phone);
   }, [phone]);
+
+  useSmartLocalNotifications(notificationInterests, profileName, notificationPersona);
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/phone" />;
@@ -27,7 +39,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#a88a00",
+          tabBarActiveTintColor: "#004aad",
           tabBarInactiveTintColor: "#9ca3af",
           tabBarStyle: {
             borderTopColor: "#ececec",

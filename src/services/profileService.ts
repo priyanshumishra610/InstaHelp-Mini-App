@@ -18,8 +18,13 @@ export async function refreshProfile(): Promise<UserProfile | null> {
 
   const res = await apiGetUserProfile(phone);
   if (res.ok) {
-    useProfileStore.getState().setProfile(res.data);
-    return res.data;
+    const prev = useProfileStore.getState().profile;
+    const samePhone = prev?.phone === res.data.phone;
+    useProfileStore.getState().setProfile({
+      ...res.data,
+      avatarUri: samePhone ? prev?.avatarUri : undefined,
+    });
+    return useProfileStore.getState().profile;
   }
   return useProfileStore.getState().profile;
 }
@@ -42,8 +47,11 @@ export async function persistProfile(next: UserProfile): Promise<UserProfile> {
   });
 
   if (res.ok) {
-    useProfileStore.getState().setProfile(res.data);
-    return res.data;
+    useProfileStore.getState().setProfile({
+      ...res.data,
+      avatarUri: next.avatarUri,
+    });
+    return useProfileStore.getState().profile as UserProfile;
   }
 
   return next;

@@ -43,6 +43,12 @@ export type CreateBookingPayload = {
   preferredTime: string;
   notes?: string;
   imageBase64?: string | null;
+  name?: string;
+  email?: string;
+  address?: string;
+  source?: string;
+  paidStatus?: string;
+  consent?: boolean;
 };
 
 export async function apiCreateBooking(payload: CreateBookingPayload) {

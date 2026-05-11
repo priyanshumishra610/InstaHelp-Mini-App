@@ -19,12 +19,12 @@ export function LogoMark({
   return (
     <View className="flex-row items-center gap-3">
       {withWordmark ? (
-        <Text className={`${s.text} font-extrabold tracking-tight text-neutral-900 dark:text-white`}>
-          Insta<Text className="text-accent-deep dark:text-accent">Help</Text>
+        <Text className={`${s.text} font-extrabold tracking-tight text-accent`}>
+          InstaHelp
         </Text>
       ) : (
         <View
-          className={`${s.box} items-center justify-center rounded-2xl bg-accent shadow-glow`}
+          className={`${s.box} items-center justify-center rounded-2xl bg-accent `}
         >
           <Text className={`${s.monogram} font-extrabold text-accent-foreground`}>
             IH

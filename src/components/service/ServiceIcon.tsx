@@ -27,14 +27,10 @@ export function ServiceIcon({
   return (
     <View
       className={`h-11 w-11 items-center justify-center rounded-2xl ${
-        active ? "bg-accent" : "bg-accent/15 dark:bg-accent/20"
+        active ? "bg-accent" : "bg-accent dark:bg-accent"
       }`}
     >
-      <Ionicons
-        name={MAP[icon]}
-        size={22}
-        color={active ? "#1a1a1a" : "#a88a00"}
-      />
+      <Ionicons name={MAP[icon]} size={22} color="#ffffff" />
     </View>
   );
 }

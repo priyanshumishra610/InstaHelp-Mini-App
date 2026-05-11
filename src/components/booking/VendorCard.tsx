@@ -17,7 +17,7 @@ const VENDORS: Vendor[] = [
     role: "Senior pro",
     rating: 4.9,
     jobs: 312,
-    color: "#7c3aed",
+    color: "#004aad",
   },
   {
     name: "Anita Patel",
@@ -25,7 +25,7 @@ const VENDORS: Vendor[] = [
     role: "Verified pro",
     rating: 4.8,
     jobs: 178,
-    color: "#059669",
+    color: "#3b82f6",
   },
   {
     name: "Vikram Singh",
@@ -33,7 +33,7 @@ const VENDORS: Vendor[] = [
     role: "Top rated",
     rating: 5.0,
     jobs: 421,
-    color: "#dc2626",
+    color: "#1e3a8a",
   },
   {
     name: "Priya Verma",
@@ -41,7 +41,7 @@ const VENDORS: Vendor[] = [
     role: "Trusted pro",
     rating: 4.7,
     jobs: 92,
-    color: "#ea580c",
+    color: "#0891b2",
   },
   {
     name: "Arjun Mehta",
@@ -49,7 +49,7 @@ const VENDORS: Vendor[] = [
     role: "Senior pro",
     rating: 4.9,
     jobs: 256,
-    color: "#0891b2",
+    color: "#1d4ed8",
   },
   {
     name: "Sneha Kapoor",
@@ -57,7 +57,7 @@ const VENDORS: Vendor[] = [
     role: "Verified pro",
     rating: 4.8,
     jobs: 145,
-    color: "#be185d",
+    color: "#4338ca",
   },
 ];
 
@@ -111,8 +111,8 @@ export function VendorCard({ vendor, onCall, onMessage, caption }: Props) {
             </Text>
             <View className="h-1 w-1 rounded-full bg-neutral-300" />
             <View className="flex-row items-center gap-1">
-              <Ionicons name="shield-checkmark" size={12} color="#059669" />
-              <Text className="text-xs font-bold text-emerald-700">
+              <Ionicons name="shield-checkmark" size={12} color="#004aad" />
+              <Text className="text-xs font-bold text-accent-deep">
                 Verified
               </Text>
             </View>
@@ -121,7 +121,7 @@ export function VendorCard({ vendor, onCall, onMessage, caption }: Props) {
       </View>
 
       {caption ? (
-        <View className="mt-4 rounded-2xl bg-accent/10 p-3">
+        <View className="mt-4 rounded-2xl bg-white p-3">
           <Text className="text-xs font-medium leading-5 text-accent-deep">
             {caption}
           </Text>
@@ -137,7 +137,7 @@ export function VendorCard({ vendor, onCall, onMessage, caption }: Props) {
               accessibilityLabel="Call pro"
               className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl bg-accent py-3 active:opacity-90"
             >
-              <Ionicons name="call" size={16} color="#1a1a1a" />
+              <Ionicons name="call" size={16} color="#ffffff" />
               <Text className="text-sm font-bold text-accent-foreground">
                 Call
               </Text>
@@ -148,9 +148,9 @@ export function VendorCard({ vendor, onCall, onMessage, caption }: Props) {
               onPress={onMessage}
               accessibilityRole="button"
               accessibilityLabel="Message pro"
-              className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3 active:bg-accent/5"
+              className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3 active:bg-neutral-100"
             >
-              <Ionicons name="chatbubble-ellipses" size={16} color="#a88a00" />
+              <Ionicons name="chatbubble-ellipses" size={16} color="#004aad" />
               <Text className="text-sm font-bold text-neutral-800">
                 Message
               </Text>

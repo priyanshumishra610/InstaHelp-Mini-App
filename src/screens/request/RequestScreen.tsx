@@ -117,7 +117,7 @@ export function RequestScreen() {
             <ServiceIcon icon={service.icon} active />
           ) : (
             <View className="h-11 w-11 items-center justify-center rounded-2xl bg-accent">
-              <Ionicons name="sparkles" size={20} color="#1a1a1a" />
+              <Ionicons name="sparkles" size={20} color="#ffffff" />
             </View>
           )}
           <View className="flex-1">
@@ -234,7 +234,7 @@ export function RequestScreen() {
               Photo (optional)
             </Text>
             {picked ? (
-              <View className="rounded-2xl bg-white p-2 shadow-soft dark:bg-brand-cardDark dark:shadow-soft-dark">
+              <View className="rounded-2xl bg-white p-2 shadow-soft dark:bg-brand-cardDark ">
                 <Image
                   source={{ uri: picked.uri }}
                   className="h-44 w-full rounded-xl"
@@ -272,8 +272,8 @@ export function RequestScreen() {
                 }}
                 className="flex-row items-center gap-3 rounded-2xl border border-dashed border-neutral-300 bg-white p-4 dark:border-neutral-700 dark:bg-brand-cardDark"
               >
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-accent/15">
-                  <Ionicons name="image-outline" size={18} color="#a88a00" />
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-accent">
+                  <Ionicons name="image-outline" size={18} color="#ffffff" />
                 </View>
                 <View className="flex-1">
                   <Text className="text-sm font-bold text-neutral-900 dark:text-white">
@@ -283,7 +283,7 @@ export function RequestScreen() {
                     Helps the vendor estimate faster.
                   </Text>
                 </View>
-                <Ionicons name="add" size={18} color="#a88a00" />
+                <Ionicons name="add" size={18} color="#004aad" />
               </Pressable>
             )}
           </View>

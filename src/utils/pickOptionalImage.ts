@@ -7,14 +7,28 @@ export type PickedImage = {
   mime?: string;
 };
 
-export async function pickOptionalImage(): Promise<PickedImage | null> {
+export type PickOptionalImageOptions = {
+  /** Square crop (good for avatars). */
+  squareCrop?: boolean;
+  /** JPEG/WebP quality 0–1. Default 0.8, or 0.65 when squareCrop. */
+  quality?: number;
+};
+
+export async function pickOptionalImage(
+  options?: PickOptionalImageOptions,
+): Promise<PickedImage | null> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (!perm.granted) return null;
+
+  const square = options?.squareCrop ?? false;
+  const quality =
+    options?.quality ?? (square ? 0.65 : 0.8);
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ["images"],
     allowsEditing: true,
-    quality: 0.8,
+    ...(square ? { aspect: [1, 1] as [number, number] } : {}),
+    quality,
     base64: Platform.OS !== "web",
   });
 

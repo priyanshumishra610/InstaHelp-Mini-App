@@ -23,6 +23,12 @@ export async function createBookingLocalFirst(input: {
   notes?: string;
   imageUri?: string | null;
   imageBase64?: string | null;
+  name?: string;
+  email?: string;
+  address?: string;
+  source?: string;
+  paidStatus?: string;
+  consent?: boolean;
 }): Promise<Booking> {
   const phone = useAuthStore.getState().phone;
   if (!phone) throw new Error("Not signed in");
@@ -53,6 +59,12 @@ export async function createBookingLocalFirst(input: {
       preferredTime: input.preferredTime,
       notes: input.notes,
       imageBase64: input.imageBase64 ?? undefined,
+      name: input.name,
+      email: input.email,
+      address: input.address,
+      source: input.source,
+      paidStatus: input.paidStatus,
+      consent: input.consent,
     });
     if (res.ok && res.data) {
       useBookingStore.getState().upsertBooking(res.data);

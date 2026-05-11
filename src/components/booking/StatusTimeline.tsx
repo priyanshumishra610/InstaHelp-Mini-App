@@ -17,9 +17,9 @@ export function StatusTimeline({ current }: { current: BookingStatus }) {
               <View
                 className={`h-7 w-7 items-center justify-center rounded-full ${
                   active
-                    ? "bg-accent shadow-glow"
+                    ? "bg-accent "
                     : done
-                      ? "bg-accent/30"
+                      ? "bg-accent"
                       : "bg-neutral-200 dark:bg-neutral-800"
                 }`}
               >
@@ -27,7 +27,7 @@ export function StatusTimeline({ current }: { current: BookingStatus }) {
                   <Ionicons
                     name={active ? "ellipse" : "checkmark"}
                     size={active ? 10 : 14}
-                    color={active ? "#1a1a1a" : "#a88a00"}
+                    color="#ffffff"
                   />
                 ) : (
                   <View className="h-1.5 w-1.5 rounded-full bg-neutral-400 dark:bg-neutral-600" />
@@ -37,7 +37,7 @@ export function StatusTimeline({ current }: { current: BookingStatus }) {
                 <View
                   className={`my-1 w-0.5 flex-1 min-h-[22px] rounded-full ${
                     i < idx
-                      ? "bg-accent/60"
+                      ? "bg-accent"
                       : "bg-neutral-200 dark:bg-neutral-800"
                   }`}
                 />

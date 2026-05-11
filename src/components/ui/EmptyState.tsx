@@ -24,8 +24,8 @@ export function EmptyState({
         className,
       )}
     >
-      <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/20">
-        <Ionicons name={icon} size={26} color="#a88a00" />
+      <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
+        <Ionicons name={icon} size={26} color="#ffffff" />
       </View>
       <Text className="mt-4 text-center text-base font-semibold text-neutral-900 dark:text-white">
         {title}

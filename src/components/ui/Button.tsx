@@ -44,7 +44,7 @@ export function Button({
   };
 
   const styles: Record<Variant, string> = {
-    primary: "bg-accent shadow-glow active:opacity-90",
+    primary: "bg-accent  active:opacity-90",
     secondary: "bg-neutral-900 dark:bg-white active:opacity-90",
     ghost: "bg-transparent active:opacity-70",
     outline:
@@ -60,9 +60,7 @@ export function Button({
   };
 
   const indicatorColor =
-    variant === "primary" || variant === "outline" || variant === "ghost"
-      ? "#1a1a1a"
-      : "#fff";
+    variant === "outline" || variant === "ghost" ? "#004aad" : "#ffffff";
 
   return (
     <Pressable

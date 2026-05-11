@@ -13,13 +13,26 @@ const SPREADSHEET_ID = "1GxiZMq0-34BdDk5kC7Hp5hhpPBUped1xtNjNcytC-yY";
 const BOOKING_SHEET_NAME = "Bookings";
 const PROFILE_SHEET_NAME = "Profiles";
 
+/**
+ * Headers for the Bookings sheet.
+ *
+ * Adding a new column here is safe: ensureSheet_ will append any missing
+ * headers to existing sheets the next time they're touched, so older
+ * deployments migrate in-place without manual edits.
+ */
 const BOOKING_HEADERS = [
   "id",
   "phone",
+  "name",
+  "email",
+  "address",
   "serviceId",
   "serviceLabel",
   "description",
   "preferredTime",
+  "source",
+  "paidStatus",
+  "consent",
   "notes",
   "status",
   "createdAt",
@@ -74,35 +87,48 @@ function createBooking_(body) {
   const sheet = ensureSheet_(BOOKING_SHEET_NAME, BOOKING_HEADERS);
   const phone = normalizePhone_(body.phone);
   const now = new Date().toISOString();
-  const booking = {
+
+  const row = {
     id: body.id || "bk_" + Utilities.getUuid(),
+    phone: phone,
+    name: stringOr_(body.name, ""),
+    email: stringOr_(body.email, ""),
+    address: stringOr_(body.address, ""),
     serviceId: body.serviceId,
     serviceLabel: body.serviceLabel,
     description: body.description,
     preferredTime: body.preferredTime,
-    notes: body.notes || "",
+    source: stringOr_(body.source, ""),
+    paidStatus: stringOr_(body.paidStatus, ""),
+    consent: consentLabel_(body.consent),
+    notes: stringOr_(body.notes, ""),
     status: "pending",
     createdAt: now,
     updatedAt: now,
+    imageNote: body.imageBase64 ? "image attached" : "",
   };
 
-  sheet.appendRow([
-    booking.id,
-    phone,
-    booking.serviceId,
-    booking.serviceLabel,
-    booking.description,
-    booking.preferredTime,
-    booking.notes,
-    booking.status,
-    booking.createdAt,
-    booking.updatedAt,
-    body.imageBase64 ? "image attached" : "",
-  ]);
-
+  appendRowByHeaders_(sheet, BOOKING_HEADERS, row);
   forceTextColumn_(sheet, BOOKING_HEADERS.indexOf("phone") + 1);
 
-  return booking;
+  return {
+    id: row.id,
+    phone: row.phone,
+    name: row.name,
+    email: row.email,
+    address: row.address,
+    serviceId: row.serviceId,
+    serviceLabel: row.serviceLabel,
+    description: row.description,
+    preferredTime: row.preferredTime,
+    source: row.source,
+    paidStatus: row.paidStatus,
+    consent: row.consent,
+    notes: row.notes,
+    status: row.status,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
 }
 
 function getBookings_(phone) {
@@ -113,13 +139,19 @@ function getBookings_(phone) {
   return getObjects_(sheet)
     .filter((booking) => normalizePhone_(booking.phone) === target)
     .map((booking) => ({
-      id: booking.id,
-      serviceId: booking.serviceId,
-      serviceLabel: booking.serviceLabel,
-      description: booking.description,
-      preferredTime: booking.preferredTime,
-      notes: booking.notes || "",
-      status: booking.status || "pending",
+      id: stringOr_(booking.id, ""),
+      serviceId: stringOr_(booking.serviceId, ""),
+      serviceLabel: stringOr_(booking.serviceLabel, ""),
+      description: stringOr_(booking.description, ""),
+      preferredTime: stringOr_(booking.preferredTime, ""),
+      name: stringOr_(booking.name, ""),
+      email: stringOr_(booking.email, ""),
+      address: stringOr_(booking.address, ""),
+      source: stringOr_(booking.source, ""),
+      paidStatus: stringOr_(booking.paidStatus, ""),
+      consent: stringOr_(booking.consent, ""),
+      notes: stringOr_(booking.notes, ""),
+      status: stringOr_(booking.status, "pending"),
       createdAt: toIsoString_(booking.createdAt),
       updatedAt: toIsoString_(booking.updatedAt),
     }));
@@ -196,23 +228,67 @@ function getSpreadsheet_() {
   return SpreadsheetApp.getActiveSpreadsheet();
 }
 
+/**
+ * Returns the sheet, creating it if missing and migrating any older sheet
+ * that's missing columns from `headers`. Missing headers are appended to the
+ * end of the existing header row so historical data stays put.
+ */
 function ensureSheet_(name, headers) {
   const spreadsheet = getSpreadsheet_();
   let sheet = spreadsheet.getSheetByName(name);
 
   if (!sheet) {
     sheet = spreadsheet.insertSheet(name);
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+    return sheet;
   }
 
-  const existingHeaders = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
-  const needsHeaders = existingHeaders.every((value) => value === "");
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const existing = sheet
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map((value) => String(value || "").trim());
 
-  if (needsHeaders) {
+  const allBlank = existing.every((value) => value === "");
+  if (allBlank) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  const missing = headers.filter((header) => existing.indexOf(header) === -1);
+  if (missing.length) {
+    const startCol = existing.length + 1;
+    sheet
+      .getRange(1, startCol, 1, missing.length)
+      .setValues([missing]);
     sheet.setFrozenRows(1);
   }
 
   return sheet;
+}
+
+/**
+ * Appends a row using the sheet's actual header order so we never write to
+ * the wrong column when new fields are added between deployments.
+ */
+function appendRowByHeaders_(sheet, expectedHeaders, dataByHeader) {
+  const lastCol = Math.max(sheet.getLastColumn(), expectedHeaders.length);
+  const headerRow = sheet
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map((value) => String(value || "").trim());
+
+  const row = headerRow.map((header) => {
+    if (header && Object.prototype.hasOwnProperty.call(dataByHeader, header)) {
+      const value = dataByHeader[header];
+      return value === undefined || value === null ? "" : value;
+    }
+    return "";
+  });
+
+  sheet.appendRow(row);
 }
 
 function forceTextColumn_(sheet, column1Based) {
@@ -272,6 +348,20 @@ function requireString_(value, name) {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("Missing required field: " + name);
   }
+}
+
+function stringOr_(value, fallback) {
+  if (value === null || value === undefined) return fallback;
+  const str = String(value).trim();
+  return str || fallback;
+}
+
+function consentLabel_(value) {
+  if (value === true || value === "true" || value === "Yes" || value === "yes")
+    return "Yes";
+  if (value === false || value === "false" || value === "No" || value === "no")
+    return "No";
+  return stringOr_(value, "");
 }
 
 function toIsoString_(value) {

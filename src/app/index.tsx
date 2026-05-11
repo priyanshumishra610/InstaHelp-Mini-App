@@ -28,5 +28,5 @@ export default function Index() {
     }
   }, [animationDone, hydrated, isAuthenticated, router]);
 
-  return <AnimatedSplash onFinish={handleFinish} minDurationMs={2100} />;
+  return <AnimatedSplash onFinish={handleFinish} minDurationMs={2400} />;
 }

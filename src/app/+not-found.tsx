@@ -7,10 +7,10 @@ export default function NotFound() {
   return (
     <>
       <Stack.Screen options={{ title: "Not found" }} />
-      <View className="flex-1 items-center justify-center bg-[#FAFAF7] px-8 dark:bg-[#0B0B0C]">
+      <View className="flex-1 items-center justify-center bg-white px-8">
         <LogoMark size="lg" />
-        <View className="mt-6 h-12 w-12 items-center justify-center rounded-full bg-accent/20">
-          <Ionicons name="alert-circle" size={24} color="#a88a00" />
+        <View className="mt-6 h-12 w-12 items-center justify-center rounded-full bg-accent">
+          <Ionicons name="alert-circle" size={24} color="#ffffff" />
         </View>
         <Text className="mt-4 text-lg font-extrabold text-neutral-900 dark:text-white">
           This screen does not exist
