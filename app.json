@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
-    "scheme": "instahelpminiapp",
+    "scheme": ["instahelpminiapp", "instahelpmobileapp"],
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
@@ -75,6 +75,12 @@
         "projectId": "fa27befe-169d-44db-a09d-90b55c657cc7"
       }
     },
-    "owner": "priyanshum567"
+    "owner": "priyanshum567",
+    "updates": {
+      "enabled": false
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }

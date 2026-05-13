@@ -78,6 +78,19 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
+          name="giftcards"
+          options={{
+            title: "GiftCards",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons
+                name={focused ? "gift" : "gift-outline"}
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
