@@ -2,7 +2,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { useAuthStore } from "@/store/authStore";
 import type { SavedAddress, UserProfile } from "@/types/user";
 
 type ProfileState = {
@@ -53,12 +52,8 @@ export const useProfileStore = create<ProfileState>()(
         }),
       toggleFavorite: (serviceId) =>
         set((s) => {
-          const phone = useAuthStore.getState().phone;
           let profile = s.profile;
-          if (!profile) {
-            if (!phone) return s;
-            profile = seedProfile(phone);
-          }
+          if (!profile) return s;
           const has = profile.favorites.includes(serviceId);
           const favorites = has
             ? profile.favorites.filter((x) => x !== serviceId)

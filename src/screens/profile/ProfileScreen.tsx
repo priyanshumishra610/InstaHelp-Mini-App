@@ -4,7 +4,8 @@ import { useDeviceAddress } from "@/hooks/useDeviceAddress";
 import { useMergedBookings } from "@/hooks/useMergedBookings";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { persistProfile } from "@/services/profileService";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { useSignOut } from "@/hooks/auth/useSignOut";
 import { useProfileStore } from "@/store/profileStore";
 import type { Booking } from "@/types/booking";
 import type { SavedAddress, UserProfile } from "@/types/user";
@@ -56,8 +57,8 @@ function memberSince(bookings: Booking[]): string {
 
 export function ProfileScreen() {
   const router = useRouter();
-  const signOut = useAuthStore((s) => s.signOut);
-  const phone = useAuthStore((s) => s.phone);
+  const signOut = useSignOut();
+  const phone = useAuthPhone();
   const { data: profile } = useProfileQuery();
   const toggleFavorite = useProfileStore((s) => s.toggleFavorite);
   const upsertAddress = useProfileStore((s) => s.upsertAddress);
@@ -231,7 +232,14 @@ export function ProfileScreen() {
   const confirmSignOut = () => {
     Alert.alert("Sign out?", "You can sign back in any time with this number.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Sign out", style: "destructive", onPress: () => signOut() },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: async () => {
+          await signOut();
+          router.replace("/(auth)/phone");
+        },
+      },
     ]);
   };
 

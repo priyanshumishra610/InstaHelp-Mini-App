@@ -38,7 +38,6 @@ export type HubbleWebViewController = {
 };
 
 export type UseHubbleInput = {
-  token?: string | null;
   sdkPath?: string;
   extraQuery?: Record<string, string | number | boolean | undefined | null>;
   onAction?: (event: HubbleHostEvent) => void;
@@ -68,20 +67,13 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
       environment: HUBBLE_ENV,
       clientId: HUBBLE_CLIENT_ID,
       appSecret: HUBBLE_APP_SECRET,
-      token: input.token,
       wrapPlt: HUBBLE_WRAP_PLATFORM,
       appVersion,
       deviceId,
       sdkPath: input.sdkPath,
       extraQuery: input.extraQuery,
     });
-  }, [
-    appVersion,
-    deviceId,
-    input.extraQuery,
-    input.sdkPath,
-    input.token,
-  ]);
+  }, [appVersion, deviceId, input.extraQuery, input.sdkPath]);
 
   const resetSessionFlags = useCallback(() => {
     setSdkReady(false);

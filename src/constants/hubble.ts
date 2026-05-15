@@ -12,14 +12,6 @@ export const HUBBLE_CLIENT_ID = process.env.EXPO_PUBLIC_HUBBLE_CLIENT_ID ?? "";
 
 export const HUBBLE_APP_SECRET = process.env.EXPO_PUBLIC_HUBBLE_APP_SECRET ?? "";
 
-/**
- * Optional Partner JWT from your backend (three base64url segments). InstaHelp’s
- * phone `sessionToken` is not a Hubble JWT — do not confuse the two.
- * Prefer minting JWTs server-side and passing them in via a secure channel when you add logged-in Hubble.
- */
-export const HUBBLE_USER_JWT_OVERRIDE =
-  process.env.EXPO_PUBLIC_HUBBLE_USER_JWT?.trim() ?? "";
-
 export const HUBBLE_ENV: HubbleEnvironment =
   process.env.EXPO_PUBLIC_HUBBLE_ENV === "development" ? "development" : "production";
 

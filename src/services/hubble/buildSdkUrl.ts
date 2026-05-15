@@ -1,5 +1,4 @@
 import { HUBBLE_SDK_BASE } from "@/constants/hubble";
-import { sanitizeHubblePartnerToken } from "@/services/hubble/partnerToken";
 import type { BuildHubbleUrlInput } from "@/services/hubble/types";
 
 function trimTrailingSlash(url: string) {
@@ -22,8 +21,6 @@ export function buildHubbleSdkUrl(input: BuildHubbleUrlInput): string {
   url.searchParams.set("appSecret", input.appSecret);
   url.searchParams.set("wrap-plt", input.wrapPlt);
 
-  const partnerToken = sanitizeHubblePartnerToken(input.token);
-  if (partnerToken) url.searchParams.set("token", partnerToken);
   if (input.appVersion) url.searchParams.set("appVersion", input.appVersion);
   if (input.deviceId) url.searchParams.set("deviceId", input.deviceId);
 

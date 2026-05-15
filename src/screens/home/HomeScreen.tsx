@@ -1,26 +1,32 @@
+import { DiscoveryCategoryNav } from "@/components/discovery/DiscoveryCategoryNav";
+import { DiscoverySection } from "@/components/discovery/DiscoverySection";
+import { DISCOVERY_CATEGORIES } from "@/constants/discoveryCategories";
+import type { DiscoveryService } from "@/types/discovery";
+import type { WeeklyOffer } from "@/types/offers";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Screen } from "@/components/ui/Screen";
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
 import { createBookingLocalFirst } from "@/services/bookingService";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
+import { discoverySelection } from "@/utils/discoveryHaptics";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   type ImageSourcePropType,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -29,6 +35,8 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   interpolate,
+  useAnimatedReaction,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -137,26 +145,68 @@ function FastestPathImageSlider() {
   }, [trackProgress]);
 
   const scrollerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(trackProgress.value, [0, 1], [0, -360]) }],
+    transform: [{ translateX: interpolate(trackProgress.value, [0, 1], [0, -430]) }],
   }));
 
   return (
-    <View className="overflow-hidden rounded-2xl border border-accent-tint/60 bg-white p-2">
-      <View className="relative overflow-hidden rounded-xl">
+    <View className="overflow-hidden rounded-3xl border border-accent-tint/70 bg-[#f8fbff] px-2.5 py-2">
+      <View
+        pointerEvents="none"
+        className="absolute -right-8 -top-10 h-24 w-24 rounded-full"
+        style={{ backgroundColor: "rgba(139, 165, 255, 0.2)" }}
+      />
+      <View className="relative overflow-hidden rounded-2xl">
+        <LinearGradient
+          pointerEvents="none"
+          colors={[
+            "rgba(255,255,255,0.52)",
+            "rgba(220, 232, 255, 0.18)",
+            "rgba(255,255,255,0.06)",
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 1,
+          }}
+        />
         <Animated.View
           className="flex-row items-center"
-          style={[{ width: 760, gap: 8 }, scrollerStyle]}
+          style={[{ width: 900, gap: 10, paddingHorizontal: 6 }, scrollerStyle]}
         >
           {[...FASTEST_PATH_SLIDER_IMAGES, ...FASTEST_PATH_SLIDER_IMAGES].map(
             (source, index) => (
               <View
                 key={`fastest-path-slider-${index}`}
-                className="h-16 w-24 overflow-hidden rounded-xl border border-white/70 bg-accent-soft"
+                className="h-20 w-28 overflow-hidden rounded-2xl border border-white/85 bg-white"
+                style={{
+                  shadowColor: "#95abff",
+                  shadowOffset: { width: 0, height: 8 },
+                  shadowOpacity: 0.16,
+                  shadowRadius: 16,
+                }}
               >
                 <Image
                   source={source}
                   resizeMode="cover"
-                  style={{ width: "100%", height: "100%", opacity: 0.92 }}
+                  style={{ width: "100%", height: "100%", opacity: 0.96 }}
+                />
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={["rgba(255,255,255,0.42)", "rgba(255,255,255,0)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    height: "56%",
+                  }}
                 />
               </View>
             ),
@@ -164,8 +214,8 @@ function FastestPathImageSlider() {
         </Animated.View>
         <LinearGradient
           pointerEvents="none"
-          colors={["#ffffff", "rgba(255,255,255,0.55)", "rgba(255,255,255,0)"]}
-          locations={[0, 0.42, 1]}
+          colors={["#f8fbff", "rgba(248,251,255,0.72)", "rgba(248,251,255,0)"]}
+          locations={[0, 0.48, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={{
@@ -179,8 +229,8 @@ function FastestPathImageSlider() {
         />
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(255,255,255,0)", "rgba(255,255,255,0.55)", "#ffffff"]}
-          locations={[0, 0.58, 1]}
+          colors={["rgba(248,251,255,0)", "rgba(248,251,255,0.72)", "#f8fbff"]}
+          locations={[0, 0.52, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={{
@@ -190,6 +240,20 @@ function FastestPathImageSlider() {
             bottom: 0,
             width: 80,
             zIndex: 10,
+          }}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(255,255,255,0.44)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 0,
+            height: 28,
+            zIndex: 11,
           }}
         />
       </View>
@@ -203,7 +267,7 @@ export function HomeScreen() {
     service?: string;
     source?: string;
   }>();
-  const authPhone = useAuthStore((s) => s.phone);
+  const authPhone = useAuthPhone();
   const { data: profile } = useProfileQuery();
 
   const greeting = useMemo(() => {
@@ -382,6 +446,62 @@ export function HomeScreen() {
     openWhatsApp(msg);
   };
 
+  const scrollRef = useRef<Animated.ScrollView>(null);
+  const scrollY = useSharedValue(0);
+  const discoveryAnchorY = useSharedValue(0);
+  const discoveryAnchorRef = useRef(0);
+  const stickyNavVisible = useSharedValue(0);
+  const scrollToCategoryRef = useRef<(categoryId: string) => void>(() => {});
+  const [activeNavId, setActiveNavId] = useState(
+    DISCOVERY_CATEGORIES[0]?.id ?? "home-personal",
+  );
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  useAnimatedReaction(
+    () => scrollY.value,
+    (y) => {
+      const threshold = discoveryAnchorY.value + 80;
+      stickyNavVisible.value = withTiming(y > threshold ? 1 : 0, { duration: 200 });
+    },
+  );
+
+  const handleOfferPress = useCallback((offer: WeeklyOffer) => {
+    const action = offer.action ?? "";
+    if (action === "scroll:form") {
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+    if (action.startsWith("http://") || action.startsWith("https://")) {
+      Linking.openURL(action).catch(() => {
+        Alert.alert("Couldn't open offer", "Please try again in a moment.");
+      });
+    }
+  }, []);
+
+  const handleDiscoveryServiceSelect = useCallback(
+    (service: DiscoveryService, _categoryId: string) => {
+      if (service.formServiceId) {
+        setServiceType(service.formServiceId);
+        setErrors((current) => ({ ...current, service: "" }));
+      }
+      setDescription((current) => {
+        if (current.trim().length >= 8) return current;
+        return `I need help with ${service.label}. Please share availability and pricing.`;
+      });
+      const anchor = discoveryAnchorRef.current || discoveryAnchorY.value;
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, anchor - 320),
+        animated: true,
+      });
+    },
+    [],
+  );
+
   return (
     <Screen>
       <KeyboardAvoidingView
@@ -389,11 +509,22 @@ export function HomeScreen() {
         className="flex-1"
         keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
       >
-        <ScrollView
+        <DiscoveryCategoryNav
+          activeId={activeNavId}
+          visible={stickyNavVisible}
+          onSelect={(id) => {
+            discoverySelection();
+            scrollToCategoryRef.current(id);
+          }}
+        />
+        <Animated.ScrollView
+          ref={scrollRef}
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
         >
           {/* Header */}
           <View className="px-5 pt-2">
@@ -789,7 +920,29 @@ export function HomeScreen() {
               </View>
             </View>
           </Animated.View>
-        </ScrollView>
+
+          <Animated.View
+            entering={FadeInUp.duration(500).delay(300)}
+            className="px-5"
+            onLayout={(e) => {
+              const y = e.nativeEvent.layout.y;
+              discoveryAnchorY.value = y;
+              discoveryAnchorRef.current = y;
+            }}
+          >
+            <DiscoverySection
+              onServiceSelect={handleDiscoveryServiceSelect}
+              onOfferPress={handleOfferPress}
+              parentScrollRef={scrollRef}
+              sectionAnchorY={discoveryAnchorY}
+              activeNavId={activeNavId}
+              onActiveNavIdChange={setActiveNavId}
+              onRegisterScrollToCategory={(fn) => {
+                scrollToCategoryRef.current = fn;
+              }}
+            />
+          </Animated.View>
+        </Animated.ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );

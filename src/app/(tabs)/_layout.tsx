@@ -1,6 +1,8 @@
 import { TAB_BAR_BASE_HEIGHT, WhatsAppFab } from "@/components/support/WhatsAppFab";
 import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
-import { useAuthStore } from "@/store/authStore";
+import { useAppAuth } from "@/hooks/auth/useAppAuth";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
@@ -10,8 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const phone = useAuthStore((s) => s.phone);
+  const { isAuthenticated, isLoaded } = useAppAuth();
+  const phone = useAuthPhone();
+  const destination = useAuthDestination();
   const favoriteServiceIds = useProfileStore((s) => s.profile?.favorites);
   const profileName = useProfileStore((s) => s.profile?.name) ?? null;
   const notificationPersona = useProfileStore((s) =>
@@ -28,8 +31,12 @@ export default function TabsLayout() {
 
   useSmartLocalNotifications(notificationInterests, profileName, notificationPersona);
 
-  if (!isAuthenticated) {
-    return <Redirect href="/(auth)/phone" />;
+  if (!isLoaded) {
+    return null;
+  }
+
+  if (!isAuthenticated || destination !== "/(tabs)") {
+    return <Redirect href={destination ?? "/(auth)/phone"} />;
   }
 
   const bottomInset = Math.max(insets.bottom, 8);

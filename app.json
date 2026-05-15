@@ -5,7 +5,10 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/app-icon.png",
-    "scheme": ["instahelpminiapp", "instahelpmobileapp"],
+    "scheme": [
+      "instahelpminiapp",
+      "instahelpmobileapp"
+    ],
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
@@ -64,7 +67,10 @@
           "color": "#004aad"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "@clerk/expo",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

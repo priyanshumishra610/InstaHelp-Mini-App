@@ -1,8 +1,8 @@
 import { useHubbleDeepLinks } from "@/hooks/useHubbleDeepLinks";
-import { useAuthStore } from "@/store/authStore";
+import { useAppAuth } from "@/hooks/auth/useAppAuth";
 
 export function HubbleLinkingBridge() {
-  const enabled = useAuthStore((s) => s.isAuthenticated);
+  const { isAuthenticated: enabled } = useAppAuth();
   useHubbleDeepLinks(enabled);
   return null;
 }

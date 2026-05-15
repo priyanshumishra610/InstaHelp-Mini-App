@@ -3,7 +3,6 @@ export type HubbleEnvironment = "development" | "production";
 export type HubbleSdkParams = {
   clientId: string;
   appSecret: string;
-  token?: string | null;
   "wrap-plt": "rn";
   appVersion?: string;
   deviceId?: string;
@@ -28,7 +27,6 @@ export type BuildHubbleUrlInput = {
   environment: HubbleEnvironment;
   clientId: string;
   appSecret: string;
-  token?: string | null;
   wrapPlt: "rn";
   appVersion?: string;
   deviceId?: string;

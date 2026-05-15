@@ -1,18 +1,26 @@
-import { useAuthStore } from "@/store/authStore";
+import { AuthLoadingSkeleton } from "@/components/auth/AuthLoadingSkeleton";
+import { useAppAuth } from "@/hooks/auth/useAppAuth";
+import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 
 export default function AuthLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { isLoaded } = useAppAuth();
+  const destination = useAuthDestination();
 
   useEffect(() => {
+    if (!isLoaded || !destination) return;
     if (!segments.length) return;
-    if (isAuthenticated) {
+    if (destination === "/(tabs)") {
       router.replace("/(tabs)");
     }
-  }, [isAuthenticated, router, segments.length]);
+  }, [destination, isLoaded, router, segments.length]);
+
+  if (!isLoaded) {
+    return <AuthLoadingSkeleton />;
+  }
 
   return (
     <Stack
@@ -22,6 +30,9 @@ export default function AuthLayout() {
       }}
     >
       <Stack.Screen name="phone" />
+      <Stack.Screen name="name" />
+      <Stack.Screen name="location" />
+      <Stack.Screen name="sso-callback" options={{ animation: "fade" }} />
     </Stack>
   );
 }

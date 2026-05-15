@@ -3,12 +3,12 @@ import {
   apiUpdateProfile,
 } from "@/api/appsScriptClient";
 import { APPS_SCRIPT_URL } from "@/api/env";
-import { useAuthStore } from "@/store/authStore";
+import { getAuthPhone } from "@/utils/auth/getAuthPhone";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import type { UserProfile } from "@/types/user";
 
 export async function refreshProfile(): Promise<UserProfile | null> {
-  const phone = useAuthStore.getState().phone;
+  const phone = getAuthPhone();
   if (!phone) return null;
 
   if (!APPS_SCRIPT_URL) {
@@ -30,7 +30,7 @@ export async function refreshProfile(): Promise<UserProfile | null> {
 }
 
 export async function persistProfile(next: UserProfile): Promise<UserProfile> {
-  const phone = useAuthStore.getState().phone;
+  const phone = getAuthPhone();
   if (!phone) throw new Error("Not signed in");
 
   useProfileStore.getState().setProfile({ ...next, phone });

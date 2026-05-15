@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/Button";
 import { Screen } from "@/components/ui/Screen";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useMergedBookings } from "@/hooks/useMergedBookings";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileStore } from "@/store/profileStore";
 import { BOOKING_STATUS_LABEL } from "@/types/booking";
 import type { Booking } from "@/types/booking";
@@ -63,7 +63,7 @@ export function ReceiptScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const merged = useMergedBookings();
-  const phone = useAuthStore((s) => s.phone);
+  const phone = useAuthPhone();
   const profile = useProfileStore((s) => s.profile);
   const [copied, setCopied] = useState(false);
 

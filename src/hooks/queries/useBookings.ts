@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useAuthStore } from "@/store/authStore";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import {
   createBookingLocalFirst,
   refreshBookingsFromServer,
@@ -12,7 +12,7 @@ export function bookingsKey(phone: string | null) {
 }
 
 export function useBookingsQuery() {
-  const phone = useAuthStore((s) => s.phone);
+  const phone = useAuthPhone();
   return useQuery({
     queryKey: bookingsKey(phone),
     queryFn: () => refreshBookingsFromServer(),
@@ -22,7 +22,7 @@ export function useBookingsQuery() {
 
 export function useCreateBookingMutation() {
   const qc = useQueryClient();
-  const phone = useAuthStore((s) => s.phone);
+  const phone = useAuthPhone();
   return useMutation({
     mutationFn: createBookingLocalFirst,
     onSuccess: (b: Booking) => {

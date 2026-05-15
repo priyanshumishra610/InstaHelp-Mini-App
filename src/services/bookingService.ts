@@ -1,6 +1,6 @@
 import { apiCreateBooking, apiGetBookings } from "@/api/appsScriptClient";
 import { APPS_SCRIPT_URL } from "@/api/env";
-import { useAuthStore } from "@/store/authStore";
+import { getAuthPhone } from "@/utils/auth/getAuthPhone";
 import { useBookingStore } from "@/store/bookingStore";
 import type { Booking, BookingStatus } from "@/types/booking";
 import { QUICK_SERVICES } from "@/constants/quickServices";
@@ -30,7 +30,7 @@ export async function createBookingLocalFirst(input: {
   paidStatus?: string;
   consent?: boolean;
 }): Promise<Booking> {
-  const phone = useAuthStore.getState().phone;
+  const phone = getAuthPhone();
   if (!phone) throw new Error("Not signed in");
 
   const label = labelForService(input.serviceId, input.serviceLabel);
@@ -76,7 +76,7 @@ export async function createBookingLocalFirst(input: {
 }
 
 export async function refreshBookingsFromServer(): Promise<Booking[]> {
-  const phone = useAuthStore.getState().phone;
+  const phone = getAuthPhone();
   if (!phone) return useBookingStore.getState().localBookings;
 
   if (!APPS_SCRIPT_URL) {

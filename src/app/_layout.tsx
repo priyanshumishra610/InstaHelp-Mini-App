@@ -1,4 +1,6 @@
+import { AuthNavigationGuard } from "@/components/auth/AuthNavigationGuard";
 import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
+import { ClerkAuthProvider } from "@/providers/ClerkAuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
@@ -36,67 +38,70 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryProvider>
-        <ThemeProvider value={DefaultTheme}>
-          <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
-            <StatusBar style="dark" />
-            <HubbleLinkingBridge />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: SURFACE },
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="hubble-webview"
+      <ClerkAuthProvider>
+        <QueryProvider>
+          <ThemeProvider value={DefaultTheme}>
+            <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
+              <StatusBar style="dark" />
+              <AuthNavigationGuard />
+              <HubbleLinkingBridge />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: SURFACE },
+                }}
+              >
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="hubble-webview"
                 options={{
                   gestureEnabled: true,
                   animation: "slide_from_right",
                 }}
-              />
-              <Stack.Screen
-                name="request/[slug]"
+                />
+                <Stack.Screen
+                  name="request/[slug]"
                 options={headerOptions("New request")}
-              />
-              <Stack.Screen
-                name="booking/[id]"
+                />
+                <Stack.Screen
+                  name="booking/[id]"
                 options={headerOptions("Tracking")}
-              />
-              <Stack.Screen
-                name="booking/simulate/[id]"
+                />
+                <Stack.Screen
+                  name="booking/simulate/[id]"
                 options={headerOptions("Status simulator")}
-              />
-              <Stack.Screen
-                name="booking/reschedule/[id]"
+                />
+                <Stack.Screen
+                  name="booking/reschedule/[id]"
                 options={headerOptions("Reschedule")}
-              />
-              <Stack.Screen
-                name="booking/rate/[id]"
+                />
+                <Stack.Screen
+                  name="booking/rate/[id]"
                 options={headerOptions("Rate booking")}
-              />
-              <Stack.Screen
-                name="booking/receipt/[id]"
+                />
+                <Stack.Screen
+                  name="booking/receipt/[id]"
                 options={headerOptions("Receipt")}
-              />
-              <Stack.Screen
-                name="booking/assigned/[id]"
+                />
+                <Stack.Screen
+                  name="booking/assigned/[id]"
                 options={headerOptions("Assigned")}
-              />
-              <Stack.Screen
-                name="booking/on-the-way/[id]"
+                />
+                <Stack.Screen
+                  name="booking/on-the-way/[id]"
                 options={headerOptions("On the way")}
-              />
-              <Stack.Screen
-                name="booking/completed/[id]"
-                options={headerOptions("Completed")}
-              />
-            </Stack>
-          </View>
-        </ThemeProvider>
-      </QueryProvider>
+                />
+                <Stack.Screen
+                  name="booking/completed/[id]"
+                  options={headerOptions("Completed")}
+                />
+              </Stack>
+            </View>
+          </ThemeProvider>
+        </QueryProvider>
+      </ClerkAuthProvider>
     </SafeAreaProvider>
   );
 }

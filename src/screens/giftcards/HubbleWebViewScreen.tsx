@@ -1,9 +1,8 @@
-import { HUBBLE_IS_CONFIGURED, HUBBLE_USER_JWT_OVERRIDE } from "@/constants/hubble";
+import { HUBBLE_IS_CONFIGURED } from "@/constants/hubble";
 import { ACCENT } from "@/constants/theme";
 import { useHubble } from "@/hooks/useHubble";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useAuthStore } from "@/store/authStore";
 import { useCallback, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,8 +17,6 @@ function normalizeSdkPath(parts: { sdkPath?: string; brandId?: string }) {
 
 export function HubbleWebViewScreen() {
   const router = useRouter();
-  const sessionToken = useAuthStore((s) => s.sessionToken);
-  const token = HUBBLE_USER_JWT_OVERRIDE || sessionToken || undefined;
   const params = useLocalSearchParams<{
     sdkPath?: string;
     category?: string;
@@ -70,7 +67,6 @@ export function HubbleWebViewScreen() {
     sdkReady,
     loadError,
   } = useHubble({
-    token,
     sdkPath,
     extraQuery,
     onCloseRequest: exitStore,

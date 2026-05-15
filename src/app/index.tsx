@@ -1,13 +1,13 @@
 import { AnimatedSplash } from "@/components/ui/AnimatedSplash";
+import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useAuthHydration } from "@/hooks/usePersistHydration";
-import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export default function Index() {
   const router = useRouter();
   const hydrated = useAuthHydration();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const destination = useAuthDestination();
 
   const [animationDone, setAnimationDone] = useState(false);
   const navigated = useRef(false);
@@ -20,13 +20,10 @@ export default function Index() {
     if (navigated.current) return;
     if (!hydrated) return;
     if (!animationDone) return;
+    if (!destination) return;
     navigated.current = true;
-    if (isAuthenticated) {
-      router.replace("/(tabs)");
-    } else {
-      router.replace("/(auth)/phone");
-    }
-  }, [animationDone, hydrated, isAuthenticated, router]);
+    router.replace(destination);
+  }, [animationDone, destination, hydrated, router]);
 
   return <AnimatedSplash onFinish={handleFinish} minDurationMs={2400} />;
 }
