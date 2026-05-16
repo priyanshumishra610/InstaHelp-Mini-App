@@ -12,6 +12,10 @@ function joinSdkPath(base: string, sdkPath?: string) {
   return `${normalizedBase}/${path}`;
 }
 
+/**
+ * Hubble WebView URL. Never sets `token` — partner JWT / classic SSO are not used;
+ * tenant must use lazy login. See HUBBLE_SETUP.md.
+ */
 export function buildHubbleSdkUrl(input: BuildHubbleUrlInput): string {
   const base = HUBBLE_SDK_BASE[input.environment];
   const target = joinSdkPath(base, input.sdkPath);

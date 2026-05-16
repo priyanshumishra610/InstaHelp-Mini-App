@@ -2,7 +2,22 @@
 
 This app embeds the official Hubble React Native flow using a `WebView` pointed at `https://sdk.myhubble.money/` (production) or `https://sdk.dev.myhubble.money/` (development), with `wrap-plt=rn`, matching the [Hubble React Native guide](https://docs.myhubble.money/sdk/platform-guides/react-native).
 
-**No SSO / no `token` param.** The SDK URL is built with only `clientId`, `appSecret`, and `wrap-plt` (plus optional `appVersion` / `deviceId`). Hubble must have **lazy login** enabled for your `clientId` so users can browse without partner JWT or classic SSO.
+**No SSO / no `token` param.** The SDK URL never includes partner auth. Hubble must have **lazy login** enabled for your `clientId` so users can browse without JWT or [classic SSO](https://docs.myhubble.money/sdk/authentication/sso-setup#classic-sso-legacy).
+
+### Query parameters (what this app sends)
+
+Implemented in `src/services/hubble/buildSdkUrl.ts` and `src/hooks/useHubble.ts`:
+
+| Query key | Source | Notes |
+| --- | --- | --- |
+| `clientId` | `EXPO_PUBLIC_HUBBLE_CLIENT_ID` | Required |
+| `appSecret` | `EXPO_PUBLIC_HUBBLE_APP_SECRET` | Required |
+| `wrap-plt` | Always `rn` | React Native per Hubble |
+| `appVersion` | Expo app version | Optional |
+| `deviceId` | `Platform.OS` + `Constants.sessionId` | Optional |
+| Deep-link extras | `category`, `showBackButton`, `amount`, `coupon`, … | Only from `HubbleWebViewScreen` / router params |
+
+**Not sent:** `token` (and no env var is read for partner JWT).
 
 ## Environment variables (EAS / local `.env`)
 
@@ -24,7 +39,7 @@ Cloud builders **do not read your local `.env`**. Before `eas build --profile pr
 - `EXPO_PUBLIC_HUBBLE_APP_SECRET`
 - Optionally `EXPO_PUBLIC_HUBBLE_ENV`=`production` (the `production` profile in `eas.json` already sets this for production builds)
 
-Remove **`EXPO_PUBLIC_HUBBLE_USER_JWT`** from `.env` / EAS if it is still set — the app no longer sends a `token` query param.
+If you still have an old **`EXPO_PUBLIC_HUBBLE_USER_JWT`** (or similar) in `.env` / EAS from a prior setup, you can delete it — this codebase does not read it.
 
 ### Login screen, “Access Denied”, or “no auth / direct access”
 

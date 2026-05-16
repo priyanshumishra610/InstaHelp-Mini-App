@@ -1,3 +1,8 @@
+import {
+  APP_VERSION,
+  LEGAL_PRIVACY_URL,
+  LEGAL_TERMS_URL,
+} from "@/constants/appInfo";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
@@ -8,17 +13,23 @@ import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useSignOut } from "@/hooks/auth/useSignOut";
 import { useProfileStore } from "@/store/profileStore";
 import type { Booking } from "@/types/booking";
-import type { SavedAddress, UserProfile } from "@/types/user";
+import type {
+  ProfilePreferredContact,
+  SavedAddress,
+  UserProfile,
+} from "@/types/user";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { pickOptionalImage } from "@/utils/pickOptionalImage";
 import { Ionicons } from "@expo/vector-icons";
+import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -31,14 +42,25 @@ import Animated, { FadeInUp } from "react-native-reanimated";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
+const PLACEHOLDER_ADDRESS = "Add your home address in Profile";
+
 const FAVORITES: { id: string; label: string; icon: IoniconName }[] = [
   { id: "cleaner", label: "Cleaner", icon: "sparkles" },
   { id: "driver", label: "Driver", icon: "car" },
   { id: "plumber", label: "Plumber", icon: "water" },
   { id: "electrician", label: "Electrician", icon: "flash" },
+  { id: "handyman", label: "Handyman", icon: "construct" },
+  { id: "salon", label: "Salon", icon: "color-wand" },
+  { id: "pest_control", label: "Pest control", icon: "bug-outline" },
 ];
 
-const APP_VERSION = "1.0.0";
+function hasRealSavedAddress(profile: UserProfile | null | undefined) {
+  return (profile?.addresses ?? []).some(
+    (a) =>
+      Boolean(a.line?.trim()) &&
+      !a.line.includes(PLACEHOLDER_ADDRESS),
+  );
+}
 
 function memberSince(bookings: Booking[]): string {
   if (!bookings.length) return "New member";
@@ -85,11 +107,45 @@ export function ProfileScreen() {
 
   const completion = useMemo(() => {
     const hasName = !!profile?.name?.trim();
-    const hasAddress = (profile?.addresses ?? []).length > 0;
+    const hasAddress = hasRealSavedAddress(profile);
     const hasFav = (profile?.favorites ?? []).length > 0;
     const filled = [hasName, hasAddress, hasFav].filter(Boolean).length;
     return Math.round((filled / 3) * 100);
   }, [profile]);
+
+  const ratedCount = useMemo(
+    () => bookings.filter((b) => b.rating).length,
+    [bookings],
+  );
+
+  const preferredContact: ProfilePreferredContact =
+    profile?.preferredContact ?? "whatsapp";
+
+  const updateRole = async (role: "consumer" | "business") => {
+    if (!profile || !phone) return;
+    await persistIfWeCan({ ...profile, role });
+  };
+
+  const updatePreferredContact = async (
+    next: ProfilePreferredContact,
+  ) => {
+    if (!profile || !phone) return;
+    await persistIfWeCan({ ...profile, preferredContact: next });
+  };
+
+  const copyPhone = async () => {
+    if (!phone) return;
+    try {
+      await Clipboard.setStringAsync(phone);
+      Alert.alert("Copied", "Phone number copied to clipboard.");
+    } catch {
+      // ignore
+    }
+  };
+
+  const openLegal = (url: string) => {
+    Linking.openURL(url).catch(() => {});
+  };
 
   const {
     isLoading: detecting,
@@ -98,6 +154,8 @@ export function ProfileScreen() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const favoritesLayoutY = useRef(0);
 
   const persistIfWeCan = async (next: UserProfile) => {
     setProfileLocal(next);
@@ -260,6 +318,7 @@ export function ProfileScreen() {
   return (
     <Screen>
       <ScrollView
+        ref={scrollRef}
         className="flex-1 px-5"
         contentContainerStyle={{ paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
@@ -334,12 +393,23 @@ export function ProfileScreen() {
                 >
                   {displayName}
                 </Text>
-                <Text
-                  className="mt-0.5 text-xs text-white/85"
-                  numberOfLines={1}
+                <Pressable
+                  onLongPress={copyPhone}
+                  delayLongPress={400}
+                  accessibilityRole="button"
+                  accessibilityLabel="Phone number, long press to copy"
+                  hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
                 >
-                  {phone ?? "—"}
-                </Text>
+                  <Text
+                    className="mt-0.5 text-xs text-white/85"
+                    numberOfLines={1}
+                  >
+                    {phone ?? "—"}
+                  </Text>
+                  <Text className="mt-0.5 text-[10px] font-semibold text-white/55">
+                    Long-press to copy
+                  </Text>
+                </Pressable>
               </View>
             </View>
             <Pressable
@@ -404,6 +474,174 @@ export function ProfileScreen() {
           </View>
         </Animated.View>
 
+        {stats.total > 0 ? (
+          <Animated.View
+            entering={FadeInUp.duration(400).delay(140)}
+            className="mt-4 flex-row items-start gap-3 rounded-2xl border border-accent-tint/90 bg-accent-soft/50 px-4 py-3.5"
+          >
+            <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
+              <Ionicons name="analytics-outline" size={18} color="#004aad" />
+            </View>
+            <View className="min-w-0 flex-1">
+              <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-accent-deep">
+                Your activity
+              </Text>
+              <Text className="mt-1 text-[13px] leading-[19px] text-neutral-800">
+                {stats.completed === stats.total ? (
+                  <>
+                    You&apos;ve completed all {stats.total} request
+                    {stats.total === 1 ? "" : "s"} so far.
+                  </>
+                ) : (
+                  <>
+                    {stats.active} active, {stats.completed} completed,{" "}
+                    {stats.total} total.
+                  </>
+                )}{" "}
+                {ratedCount > 0 ? (
+                  <Text className="font-semibold text-neutral-900">
+                    {ratedCount} rated — thanks for the feedback.
+                  </Text>
+                ) : stats.completed > 0 ? (
+                  <Text className="text-neutral-600">
+                    Rate finished jobs from Activity to help us improve.
+                  </Text>
+                ) : null}
+              </Text>
+            </View>
+          </Animated.View>
+        ) : null}
+
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(160)}
+          className="mt-6"
+        >
+          <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+            Finish your profile
+          </Text>
+          <View className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white">
+            <ProfileChecklistRow
+              icon="person"
+              title="Add your name"
+              subtitle="Used on bookings and WhatsApp"
+              done={!!profile?.name?.trim()}
+              onPress={() => setEditOpen(true)}
+            />
+            <View className="ml-14 mr-4 h-px bg-neutral-100" />
+            <ProfileChecklistRow
+              icon="home"
+              title="Save a real address"
+              subtitle="Skip typing it on every request"
+              done={hasRealSavedAddress(profile)}
+              onPress={() => void addCurrentLocation()}
+            />
+            <View className="ml-14 mr-4 h-px bg-neutral-100" />
+            <ProfileChecklistRow
+              icon="heart"
+              title="Pick favorite services"
+              subtitle="Better alerts & recommendations"
+              done={(profile?.favorites?.length ?? 0) > 0}
+              onPress={() => {
+                scrollRef.current?.scrollTo({
+                  y: Math.max(0, favoritesLayoutY.current - 24),
+                  animated: true,
+                });
+              }}
+            />
+          </View>
+          <Text className="mt-2 px-1 text-[11px] text-neutral-400">
+            Favorite chips are below — tap any to start.
+          </Text>
+        </Animated.View>
+
+        <Animated.View
+          entering={FadeInUp.duration(400).delay(190)}
+          className="mt-8"
+        >
+          <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+            Account & preferences
+          </Text>
+          <View className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white px-4 py-4">
+            <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+              How you use InstaHelp
+            </Text>
+            <View className="mt-3 flex-row rounded-2xl bg-neutral-100 p-1">
+              {(
+                [
+                  { id: "consumer" as const, label: "Personal" },
+                  { id: "business" as const, label: "Business" },
+                ] as const
+              ).map((opt) => {
+                const on = (profile?.role ?? "consumer") === opt.id;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => void updateRole(opt.id)}
+                    className={`flex-1 rounded-xl py-2.5 ${
+                      on ? "bg-white shadow-sm" : ""
+                    }`}
+                  >
+                    <Text
+                      className={`text-center text-[13px] font-bold ${
+                        on ? "text-accent" : "text-neutral-500"
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text className="mt-2 text-[11px] leading-4 text-neutral-500">
+              Business gets occasional local opportunity-style alerts tuned for
+              vendors.
+            </Text>
+
+            <Text className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+              Reach me on
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {(
+                [
+                  { id: "whatsapp" as const, label: "WhatsApp", icon: "logo-whatsapp" },
+                  { id: "call" as const, label: "Phone call", icon: "call-outline" },
+                  { id: "either" as const, label: "Either", icon: "shuffle-outline" },
+                ] as const
+              ).map((opt) => {
+                const on = preferredContact === opt.id;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => void updatePreferredContact(opt.id)}
+                    className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 ${
+                      on
+                        ? "bg-accent shadow-sm"
+                        : "border border-neutral-200 bg-neutral-50"
+                    }`}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={14}
+                      color={on ? "#ffffff" : "#525252"}
+                    />
+                    <Text
+                      className={`text-xs font-bold ${
+                        on ? "text-accent-foreground" : "text-neutral-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text className="mt-2 text-[11px] leading-4 text-neutral-500">
+              Lets your concierge know how you like follow-ups saved on this
+              device.
+            </Text>
+          </View>
+        </Animated.View>
+
         {/* QUICK ACTIONS — grouped list */}
         <Animated.View
           entering={FadeInUp.duration(420).delay(180)}
@@ -414,10 +652,31 @@ export function ProfileScreen() {
           </Text>
           <View className="overflow-hidden rounded-2xl bg-neutral-50">
             <ActionRow
+              icon="calendar-outline"
+              title="Book a service"
+              subtitle="Home screen & discovery"
+              onPress={() => router.push("/(tabs)")}
+            />
+            <RowHairline />
+            <ActionRow
+              icon="gift-outline"
+              title="Gift cards"
+              subtitle="Brands, wallet, Hubble checkout"
+              onPress={() => router.push("/(tabs)/giftcards")}
+            />
+            <RowHairline />
+            <ActionRow
               icon="time"
               title="Booking history"
               subtitle="Every request you have made"
               onPress={() => router.push("/(tabs)/bookings")}
+            />
+            <RowHairline />
+            <ActionRow
+              icon="help-circle"
+              title="Help & support"
+              subtitle="FAQ, WhatsApp, website, app info"
+              onPress={() => router.push("/support")}
             />
             <RowHairline />
             <ActionRow
@@ -534,6 +793,9 @@ export function ProfileScreen() {
         <Animated.View
           entering={FadeInUp.duration(420).delay(300)}
           className="mt-8"
+          onLayout={(e) => {
+            favoritesLayoutY.current = e.nativeEvent.layout.y;
+          }}
         >
           <View className="mb-2.5 flex-row items-center justify-between">
             <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
@@ -584,27 +846,41 @@ export function ProfileScreen() {
           </Text>
           <View className="overflow-hidden rounded-2xl bg-neutral-50">
             <SettingsRow
+              icon="document-text-outline"
+              label="Privacy policy"
+              onPress={() => openLegal(LEGAL_PRIVACY_URL)}
+            />
+            <SettingsHairline />
+            <SettingsRow
+              icon="reader-outline"
+              label="Terms of use"
+              onPress={() => openLegal(LEGAL_TERMS_URL)}
+            />
+            <SettingsHairline />
+            <SettingsRow
               icon="notifications-outline"
               label="Notifications"
-              value="On"
+              value="System"
+              onPress={() => {
+                Linking.openSettings().catch(() => {});
+              }}
+            />
+            <SettingsHairline />
+            <SettingsRow
+              icon="chatbox-ellipses-outline"
+              label="Send feedback"
               onPress={() =>
-                Alert.alert(
-                  "Notifications",
-                  "Notifications are managed by your phone's settings.",
+                openWhatsApp(
+                  `InstaHelp app feedback (v${APP_VERSION}, ${Platform.OS}): `,
                 )
               }
             />
             <SettingsHairline />
             <SettingsRow
               icon="information-circle-outline"
-              label="About InstaHelp"
+              label="About & help center"
               value={`v${APP_VERSION}`}
-              onPress={() =>
-                Alert.alert(
-                  "InstaHelp",
-                  `Version ${APP_VERSION}\n\nBuilt with care for your every need.`,
-                )
-              }
+              onPress={() => router.push("/support")}
               last
             />
           </View>
@@ -641,6 +917,60 @@ export function ProfileScreen() {
         }}
       />
     </Screen>
+  );
+}
+
+function ProfileChecklistRow({
+  icon,
+  title,
+  subtitle,
+  done,
+  onPress,
+}: {
+  icon: IoniconName;
+  title: string;
+  subtitle: string;
+  done: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      className="flex-row items-center gap-3 px-4 py-3.5 active:bg-neutral-50"
+    >
+      <View
+        className={`h-10 w-10 items-center justify-center rounded-full ${
+          done ? "bg-emerald-100" : "bg-accent-soft"
+        }`}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={done ? "#059669" : "#004aad"}
+        />
+      </View>
+      <View className="min-w-0 flex-1">
+        <Text
+          className={`text-[15px] font-bold ${
+            done ? "text-neutral-600" : "text-neutral-900"
+          }`}
+        >
+          {title}
+        </Text>
+        <Text
+          className={`mt-0.5 text-xs ${done ? "text-neutral-400" : "text-neutral-500"}`}
+        >
+          {subtitle}
+        </Text>
+      </View>
+      {done ? (
+        <Ionicons name="checkmark-circle" size={22} color="#10b981" />
+      ) : (
+        <Ionicons name="chevron-forward" size={18} color="#c4c4c4" />
+      )}
+    </Pressable>
   );
 }
 
@@ -779,6 +1109,10 @@ function EditNameModal({
 }) {
   const [name, setName] = useState(initialName);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) setName(initialName);
+  }, [open, initialName]);
 
   const save = async () => {
     const trimmed = name.trim();

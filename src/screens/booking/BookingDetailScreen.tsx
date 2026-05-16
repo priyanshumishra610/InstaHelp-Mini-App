@@ -31,15 +31,26 @@ export function BookingDetailScreen() {
     return (
       <Screen>
         <View className="flex-1 items-center justify-center px-6">
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-accent">
-            <Ionicons name="search" size={26} color="#ffffff" />
+          <View className="h-14 w-14 items-center justify-center rounded-2xl bg-accent shadow-sm">
+            <Ionicons name="receipt-outline" size={28} color="#ffffff" />
           </View>
-          <Text className="mt-4 text-center text-base font-bold text-neutral-900 dark:text-white">
+          <Text className="mt-4 text-center text-lg font-extrabold text-neutral-900 dark:text-white">
             Booking not found
           </Text>
-          <Text className="mt-2 text-center text-sm text-neutral-500">
-            It may still be syncing. Pull to refresh on Activity.
+          <Text className="mt-2 max-w-[280px] text-center text-sm leading-5 text-neutral-500">
+            It may still be syncing. Pull to refresh on Activity, or start from
+            your list.
           </Text>
+          <Pressable
+            onPress={() => router.replace("/(tabs)/bookings")}
+            accessibilityRole="button"
+            accessibilityLabel="Go to Activity"
+            className="mt-6 min-w-[220px] items-center rounded-full bg-neutral-900 px-6 py-3.5 active:opacity-90"
+          >
+            <Text className="text-center text-sm font-extrabold text-white">
+              Open Activity
+            </Text>
+          </Pressable>
         </View>
       </Screen>
     );

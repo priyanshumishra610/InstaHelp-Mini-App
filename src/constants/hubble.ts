@@ -12,6 +12,7 @@ export const HUBBLE_CLIENT_ID = process.env.EXPO_PUBLIC_HUBBLE_CLIENT_ID ?? "";
 
 export const HUBBLE_APP_SECRET = process.env.EXPO_PUBLIC_HUBBLE_APP_SECRET ?? "";
 
+/** `development` → sdk.dev.myhubble.money; anything else → sdk.myhubble.money */
 export const HUBBLE_ENV: HubbleEnvironment =
   process.env.EXPO_PUBLIC_HUBBLE_ENV === "development" ? "development" : "production";
 

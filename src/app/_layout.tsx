@@ -62,6 +62,10 @@ export default function RootLayout() {
                 }}
                 />
                 <Stack.Screen
+                  name="support"
+                  options={headerOptions("Help & support")}
+                />
+                <Stack.Screen
                   name="request/[slug]"
                 options={headerOptions("New request")}
                 />

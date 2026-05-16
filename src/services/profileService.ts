@@ -23,6 +23,9 @@ export async function refreshProfile(): Promise<UserProfile | null> {
     useProfileStore.getState().setProfile({
       ...res.data,
       avatarUri: samePhone ? prev?.avatarUri : undefined,
+      role: res.data.role ?? (samePhone ? prev?.role : undefined),
+      preferredContact:
+        res.data.preferredContact ?? (samePhone ? prev?.preferredContact : undefined),
     });
     return useProfileStore.getState().profile;
   }
@@ -50,6 +53,8 @@ export async function persistProfile(next: UserProfile): Promise<UserProfile> {
     useProfileStore.getState().setProfile({
       ...res.data,
       avatarUri: next.avatarUri,
+      role: next.role,
+      preferredContact: next.preferredContact,
     });
     return useProfileStore.getState().profile as UserProfile;
   }
