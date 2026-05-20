@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 type OnboardingState = {
-  /** Local guest session (no Clerk account). */
+  /** Local guest session (no phone sign-in). */
   isGuest: boolean;
   enterGuestMode: () => void;
   clearGuest: () => void;

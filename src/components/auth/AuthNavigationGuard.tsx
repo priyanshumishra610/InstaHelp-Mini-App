@@ -3,12 +3,7 @@ import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useRouter, useSegments } from "expo-router";
 import { useEffect, useRef } from "react";
 
-const PROTECTED_ROOTS = new Set([
-  "(tabs)",
-  "booking",
-  "request",
-  "hubble-webview",
-]);
+const PROTECTED_ROOTS = new Set(["(tabs)", "booking", "request"]);
 
 /**
  * Redirects unauthenticated or partially onboarded users away from protected routes.

@@ -40,6 +40,8 @@ export type HubbleWebViewController = {
 export type UseHubbleInput = {
   sdkPath?: string;
   extraQuery?: Record<string, string | number | boolean | undefined | null>;
+  /** Increment when retrying load so the ready-timeout runs again. */
+  sessionKey?: number;
   onAction?: (event: HubbleHostEvent) => void;
   onCloseRequest?: () => void;
   /** When the WebView has no history, Android hardware back calls this then consumes the event. */
@@ -48,6 +50,7 @@ export type UseHubbleInput = {
 
 export function useHubble(input: UseHubbleInput): HubbleWebViewController {
   const webViewRef = useRef<ComponentRef<typeof WebView> | null>(null);
+  const sessionKey = input.sessionKey ?? 0;
   const [canGoBack, setCanGoBack] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -79,6 +82,14 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
     setSdkReady(false);
     setLoadError(false);
   }, []);
+
+  useEffect(() => {
+    if (!HUBBLE_IS_CONFIGURED || !sourceUri) return;
+    const id = setTimeout(() => {
+      setSdkReady(true);
+    }, 12000);
+    return () => clearTimeout(id);
+  }, [sourceUri, sessionKey]);
 
   const onMessage = useCallback(
     (e: WebViewMessageEvent) => {

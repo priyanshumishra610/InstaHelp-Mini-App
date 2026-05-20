@@ -13,8 +13,9 @@ function joinSdkPath(base: string, sdkPath?: string) {
 }
 
 /**
- * Hubble WebView URL. Never sets `token` — partner JWT / classic SSO are not used;
- * tenant must use lazy login. See HUBBLE_SETUP.md.
+ * Hubble WebView URL. Does not set `token` — this integration uses **lazy login**
+ * on Hubble’s side (`token` optional per [React Native parameters](https://docs.myhubble.money/sdk/platform-guides/react-native)).
+ * See HUBBLE_SETUP.md.
  */
 export function buildHubbleSdkUrl(input: BuildHubbleUrlInput): string {
   const base = HUBBLE_SDK_BASE[input.environment];

@@ -623,6 +623,50 @@ export function HomeScreen() {
             <FastestPathImageSlider />
           </Animated.View>
 
+          <Animated.View
+            entering={FadeInUp.duration(480).delay(200)}
+            className="mt-5 px-5"
+          >
+            <Pressable
+              onPress={() => router.push("/(tabs)/vendors")}
+              accessibilityRole="button"
+              accessibilityLabel="Explore Bangalore vendors marketplace"
+              className="overflow-hidden rounded-3xl border border-accent-tint shadow-soft"
+            >
+              <LinearGradient
+                colors={["#003a85", "#004aad", "#3b82f6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="px-5 py-5"
+              >
+                <View className="flex-row items-center justify-between gap-4">
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <View className="rounded-full bg-white/15 px-2.5 py-1">
+                        <Text className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white">
+                          New
+                        </Text>
+                      </View>
+                      <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">
+                        Bangalore only
+                      </Text>
+                    </View>
+                    <Text className="mt-3 text-[20px] font-extrabold leading-7 text-white">
+                      Vendor marketplace
+                    </Text>
+                    <Text className="mt-1 text-[13px] leading-[19px] text-white/85">
+                      Browse 1,000+ pros in Koramangala, HSR, Whitefield, and
+                      more. Reveal contacts with credits.
+                    </Text>
+                  </View>
+                  <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
+                    <Ionicons name="sparkles" size={26} color="#ffd500" />
+                  </View>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+
           {/* Divider */}
           <Animated.View
             entering={FadeInUp.duration(400).delay(220)}

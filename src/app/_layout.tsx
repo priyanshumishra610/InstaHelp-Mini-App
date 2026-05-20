@@ -1,6 +1,5 @@
 import { AuthNavigationGuard } from "@/components/auth/AuthNavigationGuard";
 import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
-import { ClerkAuthProvider } from "@/providers/ClerkAuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
@@ -38,14 +37,13 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ClerkAuthProvider>
-        <QueryProvider>
-          <ThemeProvider value={DefaultTheme}>
-            <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
-              <StatusBar style="dark" />
-              <AuthNavigationGuard />
-              <HubbleLinkingBridge />
-              <Stack
+      <QueryProvider>
+        <ThemeProvider value={DefaultTheme}>
+          <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
+            <StatusBar style="dark" />
+            <AuthNavigationGuard />
+            <HubbleLinkingBridge />
+            <Stack
                 screenOptions={{
                   headerShown: false,
                   contentStyle: { backgroundColor: SURFACE },
@@ -54,13 +52,6 @@ export default function RootLayout() {
                 <Stack.Screen name="index" />
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="hubble-webview"
-                options={{
-                  gestureEnabled: true,
-                  animation: "slide_from_right",
-                }}
-                />
                 <Stack.Screen
                   name="support"
                   options={headerOptions("Help & support")}
@@ -101,11 +92,10 @@ export default function RootLayout() {
                   name="booking/completed/[id]"
                   options={headerOptions("Completed")}
                 />
-              </Stack>
-            </View>
-          </ThemeProvider>
-        </QueryProvider>
-      </ClerkAuthProvider>
+            </Stack>
+          </View>
+        </ThemeProvider>
+      </QueryProvider>
     </SafeAreaProvider>
   );
 }

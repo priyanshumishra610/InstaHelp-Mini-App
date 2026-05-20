@@ -1,4 +1,4 @@
-/** Normalize user input to E.164 for Clerk (defaults to India +91). */
+/** Normalize user input to E.164 (defaults to India +91). */
 export function toE164Phone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (!digits) return "";

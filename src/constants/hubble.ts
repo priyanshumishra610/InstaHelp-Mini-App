@@ -1,4 +1,16 @@
+import {
+  HUBBLE_DEMO_BRAND_IDS,
+} from "@/config/env";
 import type { HubbleEnvironment } from "@/services/hubble/types";
+
+export {
+  HUBBLE_ANALYTICS_ENABLED,
+  HUBBLE_APP_SECRET,
+  HUBBLE_CLIENT_ID,
+  HUBBLE_DEMO_BRAND_IDS,
+  HUBBLE_ENV,
+  HUBBLE_IS_CONFIGURED,
+} from "@/config/env";
 
 export const HUBBLE_WRAP_PLATFORM = "rn" as const;
 
@@ -6,29 +18,6 @@ export const HUBBLE_SDK_BASE: Record<HubbleEnvironment, string> = {
   development: "https://sdk.dev.myhubble.money/",
   production: "https://sdk.myhubble.money/",
 };
-
-/** Set via EAS / .env — never commit real secrets. */
-export const HUBBLE_CLIENT_ID = process.env.EXPO_PUBLIC_HUBBLE_CLIENT_ID ?? "";
-
-export const HUBBLE_APP_SECRET = process.env.EXPO_PUBLIC_HUBBLE_APP_SECRET ?? "";
-
-/** `development` → sdk.dev.myhubble.money; anything else → sdk.myhubble.money */
-export const HUBBLE_ENV: HubbleEnvironment =
-  process.env.EXPO_PUBLIC_HUBBLE_ENV === "development" ? "development" : "production";
-
-export const HUBBLE_ANALYTICS_ENABLED =
-  process.env.EXPO_PUBLIC_HUBBLE_ANALYTICS_LOG === "1";
-
-/**
- * Optional comma-separated brandIds for “Popular” tiles (from your catalog).
- * Example: EXPO_PUBLIC_HUBBLE_DEMO_BRAND_IDS=id1,id2
- */
-export const HUBBLE_DEMO_BRAND_IDS = (process.env.EXPO_PUBLIC_HUBBLE_DEMO_BRAND_IDS ?? "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-export const HUBBLE_IS_CONFIGURED = Boolean(HUBBLE_CLIENT_ID && HUBBLE_APP_SECRET);
 
 export type GiftCardCategory = {
   id: string;

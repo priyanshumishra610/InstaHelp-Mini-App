@@ -1,29 +1,36 @@
 /**
- * Rasterizes assets/images/10.svg for Expo (icon + splash require PNG).
- * Run: node scripts/generate-icon-assets.cjs
+ * Rasterizes the app icon source for Expo (icon + splash require PNG).
+ * Run: npm run generate:icons
  */
 const fs = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 
 const root = path.join(__dirname, "..");
-const svgPath = path.join(root, "assets", "images", "10.svg");
+const imagesDir = path.join(root, "assets", "images");
+const sourcePath = path.join(imagesDir, "InstaHelp (1).png");
 
 async function main() {
-  const svg = fs.readFileSync(svgPath);
+  if (!fs.existsSync(sourcePath)) {
+    console.error(`Missing source icon: ${sourcePath}`);
+    process.exit(1);
+  }
+
   const white = { r: 255, g: 255, b: 255, alpha: 1 };
 
-  await sharp(svg)
+  await sharp(sourcePath)
     .resize(1024, 1024, { fit: "contain", background: white })
     .png()
-    .toFile(path.join(root, "assets", "images", "app-icon.png"));
+    .toFile(path.join(imagesDir, "app-icon.png"));
 
-  await sharp(svg)
+  await sharp(sourcePath)
     .resize(512, 512, { fit: "contain", background: white })
     .png()
-    .toFile(path.join(root, "assets", "images", "splash-icon.png"));
+    .toFile(path.join(imagesDir, "splash-icon.png"));
 
-  console.log("Wrote assets/images/app-icon.png and splash-icon.png from 10.svg");
+  console.log(
+    "Wrote assets/images/app-icon.png (1024) and splash-icon.png (512) from InstaHelp (1).png",
+  );
 }
 
 main().catch((err) => {

@@ -1,246 +1,296 @@
-import { LogoMark } from "@/components/ui/LogoMark";
-import { Screen } from "@/components/ui/Screen";
+import { AuthCardScene } from "@/components/auth/premium/AuthCardScene";
+import { AuthPremiumBackdrop } from "@/components/auth/premium/AuthPremiumBackdrop";
+import { FloatingServiceObjects } from "@/components/auth/premium/FloatingServiceObjects";
 import {
   APP_WEB_URL,
   LEGAL_PRIVACY_URL,
   LEGAL_TERMS_URL,
-} from "@/constants/appInfo";
+} from "@/config/env";
+import { AUTH_FONT } from "@/constants/authPremium";
+import { activateGuestSession } from "@/utils/auth/session";
+import { signInWithPhone } from "@/utils/auth/signInWithPhone";
 import {
-  ACCENT,
-  ACCENT_DEEP,
-  ACCENT_TINT,
-  BRAND_GOLD,
-} from "@/constants/theme";
-import { useAppAuth } from "@/hooks/auth/useAppAuth";
-import { useGoogleSignIn } from "@/hooks/auth/useGoogleSignIn";
-import { syncClerkUserToProfile } from "@/utils/auth/syncClerkProfile";
-import { openWhatsApp } from "@/utils/whatsapp";
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+  useFonts,
+} from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
-import { useUser } from "@clerk/expo";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect } from "react";
+import { StatusBar } from "expo-status-bar";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Linking,
+  Platform,
   Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
-
-const PILLARS: { icon: keyof typeof Ionicons.glyphMap; label: string }[] = [
-  { icon: "home-outline", label: "Home & local" },
-  { icon: "chatbubbles-outline", label: "Concierge chat" },
-  { icon: "time-outline", label: "Live progress" },
-];
+import type { TextInput } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function LoginScreen() {
   const router = useRouter();
-  const { user } = useUser();
-  const { isSignedIn } = useAppAuth();
-  const {
-    signInWithGoogle,
-    loading,
-    error,
-    setError,
-  } = useGoogleSignIn();
+  const insets = useSafeAreaInsets();
+  const phoneRef = useRef<TextInput>(null);
 
-  useEffect(() => {
-    if (isSignedIn && user) {
-      syncClerkUserToProfile(user);
-    }
-  }, [isSignedIn, user]);
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const onGoogle = async () => {
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+    Poppins_800ExtraBold,
+  });
+
+  const focusPhone = useCallback(() => {
     setError(null);
-    const ok = await signInWithGoogle();
-    if (ok) {
-      router.replace("/(auth)/name");
+    setTimeout(() => phoneRef.current?.focus(), 120);
+  }, []);
+
+  const onContinue = useCallback(async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await signInWithPhone(phone);
+      if (!result.ok) {
+        setError(result.error);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace(result.destination);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [phone, router]);
+
+  const onSkipLogin = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const dest = activateGuestSession();
+    router.replace(dest);
+  }, [router]);
 
   const openUrl = (url: string) => {
     Linking.openURL(url).catch(() => {});
   };
 
-  return (
-    <Screen>
-      <LinearGradient
-        colors={["#e8f0ff", "#f4f8ff", "#ffffff"]}
-        locations={[0, 0.35, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.85, y: 1 }}
-        style={{ flex: 1 }}
-      >
-        <View
-          pointerEvents="none"
-          className="absolute -right-20 top-32 h-64 w-64 rounded-full"
-          style={{ backgroundColor: `${ACCENT}14` }}
-        />
-        <View
-          pointerEvents="none"
-          className="absolute -left-16 bottom-48 h-48 w-48 rounded-full"
-          style={{ backgroundColor: `${ACCENT_TINT}99` }}
-        />
-
-        <View className="flex-1 justify-between px-6 pb-10 pt-2">
-          <Animated.View entering={FadeIn.duration(400)}>
-            <View className="flex-row items-center justify-between">
-              <LogoMark size="md" withWordmark />
-              <View className="rounded-full border border-accent/25 bg-accent-soft px-3 py-1">
-                <Text className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-accent-deep">
-                  Concierge
-                </Text>
-              </View>
-            </View>
-
-            <Text className="mt-12 text-[11px] font-bold uppercase tracking-[0.2em] text-accent-deep">
-              InstaHelp® app
-            </Text>
-            <Text className="mt-3 text-4xl font-extrabold leading-[44px] tracking-tight text-neutral-900">
-              Local help,{"\n"}
-              <Text style={{ color: ACCENT }}>orchestrated for you.</Text>
-            </Text>
-            <Text className="mt-4 max-w-[340px] text-[16px] leading-[24px] text-neutral-600">
-              Sign in to request services, track bookings in one place, and reach
-              our team on WhatsApp when it matters.
-            </Text>
-
-            <View className="mt-8 flex-row flex-wrap gap-2">
-              {PILLARS.map((p, i) => (
-                <Animated.View
-                  key={p.label}
-                  entering={FadeInDown.duration(360).delay(120 + i * 70)}
-                  className="flex-row items-center gap-2 rounded-2xl border border-white/80 bg-white/75 px-3.5 py-2.5 shadow-sm"
-                  style={{
-                    shadowColor: ACCENT,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.07,
-                    shadowRadius: 12,
-                  }}
-                >
-                  <View className="h-8 w-8 items-center justify-center rounded-xl bg-accent-soft">
-                    <Ionicons name={p.icon} size={16} color={ACCENT} />
-                  </View>
-                  <Text className="text-[12px] font-bold text-neutral-800">
-                    {p.label}
-                  </Text>
-                </Animated.View>
-              ))}
-            </View>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.duration(440).delay(60)}>
-            <LinearGradient
-              colors={[BRAND_GOLD, "#ffc400"]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              className="mb-3 h-1 w-full rounded-full opacity-90"
-            />
-
-            <View
-              className="overflow-hidden rounded-3xl border border-accent-tint/80 bg-white p-5"
-              style={{
-                shadowColor: ACCENT,
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.12,
-                shadowRadius: 24,
-                elevation: 6,
-              }}
-            >
-              <Text className="text-center text-[13px] font-semibold text-neutral-800">
-                Continue with Google
-              </Text>
-              <Text className="mt-1 text-center text-[12px] leading-4 text-neutral-500">
-                Same secure sign-in across devices. Next, we&apos;ll save your name
-                and service area.
-              </Text>
-
-              {error ? (
-                <View className="mt-4 flex-row items-start gap-2.5 rounded-2xl border border-red-100 bg-red-50 px-3.5 py-3">
-                  <Ionicons
-                    name="alert-circle"
-                    size={18}
-                    color="#dc2626"
-                    style={{ marginTop: 1 }}
-                  />
-                  <Text className="flex-1 text-[13px] leading-5 font-medium text-red-800">
-                    {error}
-                  </Text>
-                </View>
-              ) : null}
-
-              <Pressable
-                onPress={() => void onGoogle()}
-                disabled={loading}
-                accessibilityRole="button"
-                accessibilityLabel="Continue with Google"
-                className={`mt-4 flex-row items-center justify-center gap-3 rounded-2xl border border-neutral-200/90 bg-neutral-50 py-[15px] active:bg-neutral-100 ${
-                  loading ? "opacity-65" : ""
-                }`}
-              >
-                {loading ? (
-                  <ActivityIndicator color={ACCENT_DEEP} />
-                ) : (
-                  <>
-                    <Ionicons name="logo-google" size={22} color="#4285F4" />
-                    <Text className="text-[16px] font-bold text-neutral-900">
-                      Google
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-
-              <Pressable
-                onPress={() =>
-                  openWhatsApp(
-                    "Hi InstaHelp — I need help signing in to the app.",
-                  )
-                }
-                accessibilityRole="button"
-                accessibilityLabel="Get help on WhatsApp"
-                className="mt-4 flex-row items-center justify-center gap-2 py-2 active:opacity-75"
-              >
-                <Ionicons name="logo-whatsapp" size={18} color="#128C7E" />
-                <Text className="text-[13px] font-bold text-neutral-700">
-                  Stuck? Chat with InstaHelp on WhatsApp
-                </Text>
-              </Pressable>
-            </View>
-
-            <Text className="mt-6 text-center text-[12px] leading-[18px] text-neutral-500">
-              By continuing you agree to our{" "}
-              <Text
-                className="font-bold text-accent"
-                onPress={() => openUrl(LEGAL_TERMS_URL)}
-              >
-                Terms
-              </Text>{" "}
-              and{" "}
-              <Text
-                className="font-bold text-accent"
-                onPress={() => openUrl(LEGAL_PRIVACY_URL)}
-              >
-                Privacy Policy
-              </Text>
-              .
-            </Text>
-
-            <Pressable
-              onPress={() => openUrl(APP_WEB_URL)}
-              accessibilityRole="button"
-              accessibilityLabel="Open InstaHelp website"
-              className="mt-4 flex-row items-center justify-center gap-1.5 self-center rounded-full bg-white/60 px-4 py-2 active:bg-white/90"
-            >
-              <Ionicons name="globe-outline" size={14} color={ACCENT} />
-              <Text className="text-[12px] font-bold text-accent-deep">
-                instahelp.in
-              </Text>
-            </Pressable>
-          </Animated.View>
+  if (!fontsLoaded) {
+    return (
+      <AuthPremiumBackdrop>
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={[styles.loaderText, { fontFamily: AUTH_FONT.medium }]}>
+            InstaHelp
+          </Text>
         </View>
-      </LinearGradient>
-    </Screen>
+      </AuthPremiumBackdrop>
+    );
+  }
+
+  return (
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <AuthPremiumBackdrop>
+        <FloatingServiceObjects />
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
+            <View style={styles.brandBlock}>
+              <Text style={[styles.brandWord, { fontFamily: AUTH_FONT.extrabold }]}>
+                InstaHelp
+              </Text>
+              <Text style={[styles.brandTag, { fontFamily: AUTH_FONT.medium }]}>
+                Local services super app
+              </Text>
+            </View>
+            <Pressable
+              onPress={onSkipLogin}
+              accessibilityRole="button"
+              accessibilityLabel="Skip login and browse as guest"
+              style={({ pressed }) => [pressed && { opacity: 0.88 }]}
+            >
+              <LinearGradient
+                colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0.08)"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.skipPill}
+              >
+                <Text style={[styles.skipLabel, { fontFamily: AUTH_FONT.semibold }]}>
+                  Skip
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={14}
+                  color="rgba(255,255,255,0.95)"
+                />
+              </LinearGradient>
+            </Pressable>
+          </View>
+
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={[
+              styles.content,
+              { paddingBottom: insets.bottom + 20 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <Animated.View entering={FadeInDown.duration(420).delay(40)}>
+              <AuthCardScene
+                onFocusLogin={focusPhone}
+                onFocusRegister={focusPhone}
+                login={{
+                  phoneInputRef: phoneRef,
+                  phone,
+                  onPhoneChange: (v) => setPhone(v.replace(/\D/g, "").slice(0, 10)),
+                  loading,
+                  error,
+                  onContinue: () => void onContinue(),
+                }}
+              />
+            </Animated.View>
+
+            <View style={styles.legalCard}>
+              <Text style={[styles.legal, { fontFamily: AUTH_FONT.regular }]}>
+                By continuing you agree to our{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => openUrl(LEGAL_TERMS_URL)}
+                >
+                  Terms
+                </Text>{" "}
+                and{" "}
+                <Text
+                  style={styles.legalLink}
+                  onPress={() => openUrl(LEGAL_PRIVACY_URL)}
+                >
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+              <Pressable
+                onPress={() => openUrl(APP_WEB_URL)}
+                accessibilityRole="button"
+                style={styles.webLink}
+              >
+                <Ionicons name="globe-outline" size={14} color="rgba(255,255,255,0.75)" />
+                <Text style={[styles.webLabel, { fontFamily: AUTH_FONT.semibold }]}>
+                  instahelp.in
+                </Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </AuthPremiumBackdrop>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+  flex: { flex: 1 },
+  loader: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+  },
+  loaderText: {
+    fontSize: 15,
+    color: "rgba(255,255,255,0.75)",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+  },
+  content: { flexGrow: 1, paddingTop: 4 },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 22,
+    paddingBottom: 8,
+    zIndex: 10,
+  },
+  brandBlock: {
+    flex: 1,
+    marginRight: 12,
+  },
+  brandWord: {
+    fontSize: 22,
+    color: "#fff",
+    letterSpacing: -0.5,
+  },
+  brandTag: {
+    marginTop: 2,
+    fontSize: 11,
+    color: "rgba(255,255,255,0.55)",
+    letterSpacing: 0.2,
+  },
+  skipPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+  skipLabel: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.95)",
+    letterSpacing: 0.2,
+  },
+  legalCard: {
+    marginTop: 8,
+    marginHorizontal: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+  },
+  legal: {
+    textAlign: "center",
+    fontSize: 11,
+    lineHeight: 17,
+    color: "rgba(255,255,255,0.7)",
+  },
+  legalLink: {
+    color: "#fff",
+    fontFamily: AUTH_FONT.semibold,
+  },
+  webLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 12,
+    alignSelf: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  webLabel: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.9)",
+    letterSpacing: 0.4,
+  },
+});

@@ -72,6 +72,19 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
+          name="vendors"
+          options={{
+            title: "Explore",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons
+                name={focused ? "grid" : "grid-outline"}
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="bookings"
           options={{
             title: "Activity",
@@ -108,6 +121,13 @@ export default function TabsLayout() {
                 size={size}
               />
             ),
+          }}
+        />
+        {/* Hubble SDK: same tab navigator so bottom bar stays visible */}
+        <Tabs.Screen
+          name="hubble-webview"
+          options={{
+            href: null,
           }}
         />
       </Tabs>

@@ -1,6 +1,10 @@
-export const APP_VERSION = "1.0.0";
-export const APP_WEB_URL = "https://instahelp.in";
+import {
+  APP_WEB_URL,
+  LEGAL_PRIVACY_URL,
+  LEGAL_TERMS_URL,
+  appWebHostLabel,
+} from "@/config/env";
 
-/** Legal pages — update when live pages exist. */
-export const LEGAL_PRIVACY_URL = `${APP_WEB_URL}/privacy`;
-export const LEGAL_TERMS_URL = `${APP_WEB_URL}/terms`;
+export const APP_VERSION = "1.0.0";
+
+export { APP_WEB_URL, LEGAL_PRIVACY_URL, LEGAL_TERMS_URL, appWebHostLabel };

@@ -32,7 +32,6 @@ export default function AuthLayout() {
       <Stack.Screen name="phone" />
       <Stack.Screen name="name" />
       <Stack.Screen name="location" />
-      <Stack.Screen name="sso-callback" options={{ animation: "fade" }} />
     </Stack>
   );
 }

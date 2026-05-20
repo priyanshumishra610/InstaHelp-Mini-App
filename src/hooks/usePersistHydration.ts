@@ -1,27 +1,31 @@
-import { useAppAuth } from "@/hooks/auth/useAppAuth";
+import { useAuthSessionStore } from "@/store/authSessionStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
+import { useProfileStore } from "@/store/profileStore";
 import { useEffect, useState } from "react";
 
-/** Wait for Clerk session restore and onboarding persist before routing. */
-export function useAuthHydration() {
-  const { isLoaded: clerkLoaded } = useAppAuth();
-  const [onboardingReady, setOnboardingReady] = useState(() =>
-    useOnboardingStore.persist.hasHydrated(),
-  );
+function useZustandHydrated(store: {
+  persist: {
+    hasHydrated: () => boolean;
+    onFinishHydration: (fn: () => void) => () => void;
+  };
+}) {
+  const [ready, setReady] = useState(() => store.persist.hasHydrated());
 
   useEffect(() => {
-    try {
-      setOnboardingReady(useOnboardingStore.persist.hasHydrated());
-      const unsub = useOnboardingStore.persist.onFinishHydration(() =>
-        setOnboardingReady(true),
-      );
-      return () => {
-        if (typeof unsub === "function") unsub();
-      };
-    } catch {
-      setOnboardingReady(true);
-    }
-  }, []);
+    setReady(store.persist.hasHydrated());
+    const unsub = store.persist.onFinishHydration(() => setReady(true));
+    return () => {
+      if (typeof unsub === "function") unsub();
+    };
+  }, [store]);
 
-  return clerkLoaded && onboardingReady;
+  return ready;
+}
+
+/** Wait for persisted auth, onboarding, and profile before routing. */
+export function useAuthHydration() {
+  const sessionReady = useZustandHydrated(useAuthSessionStore);
+  const onboardingReady = useZustandHydrated(useOnboardingStore);
+  const profileReady = useZustandHydrated(useProfileStore);
+  return sessionReady && onboardingReady && profileReady;
 }

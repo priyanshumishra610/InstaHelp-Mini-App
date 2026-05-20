@@ -1,7 +1,10 @@
+import { AuthBackdrop } from "@/components/auth/AuthBackdrop";
+import { AuthStepIndicator } from "@/components/auth/AuthStepIndicator";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Screen } from "@/components/ui/Screen";
+import { ACCENT } from "@/constants/theme";
 import { useAppAuth } from "@/hooks/auth/useAppAuth";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
@@ -141,44 +144,56 @@ export function LocationScreen() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 24,
-            paddingTop: 18,
-            paddingBottom: 40,
-          }}
-          keyboardShouldPersistTaps="handled"
+      <AuthBackdrop emphasizeFooter>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={{ flex: 1 }}
         >
-          <LogoMark size="md" withWordmark />
-          <Animated.View
-            entering={FadeIn.duration(320).easing(Easing.out(Easing.cubic))}
-            style={{ flex: 1, marginTop: 44 }}
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingHorizontal: 24,
+              paddingTop: 18,
+              paddingBottom: 40,
+            }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Animated.View entering={FadeInUp.delay(60).duration(420)}>
-              <View className="flex-row items-center gap-2">
-                <View className="h-1.5 w-1.5 rounded-full bg-brand-blue" />
-                <Text className="text-[11px] font-bold uppercase tracking-[0.22em] text-brand-blue">
+            <LogoMark size="md" withWordmark />
+            <View className="mt-6">
+              <AuthStepIndicator current="Location" />
+            </View>
+            <Animated.View
+              entering={FadeIn.duration(320).easing(Easing.out(Easing.cubic))}
+              style={{ flex: 1, marginTop: 32 }}
+            >
+              <Animated.View entering={FadeInUp.delay(60).duration(420)}>
+                <Text className="text-[11px] font-bold uppercase tracking-[0.22em] text-accent-deep">
                   Your area
                 </Text>
-              </View>
-              <Text className="mt-4 text-[34px] font-extrabold leading-[40px] tracking-tight text-neutral-900">
-                Where should we come?
-              </Text>
-              <Text className="mt-3 text-[15px] leading-[22px] text-neutral-500">
-                Speeds up future bookings. You can add more addresses later.
-              </Text>
-            </Animated.View>
+                <Text className="mt-4 text-[32px] font-extrabold leading-[38px] tracking-tight text-neutral-900">
+                  Where should we come?
+                </Text>
+                <Text className="mt-3 text-[15px] leading-[22px] text-neutral-600">
+                  Speeds up future bookings. You can add more addresses later in
+                  Profile.
+                </Text>
+              </Animated.View>
 
-            <Animated.View
-              entering={FadeInUp.delay(180).duration(420)}
-              className="mt-8"
-            >
-              <View className="rounded-3xl border border-brand-line bg-white p-5">
+              <Animated.View
+                entering={FadeInUp.delay(180).duration(420)}
+                className="mt-8"
+              >
+                <View
+                  className="rounded-3xl border border-white bg-white p-5"
+                  style={{
+                    shadowColor: ACCENT,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 20,
+                    elevation: 4,
+                  }}
+                >
                 <Controller
                   control={control}
                   name="addressLabel"
@@ -252,42 +267,43 @@ export function LocationScreen() {
 
             <View style={{ flex: 1 }} />
 
-            <Animated.View
-              entering={FadeInDown.delay(360).duration(420)}
-              className="mt-8 gap-3"
-            >
-              <Pressable
-                onPress={onSubmit}
-                disabled={isSubmitting}
-                className={`rounded-2xl bg-neutral-900 py-4 active:opacity-90 ${
-                  isSubmitting ? "opacity-60" : ""
-                }`}
+              <Animated.View
+                entering={FadeInDown.delay(360).duration(420)}
+                className="mt-8 gap-3"
               >
-                <View className="flex-row items-center justify-center gap-2">
-                  {isSubmitting ? (
-                    <ActivityIndicator color="#ffffff" size="small" />
-                  ) : (
-                    <>
-                      <Text className="text-base font-bold text-white">
-                        Finish and continue
-                      </Text>
-                      <Ionicons name="checkmark" size={16} color="#ffffff" />
-                    </>
-                  )}
-                </View>
-              </Pressable>
-              <Pressable
-                onPress={() => router.replace("/(tabs)")}
-                className="py-2"
-              >
-                <Text className="text-center text-sm font-semibold text-neutral-500">
-                  Skip for now
-                </Text>
-              </Pressable>
+                <Pressable
+                  onPress={onSubmit}
+                  disabled={isSubmitting}
+                  className={`rounded-2xl bg-accent py-4 active:opacity-90 ${
+                    isSubmitting ? "opacity-60" : ""
+                  }`}
+                >
+                  <View className="flex-row items-center justify-center gap-2">
+                    {isSubmitting ? (
+                      <ActivityIndicator color="#ffffff" size="small" />
+                    ) : (
+                      <>
+                        <Text className="text-base font-bold text-white">
+                          Finish and continue
+                        </Text>
+                        <Ionicons name="checkmark" size={16} color="#ffffff" />
+                      </>
+                    )}
+                  </View>
+                </Pressable>
+                <Pressable
+                  onPress={() => router.replace("/(tabs)")}
+                  className="py-2"
+                >
+                  <Text className="text-center text-sm font-semibold text-neutral-500">
+                    Skip for now
+                  </Text>
+                </Pressable>
+              </Animated.View>
             </Animated.View>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </AuthBackdrop>
     </Screen>
   );
 }
