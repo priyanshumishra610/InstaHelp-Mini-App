@@ -28,19 +28,15 @@ export function isOnboardingComplete(profile: UserProfile | null | undefined): b
   return hasProfileLocation(profile);
 }
 
-export type AuthDestination =
-  | "/(auth)/phone"
-  | "/(auth)/location"
-  | "/(tabs)";
+export type AuthDestination = "/(auth)/phone" | "/(tabs)";
 
 export function resolveAuthDestination(input: {
   isSignedIn: boolean;
   isGuest: boolean;
   profile: UserProfile | null | undefined;
 }): AuthDestination {
-  const { isSignedIn, isGuest, profile } = input;
+  const { isSignedIn, isGuest } = input;
   if (!isSignedIn && !isGuest) return "/(auth)/phone";
-  if (!hasProfileLocation(profile)) return "/(auth)/location";
   return "/(tabs)";
 }
 
