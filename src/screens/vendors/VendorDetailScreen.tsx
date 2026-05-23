@@ -7,7 +7,7 @@ import { VendorContactRevealPanel } from "@/components/vendors/VendorContactReve
 import { MarketplaceToast } from "@/components/vendors/MarketplaceToast";
 import { useVendorUserLocation } from "@/hooks/useVendorUserLocation";
 import { haversineKm } from "@/services/vendors/vendorGeo";
-import { getVendorCatalog } from "@/services/vendors/localVendorCatalog";
+import { useVendor } from "@/hooks/useVendor";
 import {
   formatStartingPrice,
   vendorGallerySources,
@@ -20,8 +20,9 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -45,8 +46,8 @@ export function VendorDetailScreen() {
   const router = useRouter();
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
 
-  const catalog = useMemo(() => getVendorCatalog(), []);
-  const vendor = catalog.getById(String(vendorId ?? ""));
+  const { vendor, loading: vendorLoading, error: vendorError, retry } =
+    useVendor(String(vendorId ?? ""));
   const coords = useVendorUserLocation(true);
 
   const credits = useVendorLeadStore((s) => s.credits);
@@ -112,19 +113,48 @@ export function VendorDetailScreen() {
     }
   }, [vendor, tryRevealVendor, showToastMsg]);
 
+  if (vendorLoading) {
+    return (
+      <Screen className="bg-[#eef2fb]">
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#004aad" />
+          <Text className="mt-3 text-[13px] font-semibold text-neutral-500">
+            Loading vendor…
+          </Text>
+        </View>
+      </Screen>
+    );
+  }
+
   if (!vendor) {
     return (
       <Screen className="bg-[#eef2fb]">
         <View className="flex-1 items-center justify-center px-8">
           <Text className="text-center text-[16px] font-bold text-neutral-700">
-            This vendor is no longer available in the local catalog.
+            {vendorError
+              ? "Could not load this vendor. Check your connection and try again."
+              : "This vendor is no longer available."}
           </Text>
-          <Pressable
-            onPress={() => router.back()}
-            className="mt-6 rounded-full bg-accent px-6 py-3"
-          >
-            <Text className="text-[14px] font-extrabold text-white">Go back</Text>
-          </Pressable>
+          <View className="mt-6 flex-row gap-3">
+            {vendorError ? (
+              <Pressable
+                onPress={retry}
+                className="rounded-full bg-accent px-6 py-3"
+              >
+                <Text className="text-[14px] font-extrabold text-white">
+                  Retry
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => router.back()}
+              className="rounded-full border border-neutral-200 bg-white px-6 py-3"
+            >
+              <Text className="text-[14px] font-extrabold text-neutral-800">
+                Go back
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </Screen>
     );

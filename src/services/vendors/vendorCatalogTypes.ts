@@ -6,6 +6,7 @@ import type { VendorRecord } from "@/types/vendorMarketplace";
 export type VendorCatalogQuery = {
   search: string;
   areaKey: string | null;
+  category?: string | null;
   verifiedOnly: boolean;
   availableNowOnly: boolean;
   sort: VendorCatalogSort;
@@ -19,7 +20,7 @@ export type VendorCatalogSort =
   | "reviews";
 
 export interface VendorCatalogPort {
-  readonly source: "local_json" | "remote_api";
+  readonly source: "local_json" | "firestore" | "remote_api";
   getAll(): VendorRecord[];
   query(input: VendorCatalogQuery): VendorRecord[];
   getById(id: string): VendorRecord | undefined;

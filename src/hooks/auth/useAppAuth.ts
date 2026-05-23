@@ -1,7 +1,7 @@
 import { useAuthSessionStore } from "@/store/authSessionStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useProfileStore } from "@/store/profileStore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function useZustandHydrated(store: {
   persist: {
@@ -22,14 +22,17 @@ function useZustandHydrated(store: {
   return ready;
 }
 
+function parseRealProfilePhone(profilePhone: string | undefined): string | null {
+  if (!profilePhone || profilePhone === "guest") return null;
+  const digits = profilePhone.replace(/\D/g, "");
+  return digits.length >= 10 ? profilePhone : null;
+}
+
 /**
- * Phone session (Google Sheet) or local guest mode.
- * `isSignedIn` is true if we have a stored session phone OR a persisted profile phone
- * (recovers installs where profile rehydrates but auth session lagged).
+ * Signed-in = active phone session only (not inferred from stale profile).
  */
 export function useAppAuth() {
   const sessionPhone = useAuthSessionStore((s) => s.phone);
-  const profilePhone = useProfileStore((s) => s.profile?.phone);
   const isGuest = useOnboardingStore((s) => s.isGuest);
 
   const sessionReady = useZustandHydrated(useAuthSessionStore);
@@ -37,32 +40,33 @@ export function useAppAuth() {
   const profileReady = useZustandHydrated(useProfileStore);
   const storesReady = sessionReady && onboardingReady && profileReady;
 
-  const realProfilePhone =
-    profilePhone &&
-    profilePhone !== "guest" &&
-    /\d/.test(profilePhone.replace(/\D/g, ""))
-      ? profilePhone
-      : null;
+  const restoredSession = useRef(false);
 
-  const isSignedIn =
-    Boolean(sessionPhone) ||
-    Boolean(!isGuest && realProfilePhone);
-
+  /** One-time: recover session phone from persisted profile after reinstall. */
   useEffect(() => {
-    if (!storesReady || isGuest || !realProfilePhone) return;
-    if (!useAuthSessionStore.getState().phone) {
-      useAuthSessionStore.getState().setPhone(realProfilePhone);
+    if (!storesReady || isGuest || restoredSession.current) return;
+    if (useAuthSessionStore.getState().phone) {
+      restoredSession.current = true;
+      return;
     }
-  }, [storesReady, isGuest, realProfilePhone]);
 
+    const profilePhone = parseRealProfilePhone(
+      useProfileStore.getState().profile?.phone,
+    );
+    if (!profilePhone) return;
+
+    useAuthSessionStore.getState().setPhone(profilePhone);
+    restoredSession.current = true;
+  }, [storesReady, isGuest]);
+
+  const isSignedIn = Boolean(sessionPhone);
   const isAuthenticated = isSignedIn || isGuest;
 
   return {
-    /** Wait for persisted session + profile + onboarding before auth routing. */
     isLoaded: storesReady,
     isSignedIn,
     isGuest,
     isAuthenticated,
-    sessionPhone: sessionPhone ?? (!isGuest ? realProfilePhone : null),
+    sessionPhone,
   };
 }

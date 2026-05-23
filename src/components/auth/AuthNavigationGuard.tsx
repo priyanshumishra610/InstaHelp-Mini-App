@@ -37,6 +37,14 @@ export function AuthNavigationGuard() {
       if (lastReplace.current === target) return;
       lastReplace.current = target;
       router.replace(target);
+      return;
+    }
+
+    if (destination === "/(auth)/phone" && root !== "(auth)") {
+      const target = "/(auth)/phone";
+      if (lastReplace.current === target) return;
+      lastReplace.current = target;
+      router.replace(target);
     }
   }, [destination, isLoaded, router, segments]);
 

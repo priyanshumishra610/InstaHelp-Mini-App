@@ -13,7 +13,8 @@ import { CreditHistoryModal } from "@/components/vendors/CreditHistoryModal";
 import { VendorExploreListSkeleton } from "@/components/vendors/VendorExploreListSkeleton";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useVendorUserLocation } from "@/hooks/useVendorUserLocation";
-import { getVendorCatalog } from "@/services/vendors/localVendorCatalog";
+import { BANGALORE_MARKETPLACE_AREAS } from "@/constants/bangaloreAreas";
+import { useVendors } from "@/hooks/useVendors";
 import type { VendorCatalogSort } from "@/services/vendors/vendorCatalogTypes";
 import { haversineKm } from "@/services/vendors/vendorGeo";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
@@ -23,7 +24,7 @@ import { hasBurnedLeadCredits } from "@/utils/vendorLeadEligibility";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   useCallback,
   useEffect,
@@ -35,9 +36,11 @@ import {
   type SetStateAction,
 } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   SectionList,
   Text,
@@ -73,7 +76,7 @@ type ExploreHeaderOuterProps = {
   onOpenHistory: () => void;
   search: string;
   setSearch: Dispatch<SetStateAction<string>>;
-  areaOptions: [string, string][];
+  areaOptions: ReadonlyArray<readonly [string, string]>;
   areaKey: string | null;
   setAreaKey: Dispatch<SetStateAction<string | null>>;
   sortMode: "recommended" | "distance" | "rating";
@@ -403,18 +406,21 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
 
 export function VendorsExploreScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ category?: string; search?: string }>();
   const { width: windowWidth } = useWindowDimensions();
-  const catalog = useMemo(() => getVendorCatalog(), []);
   const coords = useVendorUserLocation(true);
 
   const credits = useVendorLeadStore((s) => s.credits);
   const tryRevealVendor = useVendorLeadStore((s) => s.tryRevealVendor);
   const isVendorUnlocked = useVendorLeadStore((s) => s.isVendorUnlocked);
 
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => String(params.search ?? ""));
   const debouncedSearch = useDebouncedValue(search, 280);
 
   const [areaKey, setAreaKey] = useState<string | null>(null);
+  const [categoryFilter] = useState<string | null>(() =>
+    params.category ? String(params.category) : null,
+  );
   const [sortMode, setSortMode] = useState<
     "recommended" | "distance" | "rating"
   >("recommended");
@@ -422,15 +428,30 @@ export function VendorsExploreScreen() {
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [availableNowOnly, setAvailableNowOnly] = useState(false);
 
-  const [booting, setBooting] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => setBooting(false), 420);
-    return () => clearTimeout(t);
-  }, []);
+  const {
+    vendors: filtered,
+    loading,
+    refreshing,
+    error,
+    hasMore,
+    loadMore,
+    refresh,
+    retry,
+    source,
+  } = useVendors({
+    search: debouncedSearch,
+    areaKey,
+    category: categoryFilter,
+    city: null,
+    verifiedOnly,
+    availableNowOnly,
+    sort: sortModeToCatalogSort(sortMode),
+    userLocation: coords ?? BANGALORE_CITY_CENTER,
+  });
 
   useEffect(() => {
     return () => {
@@ -438,36 +459,12 @@ export function VendorsExploreScreen() {
     };
   }, []);
 
-  const areaOptions = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const v of catalog.getAll()) {
-      m.set(v.areaKey, v.areaLabel);
-    }
-    return Array.from(m.entries()).sort((a, b) =>
-      a[1].localeCompare(b[1]),
-    );
-  }, [catalog]);
+  const areaOptions = useMemo(
+    () => BANGALORE_MARKETPLACE_AREAS.map((a) => [a.id, a.label] as const),
+    [],
+  );
 
-  const totalCatalogCount = catalog.getAll().length;
-
-  const filtered = useMemo(() => {
-    return catalog.query({
-      search: debouncedSearch,
-      areaKey,
-      verifiedOnly,
-      availableNowOnly,
-      sort: sortModeToCatalogSort(sortMode),
-      userLocation: coords ?? BANGALORE_CITY_CENTER,
-    });
-  }, [
-    catalog,
-    debouncedSearch,
-    areaKey,
-    verifiedOnly,
-    availableNowOnly,
-    sortMode,
-    coords,
-  ]);
+  const totalCatalogCount = filtered.length;
 
   const activeFilterCount = useMemo(() => {
     let n = 0;
@@ -591,8 +588,29 @@ export function VendorsExploreScreen() {
           onClose={() => setHistoryOpen(false)}
         />
 
-        {booting ? (
+        {loading && !filtered.length && !error ? (
           <VendorExploreListSkeleton />
+        ) : error && !filtered.length ? (
+          <View className="flex-1 justify-center px-6">
+            <EmptyState
+              title="Could not load vendors"
+              subtitle={
+                source === "firestore"
+                  ? "Check your connection and Firebase config, then try again."
+                  : "Something went wrong loading the catalog."
+              }
+              icon="cloud-offline-outline"
+            >
+              <Pressable
+                onPress={retry}
+                className="rounded-full bg-accent px-8 py-3.5"
+              >
+                <Text className="text-center text-[15px] font-extrabold text-accent-foreground">
+                  Retry
+                </Text>
+              </Pressable>
+            </EmptyState>
+          </View>
         ) : (
           <SectionList
             style={{ flex: 1 }}
@@ -604,6 +622,29 @@ export function VendorsExploreScreen() {
             nestedScrollEnabled
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={refresh}
+                tintColor="#004aad"
+              />
+            }
+            onEndReached={() => {
+              if (hasMore && !loading) loadMore();
+            }}
+            onEndReachedThreshold={0.35}
+            ListFooterComponent={
+              hasMore ? (
+                <View className="items-center py-6">
+                  <ActivityIndicator color="#004aad" />
+                  <Text className="mt-2 text-[12px] font-semibold text-neutral-500">
+                    Loading more vendors…
+                  </Text>
+                </View>
+              ) : (
+                <View className="h-6" />
+              )
+            }
             ListHeaderComponent={ListHeaderComponent}
             renderSectionHeader={({ section }) => (
               <View className="border-b border-neutral-200/70 bg-[#eef2fb] px-4 pb-3 pt-5">

@@ -38,6 +38,11 @@ export class LocalJsonVendorCatalog implements VendorCatalogPort {
       (v) => vendorMatchesSearch(v, q),
     );
 
+    if (input.category?.trim()) {
+      const cat = input.category.trim().toLowerCase();
+      list = list.filter((v) => v.category.trim().toLowerCase() === cat);
+    }
+
     if (input.verifiedOnly) {
       list = list.filter((v) => v.isVerified);
     }
@@ -81,9 +86,3 @@ export class LocalJsonVendorCatalog implements VendorCatalogPort {
   }
 }
 
-let singleton: VendorCatalogPort | null = null;
-
-export function getVendorCatalog(): VendorCatalogPort {
-  singleton ??= new LocalJsonVendorCatalog();
-  return singleton;
-}

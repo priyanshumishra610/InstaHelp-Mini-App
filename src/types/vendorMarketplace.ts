@@ -55,7 +55,7 @@ export type CreditTransaction = {
   note: string;
 };
 
-export type VendorCatalogSource = "local_json" | "remote_api";
+export type VendorCatalogSource = "local_json" | "firestore" | "remote_api";
 
 export type VendorSortContext = {
   userLocation: VendorCoordinates | null;

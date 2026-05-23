@@ -1,5 +1,9 @@
+import { CategoryChipsRow } from "@/components/category/CategoryChipsRow";
+import { TrendingServicesRow } from "@/components/category/TrendingServicesRow";
 import { DiscoveryCategoryNav } from "@/components/discovery/DiscoveryCategoryNav";
 import { DiscoverySection } from "@/components/discovery/DiscoverySection";
+import { FeaturedVendorsRow } from "@/components/vendor/FeaturedVendorsRow";
+import { NearbyVendorsRow } from "@/components/vendor/NearbyVendorsRow";
 import { DISCOVERY_CATEGORIES } from "@/constants/discoveryCategories";
 import type { DiscoveryService } from "@/types/discovery";
 import type { WeeklyOffer } from "@/types/offers";
@@ -12,6 +16,7 @@ import { createBookingLocalFirst } from "@/services/bookingService";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
+import { useVendorUserLocation } from "@/hooks/useVendorUserLocation";
 import { discoverySelection } from "@/utils/discoveryHaptics";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { LinearGradient } from "expo-linear-gradient";
@@ -288,6 +293,7 @@ export function HomeScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const deviceLocation = useDeviceAddress({ autoFetch: true });
+  const vendorCoords = useVendorUserLocation(false);
 
   // Hydrate name + phone from the saved profile as soon as they're available,
   // but only if the user hasn't typed anything yet (don't clobber edits).
@@ -623,6 +629,11 @@ export function HomeScreen() {
             <FastestPathImageSlider />
           </Animated.View>
 
+          <FeaturedVendorsRow userLocation={vendorCoords} />
+          <CategoryChipsRow />
+          <TrendingServicesRow />
+          <NearbyVendorsRow userLocation={vendorCoords} />
+
           <Animated.View
             entering={FadeInUp.duration(480).delay(200)}
             className="mt-5 px-5"
@@ -655,8 +666,8 @@ export function HomeScreen() {
                       Vendor marketplace
                     </Text>
                     <Text className="mt-1 text-[13px] leading-[19px] text-white/85">
-                      Browse 1,000+ pros in Koramangala, HSR, Whitefield, and
-                      more. Reveal contacts with credits.
+                      Live vendor listings across Bengaluru — updated instantly
+                      from the cloud. Reveal contacts with credits.
                     </Text>
                   </View>
                   <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
