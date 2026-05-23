@@ -6,6 +6,7 @@ import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import { toE164Phone } from "@/utils/auth/phone";
 import {
   resolveAuthDestination,
+  resolveProfileDisplayName,
   type AuthDestination,
 } from "@/utils/auth/session";
 
@@ -35,7 +36,10 @@ export async function signInWithPhone(rawPhone: string): Promise<SignInResult> {
     const samePhone = prev?.phone === sheetPhone;
     useProfileStore.getState().setProfile({
       phone: sheetPhone,
-      name: res.data.name,
+      name:
+        res.data.name?.trim() ||
+        (samePhone ? prev?.name?.trim() : undefined) ||
+        resolveProfileDisplayName(prev, sheetPhone),
       addresses: res.data.addresses?.length
         ? res.data.addresses
         : prev?.addresses?.length

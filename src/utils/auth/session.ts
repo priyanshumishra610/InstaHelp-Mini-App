@@ -5,10 +5,6 @@ import type { UserProfile } from "@/types/user";
 
 const PLACEHOLDER_LINE = "Add your home address in Profile";
 
-export function hasProfileName(profile: UserProfile | null | undefined): boolean {
-  return Boolean(profile?.name?.trim());
-}
-
 export function hasProfileLocation(profile: UserProfile | null | undefined): boolean {
   if (!profile?.addresses?.length) return false;
   return profile.addresses.some(
@@ -16,13 +12,24 @@ export function hasProfileLocation(profile: UserProfile | null | undefined): boo
   );
 }
 
+/** Fallback when no name is set — name is collected on Profile, not onboarding. */
+export function resolveProfileDisplayName(
+  profile: UserProfile | null | undefined,
+  phone?: string,
+): string {
+  const trimmed = profile?.name?.trim();
+  if (trimmed) return trimmed;
+  const digits = (phone ?? profile?.phone ?? "").replace(/\D/g, "");
+  if (digits.length >= 4) return `User ····${digits.slice(-4)}`;
+  return "Guest";
+}
+
 export function isOnboardingComplete(profile: UserProfile | null | undefined): boolean {
-  return hasProfileName(profile) && hasProfileLocation(profile);
+  return hasProfileLocation(profile);
 }
 
 export type AuthDestination =
   | "/(auth)/phone"
-  | "/(auth)/name"
   | "/(auth)/location"
   | "/(tabs)";
 
@@ -33,7 +40,6 @@ export function resolveAuthDestination(input: {
 }): AuthDestination {
   const { isSignedIn, isGuest, profile } = input;
   if (!isSignedIn && !isGuest) return "/(auth)/phone";
-  if (!hasProfileName(profile)) return "/(auth)/name";
   if (!hasProfileLocation(profile)) return "/(auth)/location";
   return "/(tabs)";
 }
@@ -46,7 +52,7 @@ export function activateGuestSession(): AuthDestination {
   const { profile, setProfile } = useProfileStore.getState();
   const merged: UserProfile = {
     phone: "guest",
-    name: profile?.name?.trim() || "Guest",
+    name: resolveProfileDisplayName(profile, "guest"),
     addresses:
       profile && hasProfileLocation(profile)
         ? profile.addresses

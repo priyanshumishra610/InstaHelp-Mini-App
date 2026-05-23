@@ -1,14 +1,13 @@
 import { ACCENT } from "@/constants/theme";
 import { Text, View } from "react-native";
 
-const STEPS = ["Sign in", "Your name", "Location"] as const;
+const STEPS = ["Sign in", "Location"] as const;
 
 type Step = (typeof STEPS)[number];
 
 const STEP_INDEX: Record<Step, number> = {
   "Sign in": 0,
-  "Your name": 1,
-  Location: 2,
+  Location: 1,
 };
 
 export function AuthStepIndicator({ current }: { current: Step }) {

@@ -1,5 +1,8 @@
 import { MinimalPhoneField } from "@/components/auth/premium/MinimalPhoneField";
 import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
+import { OtpInputRow } from "@/components/auth/premium/OtpInputRow";
+import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
+import { SocialAuthButton } from "@/components/auth/premium/SocialAuthButton";
 import {
   AUTH_ACCENT_TEAL,
   AUTH_FONT,
@@ -8,15 +11,16 @@ import {
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   View,
   type TextInput,
 } from "react-native";
 import type { RefObject } from "react";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 type Props = {
   phoneInputRef?: RefObject<TextInput | null>;
@@ -25,6 +29,8 @@ type Props = {
   loading: boolean;
   error: string | null;
   onContinue: () => void;
+  isFocused?: boolean;
+  onSocialHint?: (message: string) => void;
 };
 
 export function LoginAuthCard({
@@ -34,28 +40,42 @@ export function LoginAuthCard({
   loading,
   error,
   onContinue,
+  isFocused = true,
+  onSocialHint,
 }: Props) {
+  const [otp, setOtp] = useState("");
   const digits = phone.replace(/\D/g, "").length;
+  const showOtp = digits >= 10;
+  const phoneReady = digits === 10;
+
+  const socialHint = () =>
+    onSocialHint?.("Phone sign-in is fastest — enter your mobile number below.");
 
   return (
-    <GlassAuthCard elevated accentEdge style={styles.card}>
+    <GlassAuthCard elevated accentEdge glowPulse={isFocused} style={styles.card}>
       <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
         InstaHelp
       </Text>
       <Text style={[styles.headline, { fontFamily: AUTH_FONT.extrabold }]}>
-        Welcome back
+        Welcome Back
       </Text>
       <Text style={[styles.sub, { fontFamily: AUTH_FONT.regular }]}>
-        Sign in with your mobile — we sync your profile securely.
+        We missed you at InstaHelp
       </Text>
 
       <MinimalPhoneField
         ref={phoneInputRef}
         value={phone}
         onChangeText={onPhoneChange}
-        editable={!loading}
+        editable={!loading && isFocused}
         error={!!error}
       />
+
+      {showOtp ? (
+        <Animated.View entering={FadeInDown.duration(320)}>
+          <OtpInputRow value={otp} onChange={setOtp} visible={isFocused} />
+        </Animated.View>
+      ) : null}
 
       {digits > 0 && digits < 10 && !error ? (
         <Text style={[styles.hint, { fontFamily: AUTH_FONT.regular }]}>
@@ -72,17 +92,20 @@ export function LoginAuthCard({
         </View>
       ) : null}
 
-      <Pressable
+      <PremiumPressable
         onPress={onContinue}
-        disabled={loading}
+        disabled={loading || !phoneReady}
+        glow
         accessibilityRole="button"
-        style={({ pressed }) => [
-          styles.ctaWrap,
-          pressed && !loading && { transform: [{ scale: 0.98 }] },
-        ]}
+        accessibilityLabel="Continue"
+        style={[styles.ctaWrap, !phoneReady && styles.ctaDisabled]}
       >
         <LinearGradient
-          colors={["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
+          colors={
+            phoneReady
+              ? ["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]
+              : ["#94a3b8", "#64748b", "#475569"]
+          }
           locations={[0, 0.45, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
@@ -99,16 +122,26 @@ export function LoginAuthCard({
             </View>
           )}
         </LinearGradient>
-      </Pressable>
+      </PremiumPressable>
+
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={[styles.dividerText, { fontFamily: AUTH_FONT.medium }]}>
+          or
+        </Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <SocialAuthButton provider="google" onPress={socialHint} />
 
       <View style={styles.trustRow}>
         {[
-          { icon: "shield-checkmark" as const, label: "Secure" },
-          { icon: "flash" as const, label: "Instant" },
-          { icon: "cloud-done-outline" as const, label: "Synced" },
+          { icon: "shield-checkmark" as const, label: "Verified Services" },
+          { icon: "lock-closed" as const, label: "Secure Login" },
+          { icon: "flash" as const, label: "Fast Booking" },
         ].map((item) => (
           <View key={item.label} style={styles.trustChip}>
-            <Ionicons name={item.icon} size={13} color={AUTH_PRIMARY} />
+            <Ionicons name={item.icon} size={12} color={AUTH_PRIMARY} />
             <Text style={[styles.trustChipText, { fontFamily: AUTH_FONT.semibold }]}>
               {item.label}
             </Text>
@@ -119,7 +152,7 @@ export function LoginAuthCard({
       <View style={styles.footerNote}>
         <View style={[styles.dot, { backgroundColor: AUTH_ACCENT_TEAL }]} />
         <Text style={[styles.trust, { fontFamily: AUTH_FONT.regular }]}>
-          Local services · One super app
+          One tap to trusted local help
         </Text>
       </View>
     </GlassAuthCard>
@@ -127,7 +160,7 @@ export function LoginAuthCard({
 }
 
 const styles = StyleSheet.create({
-  card: { width: "100%", minHeight: 340 },
+  card: { width: "100%", minHeight: 380 },
   eyebrow: {
     fontSize: 10,
     letterSpacing: 2.4,
@@ -147,7 +180,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: "#64748b",
-    maxWidth: "100%",
   },
   hint: {
     marginTop: 8,
@@ -171,9 +203,8 @@ const styles = StyleSheet.create({
     color: "#b91c1c",
     lineHeight: 17,
   },
-  ctaWrap: {
-    marginTop: 20,
-  },
+  ctaWrap: { marginTop: 18 },
+  ctaDisabled: { opacity: 0.92 },
   primaryBtn: {
     borderRadius: 16,
     paddingVertical: 15,
@@ -191,31 +222,48 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryLabel: { color: "#fff", fontSize: 16, letterSpacing: 0.2 },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(148,163,184,0.45)",
+  },
+  dividerText: {
+    fontSize: 11,
+    color: "#94a3b8",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
   trustRow: {
-    marginTop: 18,
+    marginTop: 4,
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
   },
   trustChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
     borderRadius: 999,
     backgroundColor: "rgba(37,99,235,0.06)",
     borderWidth: 1,
     borderColor: "rgba(37,99,235,0.1)",
   },
   trustChipText: {
-    fontSize: 11,
+    fontSize: 9,
     color: "#334155",
-    letterSpacing: 0.2,
+    letterSpacing: 0.15,
   },
   footerNote: {
-    marginTop: 16,
+    marginTop: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

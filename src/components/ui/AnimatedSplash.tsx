@@ -1,6 +1,14 @@
+import {
+  SPLASH_BACKGROUND,
+  SPLASH_BRAND_TAGLINE,
+  SPLASH_BRAND_TITLE,
+  SPLASH_MIN_DURATION_MS,
+} from "@/constants/splash";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   cancelAnimation,
@@ -8,125 +16,86 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withRepeat,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
 
-const TAGLINE_TEXT = "We\u2019ll get it done.";
-
-const BG_FROM = "rgba(0,74,173,0.10)";
-const BG_MID = "rgba(59,130,246,0.06)";
-const BG_TO = "rgba(0,74,173,0.10)";
-const TAGLINE_COLOR = "#4a5b7d";
-
-const SPLASH_LOGO = require("../../../assets/images/splash-icon.png");
-
-const PHASE_BG_IN_MS = 360;
-const PHASE_BRAND_IN_START_MS = 300;
-const PHASE_BRAND_IN_DURATION_MS = 400;
-const PHASE_TAGLINE_START_MS = 1100;
-const PHASE_TAGLINE_DURATION_MS = 520;
-const PHASE_PULSE_START_MS = 1620;
-const PHASE_PULSE_UP_MS = 300;
-const PHASE_PULSE_DOWN_MS = 320;
-const EXIT_DURATION_MS = 520;
-const EXIT_FALLBACK_PAD_MS = 220;
+const BRAND_IN_MS = 560;
+const BRAND_DELAY_MS = 120;
+const EXIT_MS = 500;
 
 type Props = {
-  /** Called once the splash fully animates out. */
   onFinish?: () => void;
-  /** Minimum visible time before exit (ms). Default ~2400ms per brief. */
   minDurationMs?: number;
+  /** Wait until auth/storage is ready before fade-out */
+  readyToExit?: boolean;
 };
 
-export function AnimatedSplash({ onFinish, minDurationMs = 2400 }: Props) {
-  const containerOpacity = useSharedValue(0);
-  const containerLiftY = useSharedValue(0);
-
+export function AnimatedSplash({
+  onFinish,
+  minDurationMs = SPLASH_MIN_DURATION_MS,
+  readyToExit = true,
+}: Props) {
+  const screenOpacity = useSharedValue(1);
   const brandOpacity = useSharedValue(0);
-  const brandScale = useSharedValue(0.95);
-
+  const brandScale = useSharedValue(0.94);
   const taglineOpacity = useSharedValue(0);
-  const taglineY = useSharedValue(14);
+  const glowScale = useSharedValue(1);
 
   const onFinishRef = useRef(onFinish);
+  const [minElapsed, setMinElapsed] = useState(false);
+  const exitStarted = useRef(false);
+
   useEffect(() => {
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
   useEffect(() => {
-    containerOpacity.value = withTiming(1, {
-      duration: PHASE_BG_IN_MS,
-      easing: Easing.out(Easing.cubic),
-    });
+    const t = setTimeout(() => setMinElapsed(true), minDurationMs);
+    return () => clearTimeout(t);
+  }, [minDurationMs]);
+
+  useEffect(() => {
+    void SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    glowScale.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+      ),
+      -1,
+      false,
+    );
 
     brandOpacity.value = withDelay(
-      PHASE_BRAND_IN_START_MS,
-      withTiming(1, {
-        duration: PHASE_BRAND_IN_DURATION_MS,
-        easing: Easing.out(Easing.cubic),
-      }),
+      BRAND_DELAY_MS,
+      withTiming(1, { duration: BRAND_IN_MS, easing: Easing.out(Easing.cubic) }),
     );
     brandScale.value = withDelay(
-      PHASE_BRAND_IN_START_MS,
-      withSequence(
-        withTiming(1, {
-          duration: PHASE_BRAND_IN_DURATION_MS,
-          easing: Easing.out(Easing.cubic),
-        }),
-        withDelay(
-          Math.max(
-            0,
-            PHASE_PULSE_START_MS -
-              (PHASE_BRAND_IN_START_MS + PHASE_BRAND_IN_DURATION_MS),
-          ),
-          withSequence(
-            withTiming(1.02, {
-              duration: PHASE_PULSE_UP_MS,
-              easing: Easing.out(Easing.cubic),
-            }),
-            withTiming(1, {
-              duration: PHASE_PULSE_DOWN_MS,
-              easing: Easing.inOut(Easing.cubic),
-            }),
-          ),
-        ),
-      ),
+      BRAND_DELAY_MS,
+      withTiming(1, { duration: BRAND_IN_MS, easing: Easing.out(Easing.cubic) }),
     );
-
     taglineOpacity.value = withDelay(
-      PHASE_TAGLINE_START_MS,
-      withTiming(1, {
-        duration: PHASE_TAGLINE_DURATION_MS,
-        easing: Easing.out(Easing.cubic),
-      }),
-    );
-    taglineY.value = withDelay(
-      PHASE_TAGLINE_START_MS,
-      withTiming(0, {
-        duration: PHASE_TAGLINE_DURATION_MS,
-        easing: Easing.out(Easing.cubic),
-      }),
+      BRAND_DELAY_MS + 220,
+      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }),
     );
 
     return () => {
-      cancelAnimation(containerOpacity);
-      cancelAnimation(containerLiftY);
       cancelAnimation(brandOpacity);
       cancelAnimation(brandScale);
       cancelAnimation(taglineOpacity);
-      cancelAnimation(taglineY);
+      cancelAnimation(screenOpacity);
+      cancelAnimation(glowScale);
     };
-  }, [
-    brandOpacity,
-    brandScale,
-    containerLiftY,
-    containerOpacity,
-    taglineOpacity,
-    taglineY,
-  ]);
+  }, [brandOpacity, brandScale, glowScale, screenOpacity, taglineOpacity]);
 
   useEffect(() => {
+    if (!minElapsed || !readyToExit || exitStarted.current) return;
+    exitStarted.current = true;
+
     let didFinish = false;
     let fallback: ReturnType<typeof setTimeout> | null = null;
 
@@ -136,68 +105,59 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2400 }: Props) {
       onFinishRef.current?.();
     };
 
-    const exitTimer = setTimeout(() => {
-      containerLiftY.value = withTiming(-6, {
-        duration: EXIT_DURATION_MS,
-        easing: Easing.in(Easing.cubic),
-      });
-      containerOpacity.value = withTiming(
-        0,
-        {
-          duration: EXIT_DURATION_MS,
-          easing: Easing.out(Easing.cubic),
-        },
-        (finished) => {
-          "worklet";
-          if (finished) runOnJS(safeFinish)();
-        },
-      );
-      fallback = setTimeout(safeFinish, EXIT_DURATION_MS + EXIT_FALLBACK_PAD_MS);
-    }, minDurationMs);
+    brandOpacity.value = withTiming(0, {
+      duration: EXIT_MS,
+      easing: Easing.in(Easing.cubic),
+    });
+    taglineOpacity.value = withTiming(0, { duration: EXIT_MS * 0.85 });
+    screenOpacity.value = withTiming(
+      0,
+      { duration: EXIT_MS, easing: Easing.inOut(Easing.cubic) },
+      (finished) => {
+        "worklet";
+        if (finished) runOnJS(safeFinish)();
+      },
+    );
+    fallback = setTimeout(safeFinish, EXIT_MS + 220);
 
     return () => {
-      clearTimeout(exitTimer);
       if (fallback) clearTimeout(fallback);
     };
-  }, [minDurationMs, containerOpacity, containerLiftY]);
+  }, [minElapsed, brandOpacity, readyToExit, screenOpacity, taglineOpacity]);
 
-  const containerStyle = useAnimatedStyle(() => ({
-    opacity: containerOpacity.value,
-    transform: [{ translateY: containerLiftY.value }],
+  const screenStyle = useAnimatedStyle(() => ({
+    opacity: screenOpacity.value,
   }));
 
-  const brandWrapperStyle = useAnimatedStyle(() => ({
+  const brandStyle = useAnimatedStyle(() => ({
     opacity: brandOpacity.value,
     transform: [{ scale: brandScale.value }],
   }));
 
   const taglineStyle = useAnimatedStyle(() => ({
     opacity: taglineOpacity.value,
-    transform: [{ translateY: taglineY.value }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: glowScale.value }],
+    opacity: 0.5 + (glowScale.value - 1) * 2,
   }));
 
   return (
-    <Animated.View style={[styles.root, containerStyle]}>
+    <Animated.View style={[styles.root, screenStyle]}>
+      <StatusBar style="light" />
       <LinearGradient
-        colors={[BG_FROM, BG_MID, BG_TO]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={["#0A0A1A", "#0f1028", "#12122a"]}
         style={StyleSheet.absoluteFill}
       />
-
+      <Animated.View style={[styles.glow, glowStyle]} />
       <View style={styles.center}>
-        <Animated.View style={brandWrapperStyle}>
-          <Animated.Image
-            source={SPLASH_LOGO}
-            style={styles.logo}
-            resizeMode="contain"
-            accessibilityLabel="InstaHelp"
-          />
+        <Animated.View style={[styles.brandBlock, brandStyle]}>
+          <Animated.Text style={styles.title}>{SPLASH_BRAND_TITLE}</Animated.Text>
+          <Animated.Text style={[styles.tagline, taglineStyle]}>
+            {SPLASH_BRAND_TAGLINE}
+          </Animated.Text>
         </Animated.View>
-
-        <Animated.Text style={[styles.tagline, taglineStyle]}>
-          {TAGLINE_TEXT}
-        </Animated.Text>
       </View>
     </Animated.View>
   );
@@ -206,31 +166,40 @@ export function AnimatedSplash({ onFinish, minDurationMs = 2400 }: Props) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: SPLASH_BACKGROUND,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
-    overflow: "hidden",
+  },
+  glow: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(124,58,237,0.22)",
+    top: "38%",
+    alignSelf: "center",
   },
   center: {
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 32,
   },
-  logo: {
-    width: 300,
-    height: 120,
+  brandBlock: {
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 40,
+    fontWeight: "800",
+    color: "#ffffff",
+    letterSpacing: -0.8,
+    textAlign: "center",
   },
   tagline: {
-    marginTop: 28,
-    fontSize: 14,
+    marginTop: 10,
+    fontSize: 15,
     fontWeight: "500",
-    color: TAGLINE_COLOR,
-    letterSpacing: 0.4,
+    color: "rgba(255,255,255,0.58)",
+    letterSpacing: 0.2,
     textAlign: "center",
-    ...Platform.select({
-      ios: { fontFamily: "System" },
-      android: { fontFamily: "sans-serif" },
-      default: {},
-    }),
   },
 });

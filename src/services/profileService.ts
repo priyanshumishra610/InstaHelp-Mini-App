@@ -6,6 +6,7 @@ import { APPS_SCRIPT_URL } from "@/api/env";
 import { getAuthPhone } from "@/utils/auth/getAuthPhone";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import type { UserProfile } from "@/types/user";
+import { resolveProfileDisplayName } from "@/utils/auth/session";
 
 export async function refreshProfile(): Promise<UserProfile | null> {
   const phone = getAuthPhone();
@@ -22,6 +23,10 @@ export async function refreshProfile(): Promise<UserProfile | null> {
     const samePhone = prev?.phone === res.data.phone;
     useProfileStore.getState().setProfile({
       ...res.data,
+      name:
+        res.data.name?.trim() ||
+        (samePhone ? prev?.name?.trim() : undefined) ||
+        resolveProfileDisplayName(prev, res.data.phone),
       avatarUri: samePhone ? prev?.avatarUri : undefined,
       role: res.data.role ?? (samePhone ? prev?.role : undefined),
       preferredContact:

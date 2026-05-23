@@ -4,30 +4,76 @@ import {
   AUTH_PRIMARY_DEEP,
 } from "@/constants/authPremium";
 import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
+import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
+import { SocialAuthButton } from "@/components/auth/premium/SocialAuthButton";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 
 type Props = {
-  onCreateAccount: () => void;
+  onCreateAccount: (phone?: string) => void;
+  initialPhone?: string;
+  compact?: boolean;
+  onSocialHint?: (message: string) => void;
 };
 
-function GhostField({ label, icon }: { label: string; icon: keyof typeof Ionicons.glyphMap }) {
+function Field({
+  label,
+  icon,
+  value,
+  onChangeText,
+  keyboardType,
+  maxLength,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  value: string;
+  onChangeText: (t: string) => void;
+  keyboardType?: "default" | "phone-pad";
+  maxLength?: number;
+}) {
+  const [focused, setFocused] = useState(false);
   return (
-    <View style={styles.field}>
-      <Ionicons name={icon} size={14} color="#94a3b8" />
-      <Text style={[styles.fieldText, { fontFamily: AUTH_FONT.regular }]}>
+    <View style={styles.fieldBlock}>
+      <Text style={[styles.fieldLabel, { fontFamily: AUTH_FONT.semibold }]}>
         {label}
       </Text>
+      <View style={[styles.field, focused && styles.fieldFocused]}>
+        <Ionicons name={icon} size={16} color={focused ? AUTH_PRIMARY : "#94a3b8"} />
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={label}
+          placeholderTextColor="#cbd5e1"
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          style={[styles.fieldInput, { fontFamily: AUTH_FONT.medium }]}
+        />
+      </View>
     </View>
   );
 }
 
-export function RegisterAuthCard({ onCreateAccount }: Props) {
+export function RegisterAuthCard({
+  onCreateAccount,
+  initialPhone = "",
+  compact,
+  onSocialHint,
+}: Props) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState(initialPhone.replace(/\D/g, "").slice(0, 10));
+  const [location, setLocation] = useState("");
+
+  const socialHint = () =>
+    onSocialHint?.("Complete sign-up with your mobile on the login card.");
+
   return (
-    <GlassAuthCard style={styles.card}>
+    <GlassAuthCard style={compact ? [styles.card, styles.cardCompact] : styles.card}>
       <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
-        New here
+        Join the network
       </Text>
       <Text style={[styles.headline, { fontFamily: AUTH_FONT.extrabold }]}>
         Join InstaHelp
@@ -35,13 +81,28 @@ export function RegisterAuthCard({ onCreateAccount }: Props) {
       <Text style={[styles.sub, { fontFamily: AUTH_FONT.regular }]}>
         Access local services, offers and smart bookings.
       </Text>
-      <GhostField label="Your name" icon="person-outline" />
-      <GhostField label="Phone number" icon="call-outline" />
-      <GhostField label="Your city / area" icon="location-outline" />
-      <Pressable
-        onPress={onCreateAccount}
+
+      <Field label="Name" icon="person-outline" value={name} onChangeText={setName} />
+      <Field
+        label="Phone number"
+        icon="call-outline"
+        value={phone}
+        onChangeText={(t) => setPhone(t.replace(/\D/g, "").slice(0, 10))}
+        keyboardType="phone-pad"
+        maxLength={10}
+      />
+      <Field
+        label="Location"
+        icon="location-outline"
+        value={location}
+        onChangeText={setLocation}
+      />
+
+      <PremiumPressable
+        onPress={() => onCreateAccount(phone || undefined)}
+        glow
         accessibilityRole="button"
-        style={{ marginTop: 14 }}
+        style={{ marginTop: 16 }}
       >
         <LinearGradient
           colors={["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
@@ -55,16 +116,31 @@ export function RegisterAuthCard({ onCreateAccount }: Props) {
           </Text>
           <Ionicons name="arrow-forward" size={16} color="#fff" />
         </LinearGradient>
-      </Pressable>
-      <Text style={[styles.note, { fontFamily: AUTH_FONT.regular }]}>
-        Sign up with your mobile — we save your profile to InstaHelp.
-      </Text>
+      </PremiumPressable>
+
+      {!compact ? (
+        <View style={styles.socialRow}>
+          <SocialAuthButton
+            provider="google"
+            compact
+            label="Google"
+            onPress={socialHint}
+          />
+          <SocialAuthButton
+            provider="apple"
+            compact
+            label="Apple"
+            onPress={socialHint}
+          />
+        </View>
+      ) : null}
     </GlassAuthCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { width: "100%", minHeight: 348 },
+  card: { width: "100%", minHeight: 400 },
+  cardCompact: { minHeight: 360 },
   eyebrow: {
     fontSize: 10,
     letterSpacing: 2.2,
@@ -74,32 +150,54 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   headline: {
-    fontSize: 20,
+    fontSize: 22,
     color: "#0f172a",
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
   },
   sub: {
     marginTop: 6,
     fontSize: 13,
     lineHeight: 18,
     color: "#64748b",
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+  fieldBlock: { marginTop: 10 },
+  fieldLabel: {
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#94a3b8",
+    marginBottom: 6,
   },
   field: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(148,163,184,0.35)",
+    gap: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(248,250,252,0.95)",
+    borderWidth: 1,
+    borderColor: "rgba(148,163,184,0.25)",
   },
-  fieldText: {
-    fontSize: 11,
-    color: "#94a3b8",
+  fieldFocused: {
+    borderColor: "rgba(37,99,235,0.45)",
+    backgroundColor: "#fff",
+    shadowColor: AUTH_PRIMARY,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  fieldInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#0f172a",
+    paddingVertical: 0,
   },
   primaryBtn: {
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -110,12 +208,10 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
-  primaryLabel: { color: "#fff", fontSize: 13 },
-  note: {
-    marginTop: 12,
-    fontSize: 10,
-    lineHeight: 14,
-    color: "#94a3b8",
-    textAlign: "center",
+  primaryLabel: { color: "#fff", fontSize: 15 },
+  socialRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
   },
 });

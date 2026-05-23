@@ -1,5 +1,5 @@
 import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
-import { forwardRef, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,43 +7,72 @@ import {
   View,
   type TextInputProps,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
 
 type Props = TextInputProps & {
   error?: boolean;
 };
 
 export const MinimalPhoneField = forwardRef<TextInput, Props>(
-  function MinimalPhoneField({ error, style, onFocus, onBlur, ...rest }, ref) {
+  function MinimalPhoneField({ error, style, onFocus, onBlur, value, ...rest }, ref) {
     const [focused, setFocused] = useState(false);
+    const labelY = useSharedValue(0);
+    const labelScale = useSharedValue(1);
+    const glow = useSharedValue(0);
 
-    const lineActive = focused && !error;
-    const lineError = Boolean(error);
+    const hasValue = Boolean(value && String(value).length > 0);
+    const floated = focused || hasValue;
+
+    useEffect(() => {
+      labelY.value = withSpring(floated ? -22 : 0, { damping: 14, stiffness: 180 });
+      labelScale.value = withSpring(floated ? 0.82 : 1, { damping: 14, stiffness: 180 });
+      glow.value = withTiming(focused && !error ? 1 : 0, { duration: 200 });
+    }, [error, floated, focused, glow, labelScale, labelY]);
+
+    const labelStyle = useAnimatedStyle(() => ({
+      transform: [{ translateY: labelY.value }, { scale: labelScale.value }],
+      opacity: floated ? 0.9 : 0.75,
+    }));
+
+    const shellStyle = useAnimatedStyle(() => ({
+      borderColor:
+        error
+          ? "rgba(239,68,68,0.55)"
+          : glow.value > 0.5
+            ? "rgba(37,99,235,0.55)"
+            : "rgba(148,163,184,0.28)",
+      shadowOpacity: glow.value * 0.18,
+    }));
 
     return (
       <View style={styles.block}>
-        <Text style={[styles.label, { fontFamily: AUTH_FONT.semibold }]}>
+        <Animated.Text
+          style={[styles.floatingLabel, labelStyle, { fontFamily: AUTH_FONT.semibold }]}
+          pointerEvents="none"
+        >
           Mobile number
-        </Text>
+        </Animated.Text>
         <View style={styles.wrap}>
           <View
             style={[
               styles.prefixPill,
-              lineActive && styles.prefixPillActive,
-              lineError && styles.prefixPillError,
+              focused && !error && styles.prefixPillActive,
+              error && styles.prefixPillError,
             ]}
           >
+            <Text style={styles.flag}>🇮🇳</Text>
             <Text style={[styles.prefix, { fontFamily: AUTH_FONT.bold }]}>+91</Text>
           </View>
-          <View
-            style={[
-              styles.fieldShell,
-              lineActive && styles.fieldShellActive,
-              lineError && styles.fieldShellError,
-            ]}
-          >
+          <Animated.View style={[styles.fieldShell, shellStyle]}>
             <TextInput
               ref={ref}
-              placeholder="00000 00000"
+              value={value}
+              placeholder={floated ? "10-digit mobile number" : ""}
               placeholderTextColor="#cbd5e1"
               keyboardType="phone-pad"
               maxLength={10}
@@ -62,7 +91,7 @@ export const MinimalPhoneField = forwardRef<TextInput, Props>(
               ]}
               {...rest}
             />
-          </View>
+          </Animated.View>
         </View>
       </View>
     );
@@ -71,22 +100,30 @@ export const MinimalPhoneField = forwardRef<TextInput, Props>(
 
 const styles = StyleSheet.create({
   block: {
-    marginTop: 20,
+    marginTop: 24,
+    paddingTop: 8,
   },
-  label: {
+  floatingLabel: {
+    position: "absolute",
+    left: 4,
+    top: 0,
     fontSize: 11,
     letterSpacing: 1.2,
     textTransform: "uppercase",
     color: "#64748b",
-    marginBottom: 10,
+    zIndex: 2,
   },
   wrap: {
     flexDirection: "row",
     alignItems: "stretch",
     gap: 10,
+    marginTop: 8,
   },
   prefixPill: {
-    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
     borderRadius: 14,
     backgroundColor: "rgba(37,99,235,0.08)",
     borderWidth: 1,
@@ -101,38 +138,29 @@ const styles = StyleSheet.create({
     borderColor: "rgba(248,113,113,0.6)",
     backgroundColor: "rgba(254,226,226,0.5)",
   },
+  flag: { fontSize: 16 },
   prefix: {
-    fontSize: 16,
+    fontSize: 15,
     color: AUTH_PRIMARY,
     letterSpacing: 0.5,
   },
   fieldShell: {
     flex: 1,
     borderRadius: 14,
-    backgroundColor: "rgba(248,250,252,0.95)",
-    borderWidth: 1,
-    borderColor: "rgba(148,163,184,0.22)",
+    backgroundColor: "rgba(248,250,252,0.98)",
+    borderWidth: 1.5,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: 13,
     justifyContent: "center",
-  },
-  fieldShellActive: {
-    borderColor: "rgba(37,99,235,0.45)",
-    backgroundColor: "#fff",
     shadowColor: AUTH_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
     shadowRadius: 12,
     elevation: 3,
-  },
-  fieldShellError: {
-    borderColor: "rgba(239,68,68,0.45)",
-    backgroundColor: "rgba(254,242,242,0.6)",
   },
   input: {
     fontSize: 18,
     color: "#0f172a",
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     paddingVertical: 0,
   },
 });

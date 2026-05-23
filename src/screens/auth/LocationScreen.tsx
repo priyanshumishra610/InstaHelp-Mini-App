@@ -10,6 +10,7 @@ import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
 import { persistProfile } from "@/services/profileService";
 import { useProfileStore } from "@/store/profileStore";
+import { resolveProfileDisplayName } from "@/utils/auth/session";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
@@ -106,8 +107,8 @@ export function LocationScreen() {
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
     const basePhone = phone && phone !== "guest" ? phone : profile?.phone;
-    if (!basePhone || !profile?.name?.trim()) {
-      router.replace("/(auth)/name");
+    if (!basePhone) {
+      router.replace("/(auth)/phone");
       return;
     }
 
@@ -122,12 +123,22 @@ export function LocationScreen() {
               line: trimmedLine,
             },
           ]
-        : profile.addresses;
+        : (profile?.addresses ?? [
+            {
+              id: "home",
+              label: "Home",
+              line: "Add your home address in Profile",
+            },
+          ]);
 
       const next = {
-        ...profile,
         phone: basePhone,
+        name: resolveProfileDisplayName(profile, basePhone),
         addresses,
+        favorites: profile?.favorites ?? [],
+        avatarUri: profile?.avatarUri,
+        role: profile?.role,
+        preferredContact: profile?.preferredContact,
       };
 
       setProfile(next);

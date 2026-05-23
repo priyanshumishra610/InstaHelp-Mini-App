@@ -5,12 +5,13 @@ import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
 import { View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-reanimated";
 
 import "../../global.css";
+
+void SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export { ErrorBoundary } from "expo-router";
 
@@ -18,7 +19,7 @@ export const unstable_settings = {
   initialRouteName: "index",
 };
 
-const SURFACE = "#FFFFFF";
+const SURFACE = "#0A0A1A";
 const HEADER_TINT = "#171717";
 
 const headerOptions = (title: string) => ({
@@ -31,10 +32,6 @@ const headerOptions = (title: string) => ({
 });
 
 export default function RootLayout() {
-  useEffect(() => {
-    void SplashScreen.hideAsync().catch(() => {});
-  }, []);
-
   return (
     <SafeAreaProvider>
       <QueryProvider>

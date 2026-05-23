@@ -1,11 +1,5 @@
-import { AuthCardScene } from "@/components/auth/premium/AuthCardScene";
-import { AuthPremiumBackdrop } from "@/components/auth/premium/AuthPremiumBackdrop";
-import { FloatingServiceObjects } from "@/components/auth/premium/FloatingServiceObjects";
-import {
-  APP_WEB_URL,
-  LEGAL_PRIVACY_URL,
-  LEGAL_TERMS_URL,
-} from "@/config/env";
+import { LoginHeroVisual } from "@/components/auth/LoginHeroVisual";
+import { LEGAL_PRIVACY_URL, LEGAL_TERMS_URL } from "@/config/env";
 import { AUTH_FONT } from "@/constants/authPremium";
 import { activateGuestSession } from "@/utils/auth/session";
 import { signInWithPhone } from "@/utils/auth/signInWithPhone";
@@ -14,7 +8,6 @@ import {
   Poppins_500Medium,
   Poppins_600SemiBold,
   Poppins_700Bold,
-  Poppins_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,13 +22,11 @@ import {
   Linking,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import type { TextInput } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function LoginScreen() {
@@ -52,15 +43,12 @@ export function LoginScreen() {
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
-    Poppins_800ExtraBold,
   });
 
-  const focusPhone = useCallback(() => {
-    setError(null);
-    setTimeout(() => phoneRef.current?.focus(), 120);
-  }, []);
+  const phoneReady = phone.replace(/\D/g, "").length === 10;
 
   const onContinue = useCallback(async () => {
+    if (!phoneReady || loading) return;
     setError(null);
     setLoading(true);
     try {
@@ -75,12 +63,11 @@ export function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  }, [phone, router]);
+  }, [loading, phone, phoneReady, router]);
 
-  const onSkipLogin = useCallback(() => {
+  const onSkip = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const dest = activateGuestSession();
-    router.replace(dest);
+    router.replace(activateGuestSession());
   }, [router]);
 
   const openUrl = (url: string) => {
@@ -89,208 +76,290 @@ export function LoginScreen() {
 
   if (!fontsLoaded) {
     return (
-      <AuthPremiumBackdrop>
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={[styles.loaderText, { fontFamily: AUTH_FONT.medium }]}>
-            InstaHelp
-          </Text>
-        </View>
-      </AuthPremiumBackdrop>
+      <View style={[styles.root, styles.loader]}>
+        <ActivityIndicator color="#fff" />
+      </View>
     );
   }
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <AuthPremiumBackdrop>
-        <FloatingServiceObjects />
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <LinearGradient
+        colors={["#0A0A1A", "#0f1028", "#12122a"]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.topBarSpacer} />
+          <Pressable
+            onPress={onSkip}
+            accessibilityRole="button"
+            accessibilityLabel="Skip login and browse as guest"
+            style={({ pressed }) => [styles.skipBtn, pressed && { opacity: 0.85 }]}
+          >
+            <Text style={[styles.skipText, { fontFamily: AUTH_FONT.semibold }]}>
+              Skip
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Top: brand + hero */}
+        <View style={styles.heroSection}>
+          <Text style={[styles.logo, { fontFamily: AUTH_FONT.bold }]}>InstaHelp</Text>
+          <Text style={[styles.logoSub, { fontFamily: AUTH_FONT.medium }]}>
+            We&apos;ll get it done
+          </Text>
+          <LoginHeroVisual />
+        </View>
+
+        {/* Bottom sheet */}
+        <View
+          style={[
+            styles.sheet,
+            { paddingBottom: Math.max(insets.bottom, 20) + 8 },
+          ]}
         >
-          <View style={[styles.topBar, { paddingTop: insets.top + 6 }]}>
-            <View style={styles.brandBlock}>
-              <Text style={[styles.brandWord, { fontFamily: AUTH_FONT.extrabold }]}>
-                InstaHelp
-              </Text>
-              <Text style={[styles.brandTag, { fontFamily: AUTH_FONT.medium }]}>
-                Local services super app
-              </Text>
-            </View>
-            <Pressable
-              onPress={onSkipLogin}
-              accessibilityRole="button"
-              accessibilityLabel="Skip login and browse as guest"
-              style={({ pressed }) => [pressed && { opacity: 0.88 }]}
-            >
-              <LinearGradient
-                colors={["rgba(255,255,255,0.22)", "rgba(255,255,255,0.08)"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.skipPill}
-              >
-                <Text style={[styles.skipLabel, { fontFamily: AUTH_FONT.semibold }]}>
-                  Skip
-                </Text>
-                <Ionicons
-                  name="arrow-forward"
-                  size={14}
-                  color="rgba(255,255,255,0.95)"
-                />
-              </LinearGradient>
-            </Pressable>
+          <Text style={[styles.headline, { fontFamily: AUTH_FONT.bold }]}>
+            Everything You Need.{"\n"}One Tap Away.
+          </Text>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={[styles.dividerLabel, { fontFamily: AUTH_FONT.medium }]}>
+              LOG IN OR SIGN UP
+            </Text>
+            <View style={styles.dividerLine} />
           </View>
 
-          <ScrollView
-            style={styles.flex}
-            contentContainerStyle={[
-              styles.content,
-              { paddingBottom: insets.bottom + 20 },
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <Animated.View entering={FadeInDown.duration(420).delay(40)}>
-              <AuthCardScene
-                onFocusLogin={focusPhone}
-                onFocusRegister={focusPhone}
-                login={{
-                  phoneInputRef: phoneRef,
-                  phone,
-                  onPhoneChange: (v) => setPhone(v.replace(/\D/g, "").slice(0, 10)),
-                  loading,
-                  error,
-                  onContinue: () => void onContinue(),
-                }}
-              />
-            </Animated.View>
-
-            <View style={styles.legalCard}>
-              <Text style={[styles.legal, { fontFamily: AUTH_FONT.regular }]}>
-                By continuing you agree to our{" "}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => openUrl(LEGAL_TERMS_URL)}
-                >
-                  Terms
-                </Text>{" "}
-                and{" "}
-                <Text
-                  style={styles.legalLink}
-                  onPress={() => openUrl(LEGAL_PRIVACY_URL)}
-                >
-                  Privacy Policy
-                </Text>
-                .
+          <View style={styles.phoneRow}>
+            <Pressable style={styles.countryBox} accessibilityRole="button">
+              <Text style={styles.flag}>🇮🇳</Text>
+              <Text style={[styles.countryCode, { fontFamily: AUTH_FONT.semibold }]}>
+                +91
               </Text>
-              <Pressable
-                onPress={() => openUrl(APP_WEB_URL)}
-                accessibilityRole="button"
-                style={styles.webLink}
+              <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+            </Pressable>
+
+            <TextInput
+              ref={phoneRef}
+              value={phone}
+              onChangeText={(t) => {
+                setError(null);
+                setPhone(t.replace(/\D/g, "").slice(0, 10));
+              }}
+              placeholder="10-digit mobile number"
+              placeholderTextColor="#6B7280"
+              keyboardType="phone-pad"
+              maxLength={10}
+              style={[styles.phoneInput, { fontFamily: AUTH_FONT.medium }]}
+              editable={!loading}
+            />
+          </View>
+
+          {error ? (
+            <Text style={[styles.error, { fontFamily: AUTH_FONT.medium }]}>
+              {error}
+            </Text>
+          ) : null}
+
+          <Pressable
+            onPress={() => void onContinue()}
+            disabled={!phoneReady || loading}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !phoneReady || loading }}
+            style={({ pressed }) => [
+              styles.continueBtn,
+              phoneReady && styles.continueBtnActive,
+              pressed && phoneReady && { opacity: 0.92 },
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator color={phoneReady ? "#0f172a" : "#9CA3AF"} />
+            ) : (
+              <Text
+                style={[
+                  styles.continueLabel,
+                  { fontFamily: AUTH_FONT.semibold },
+                  phoneReady && styles.continueLabelActive,
+                ]}
               >
-                <Ionicons name="globe-outline" size={14} color="rgba(255,255,255,0.75)" />
-                <Text style={[styles.webLabel, { fontFamily: AUTH_FONT.semibold }]}>
-                  instahelp.in
-                </Text>
-              </Pressable>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </AuthPremiumBackdrop>
+                Continue
+              </Text>
+            )}
+          </Pressable>
+
+          <Text style={[styles.legal, { fontFamily: AUTH_FONT.regular }]}>
+            By continuing, you agree to our{" "}
+            <Text style={styles.legalLink} onPress={() => openUrl(LEGAL_TERMS_URL)}>
+              Terms of Service
+            </Text>{" "}
+            <Text style={styles.legalLink} onPress={() => openUrl(LEGAL_PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+          </Text>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
+const SHEET_BG = "#14141C";
+const INPUT_BG = "#1E1E28";
+const BORDER = "rgba(255,255,255,0.08)";
+
 const styles = StyleSheet.create({
-  root: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: "#0A0A1A",
+  },
   flex: { flex: 1 },
   loader: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 14,
   },
-  loaderText: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.75)",
-    letterSpacing: 3,
-    textTransform: "uppercase",
-  },
-  content: { flexGrow: 1, paddingTop: 4 },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 22,
-    paddingBottom: 8,
-    zIndex: 10,
+    justifyContent: "flex-end",
+    paddingHorizontal: 20,
+    paddingBottom: 4,
+    zIndex: 20,
+    elevation: 20,
   },
-  brandBlock: {
+  topBarSpacer: {
     flex: 1,
-    marginRight: 12,
   },
-  brandWord: {
-    fontSize: 22,
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-  brandTag: {
-    marginTop: 2,
-    fontSize: 11,
-    color: "rgba(255,255,255,0.55)",
-    letterSpacing: 0.2,
-  },
-  skipPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
+  skipBtn: {
+    paddingHorizontal: 18,
     paddingVertical: 9,
     borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.28)",
   },
-  skipLabel: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.95)",
-    letterSpacing: 0.2,
+  skipText: {
+    fontSize: 14,
+    color: "#FFFFFF",
   },
-  legalCard: {
-    marginTop: 8,
-    marginHorizontal: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.08)",
+  heroSection: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
+  logo: {
+    fontSize: 32,
+    color: "#fff",
+    letterSpacing: -0.5,
+  },
+  logoSub: {
+    marginTop: 4,
+    fontSize: 13,
+    letterSpacing: 0.2,
+    color: "rgba(255,255,255,0.55)",
+  },
+  sheet: {
+    backgroundColor: SHEET_BG,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    borderTopWidth: 1,
+    borderColor: BORDER,
+  },
+  headline: {
+    fontSize: 22,
+    lineHeight: 30,
+    color: "#fff",
+    letterSpacing: -0.3,
+    marginBottom: 22,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 22,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  dividerLabel: {
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: "#6B7280",
+  },
+  phoneRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  countryBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
+    borderColor: BORDER,
+  },
+  flag: { fontSize: 18 },
+  countryCode: {
+    fontSize: 16,
+    color: "#fff",
+  },
+  phoneInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: INPUT_BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    fontSize: 16,
+    color: "#fff",
+    letterSpacing: 0.3,
+  },
+  error: {
+    fontSize: 12,
+    color: "#f87171",
+    marginBottom: 10,
+    marginTop: -6,
+  },
+  continueBtn: {
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2A2A34",
+    marginBottom: 20,
+  },
+  continueBtnActive: {
+    backgroundColor: "#E5E7EB",
+  },
+  continueLabel: {
+    fontSize: 16,
+    color: "#6B7280",
+  },
+  continueLabelActive: {
+    color: "#0f172a",
   },
   legal: {
     textAlign: "center",
     fontSize: 11,
     lineHeight: 17,
-    color: "rgba(255,255,255,0.7)",
+    color: "#6B7280",
   },
   legalLink: {
-    color: "#fff",
-    fontFamily: AUTH_FONT.semibold,
-  },
-  webLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginTop: 12,
-    alignSelf: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
-  webLabel: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.9)",
-    letterSpacing: 0.4,
+    color: "#9CA3AF",
+    textDecorationLine: "underline",
   },
 });

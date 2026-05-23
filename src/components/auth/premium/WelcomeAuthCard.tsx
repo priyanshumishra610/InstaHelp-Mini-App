@@ -1,4 +1,5 @@
 import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
+import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
 import { ServiceIllustration } from "@/components/auth/premium/ServiceIllustration";
 import {
   AUTH_FONT,
@@ -7,29 +8,35 @@ import {
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 type Props = {
   onLogin: () => void;
   onRegister: () => void;
+  compact?: boolean;
 };
 
-export function WelcomeAuthCard({ onLogin, onRegister }: Props) {
+export function WelcomeAuthCard({ onLogin, onRegister, compact }: Props) {
   return (
-    <GlassAuthCard style={styles.card}>
+    <GlassAuthCard style={compact ? [styles.card, styles.cardCompact] : styles.card}>
       <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
-        InstaHelp
+        Discover InstaHelp
       </Text>
-      <ServiceIllustration />
-      <Text style={[styles.headline, { fontFamily: AUTH_FONT.extrabold }]}>
+      {!compact ? <ServiceIllustration /> : null}
+      <Text
+        style={[
+          styles.headline,
+          { fontFamily: AUTH_FONT.extrabold },
+          compact && styles.headlineCompact,
+        ]}
+      >
         Everything You Need.{"\n"}One Tap Away.
       </Text>
       <Text style={[styles.sub, { fontFamily: AUTH_FONT.regular }]}>
-        Book trusted local services, repairs, deliveries and experiences
-        instantly.
+        Trusted services, instant bookings, repairs, travel, logistics and more.
       </Text>
       <View style={styles.actions}>
-        <Pressable onPress={onLogin} accessibilityRole="button">
+        <PremiumPressable onPress={onLogin} glow accessibilityRole="button">
           <LinearGradient
             colors={["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
             locations={[0, 0.5, 1]}
@@ -42,8 +49,8 @@ export function WelcomeAuthCard({ onLogin, onRegister }: Props) {
             </Text>
             <Ionicons name="arrow-forward" size={16} color="#fff" />
           </LinearGradient>
-        </Pressable>
-        <Pressable
+        </PremiumPressable>
+        <PremiumPressable
           onPress={onRegister}
           accessibilityRole="button"
           style={styles.secondaryBtn}
@@ -51,14 +58,15 @@ export function WelcomeAuthCard({ onLogin, onRegister }: Props) {
           <Text style={[styles.secondaryLabel, { fontFamily: AUTH_FONT.semibold }]}>
             Register
           </Text>
-        </Pressable>
+        </PremiumPressable>
       </View>
     </GlassAuthCard>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { width: "100%", minHeight: 332 },
+  card: { width: "100%", minHeight: 360 },
+  cardCompact: { minHeight: 300 },
   eyebrow: {
     fontSize: 10,
     letterSpacing: 2.4,
@@ -68,21 +76,25 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   headline: {
-    fontSize: 18,
-    lineHeight: 20,
+    fontSize: 20,
+    lineHeight: 26,
     color: "#0f172a",
-    letterSpacing: -0.2,
+    letterSpacing: -0.4,
+  },
+  headlineCompact: {
+    fontSize: 17,
+    lineHeight: 22,
   },
   sub: {
-    marginTop: 8,
+    marginTop: 10,
     fontSize: 13,
     lineHeight: 19,
     color: "#64748b",
   },
-  actions: { marginTop: 14, gap: 8 },
+  actions: { marginTop: 18, gap: 10 },
   primaryBtn: {
-    borderRadius: 14,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -93,14 +105,14 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
-  primaryLabel: { color: "#fff", fontSize: 13 },
+  primaryLabel: { color: "#fff", fontSize: 15 },
   secondaryBtn: {
-    borderRadius: 14,
-    paddingVertical: 10,
+    borderRadius: 16,
+    paddingVertical: 13,
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "rgba(37,99,235,0.25)",
-    backgroundColor: "rgba(255,255,255,0.8)",
+    borderColor: "rgba(37,99,235,0.28)",
+    backgroundColor: "rgba(255,255,255,0.85)",
   },
-  secondaryLabel: { color: AUTH_PRIMARY, fontSize: 13 },
+  secondaryLabel: { color: AUTH_PRIMARY, fontSize: 14 },
 });

@@ -37,7 +37,13 @@ export default function EarnGameLayout() {
         contentStyle: { backgroundColor: "#eef2fb" },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Arcade" }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: "InstaHelp Play",
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="grid" options={{ title: "Insta Grid" }} />
       <Stack.Screen name="hangman" options={{ title: "Hangman" }} />
       <Stack.Screen name="whack" options={{ title: "Whack-a-mole" }} />
