@@ -34,6 +34,10 @@ yarn-error.*
 .env
 .env*.local
 
+# Firebase Android / downloads — committed template only (`google-services.example.json`)
+google-services*.json
+!google-services.example.json
+
 # typescript
 *.tsbuildinfo
 

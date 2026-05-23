@@ -1,24 +1,32 @@
 import { AuthLoadingSkeleton } from "@/components/auth/AuthLoadingSkeleton";
-import { useAppAuth } from "@/hooks/auth/useAppAuth";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
+import { useAuth } from "@/providers/AuthProvider";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 
 export default function AuthLayout() {
   const router = useRouter();
   const segments = useSegments();
-  const { isLoaded } = useAppAuth();
+  const { isReady } = useAuth();
   const destination = useAuthDestination();
 
   useEffect(() => {
-    if (!isLoaded || !destination) return;
-    if (!segments.length) return;
+    if (!isReady || !destination) return;
+    const leaf = segments[segments.length - 1];
+    if (!leaf) return;
+
     if (destination === "/(tabs)") {
       router.replace("/(tabs)");
+      return;
     }
-  }, [destination, isLoaded, router, segments.length]);
 
-  if (!isLoaded) {
+    const targetLeaf = destination.replace("/(auth)/", "");
+    if (leaf !== targetLeaf && destination.startsWith("/(auth)/")) {
+      router.replace(destination);
+    }
+  }, [destination, isReady, router, segments]);
+
+  if (!isReady) {
     return <AuthLoadingSkeleton />;
   }
 
@@ -30,6 +38,8 @@ export default function AuthLayout() {
       }}
     >
       <Stack.Screen name="phone" />
+      <Stack.Screen name="otp" />
+      <Stack.Screen name="profile" />
     </Stack>
   );
 }

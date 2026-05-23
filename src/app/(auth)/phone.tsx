@@ -1,5 +1,5 @@
-import { LoginScreen } from "@/screens/auth/LoginScreen";
+import { PhoneAuthScreen } from "@/screens/auth/PhoneAuthScreen";
 
 export default function PhoneRoute() {
-  return <LoginScreen />;
+  return <PhoneAuthScreen />;
 }

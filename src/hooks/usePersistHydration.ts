@@ -1,31 +1,22 @@
-import { useAuthSessionStore } from "@/store/authSessionStore";
+import { useAuth } from "@/providers/AuthProvider";
 import { useOnboardingStore } from "@/store/onboardingStore";
-import { useProfileStore } from "@/store/profileStore";
 import { useEffect, useState } from "react";
 
-function useZustandHydrated(store: {
-  persist: {
-    hasHydrated: () => boolean;
-    onFinishHydration: (fn: () => void) => () => void;
-  };
-}) {
-  const [ready, setReady] = useState(() => store.persist.hasHydrated());
+/** App routing waits for Firebase auth restore + persisted guest flag hydration. */
+export function useAuthHydration(): boolean {
+  const { isReady } = useAuth();
+  const [onboardingHydrated, setOnboardingHydrated] = useState(() =>
+    useOnboardingStore.persist.hasHydrated(),
+  );
 
   useEffect(() => {
-    setReady(store.persist.hasHydrated());
-    const unsub = store.persist.onFinishHydration(() => setReady(true));
-    return () => {
-      if (typeof unsub === "function") unsub();
-    };
-  }, [store]);
+    if (useOnboardingStore.persist.hasHydrated()) {
+      setOnboardingHydrated(true);
+    }
+    return useOnboardingStore.persist.onFinishHydration(() => {
+      setOnboardingHydrated(true);
+    });
+  }, []);
 
-  return ready;
-}
-
-/** Wait for persisted auth, onboarding, and profile before routing. */
-export function useAuthHydration() {
-  const sessionReady = useZustandHydrated(useAuthSessionStore);
-  const onboardingReady = useZustandHydrated(useOnboardingStore);
-  const profileReady = useZustandHydrated(useProfileStore);
-  return sessionReady && onboardingReady && profileReady;
+  return isReady && onboardingHydrated;
 }

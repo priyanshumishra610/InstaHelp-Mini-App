@@ -1,21 +1,14 @@
-import { useAppAuth } from "@/hooks/auth/useAppAuth";
-import { useProfileStore } from "@/store/profileStore";
-import {
-  resolveAuthDestination,
-  type AuthDestination,
-} from "@/utils/auth/session";
+import { useAuth } from "@/providers/AuthProvider";
+import { useOnboardingStore } from "@/store/onboardingStore";
+import { authStatusToDestination, type AuthDestination } from "@/utils/auth/session";
 import { useMemo } from "react";
 
 export function useAuthDestination(): AuthDestination | null {
-  const { isLoaded, isSignedIn, isGuest } = useAppAuth();
-  const profile = useProfileStore((s) => s.profile);
+  const { status, isReady } = useAuth();
+  const isGuest = useOnboardingStore((s) => s.isGuest);
 
   return useMemo(() => {
-    if (!isLoaded) return null;
-    return resolveAuthDestination({
-      isSignedIn,
-      isGuest,
-      profile,
-    });
-  }, [isGuest, isLoaded, isSignedIn, profile]);
+    if (!isReady) return null;
+    return authStatusToDestination(status, { isGuest });
+  }, [isGuest, isReady, status]);
 }

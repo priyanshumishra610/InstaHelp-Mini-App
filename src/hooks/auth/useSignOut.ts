@@ -1,27 +1,13 @@
-import { useAuthSessionStore } from "@/store/authSessionStore";
-import { useOnboardingStore } from "@/store/onboardingStore";
-import { useProfileStore } from "@/store/profileStore";
+import { useAuth } from "@/providers/AuthProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 export function useSignOut() {
-  const clearGuest = useOnboardingStore((s) => s.clearGuest);
-  const clearSession = useAuthSessionStore((s) => s.clearSession);
-  const setProfile = useProfileStore((s) => s.setProfile);
+  const { signOut } = useAuth();
   const queryClient = useQueryClient();
 
   return useCallback(async () => {
-    clearGuest();
-    clearSession();
-    setProfile(null);
+    await signOut();
     queryClient.clear();
-
-    try {
-      useAuthSessionStore.persist.clearStorage();
-      useProfileStore.persist.clearStorage();
-      useOnboardingStore.persist.clearStorage();
-    } catch {
-      // Best-effort — in-memory session is already cleared.
-    }
-  }, [clearGuest, clearSession, queryClient, setProfile]);
+  }, [queryClient, signOut]);
 }

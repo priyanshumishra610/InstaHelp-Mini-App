@@ -72,4 +72,5 @@ export const COLLECTIONS = {
   categories: "categories",
   services: "services",
   featuredVendors: "featured_vendors",
+  users: "users",
 } as const;

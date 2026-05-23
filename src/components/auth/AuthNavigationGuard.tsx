@@ -1,22 +1,22 @@
-import { useAppAuth } from "@/hooks/auth/useAppAuth";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
+import { useAuth } from "@/providers/AuthProvider";
 import { useRouter, useSegments } from "expo-router";
 import { useEffect, useRef } from "react";
 
 const PROTECTED_ROOTS = new Set(["(tabs)", "booking", "request"]);
 
 /**
- * Redirects unauthenticated or partially onboarded users away from protected routes.
+ * Redirects based on Firebase auth state (phone → OTP → profile → home).
  */
 export function AuthNavigationGuard() {
   const router = useRouter();
   const segments = useSegments();
-  const { isLoaded } = useAppAuth();
+  const { isReady } = useAuth();
   const destination = useAuthDestination();
   const lastReplace = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isLoaded || !destination) return;
+    if (!isReady || !destination) return;
 
     const root = segments[0];
     if (!root) return;
@@ -40,13 +40,13 @@ export function AuthNavigationGuard() {
       return;
     }
 
-    if (destination === "/(auth)/phone" && root !== "(auth)") {
-      const target = "/(auth)/phone";
+    if (destination.startsWith("/(auth)/") && root !== "(auth)") {
+      const target = destination;
       if (lastReplace.current === target) return;
       lastReplace.current = target;
       router.replace(target);
     }
-  }, [destination, isLoaded, router, segments]);
+  }, [destination, isReady, router, segments]);
 
   return null;
 }

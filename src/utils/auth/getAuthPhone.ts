@@ -1,15 +1,12 @@
-import { useAuthSessionStore } from "@/store/authSessionStore";
-import { useOnboardingStore } from "@/store/onboardingStore";
-import { useProfileStore } from "@/store/profileStore";
+import { getFirebaseAuth } from "@/firebase/auth";
+import { isFirebaseConfigured } from "@/firebase/config";
 
-/** Sync phone for services (session, profile store; guest uses placeholder). */
+/** Active signed-in phone from Firebase Auth session. */
 export function getAuthPhone(): string | null {
-  const sessionPhone = useAuthSessionStore.getState().phone;
-  if (sessionPhone) return sessionPhone;
-
-  const profilePhone = useProfileStore.getState().profile?.phone;
-  if (profilePhone && profilePhone !== "guest") return profilePhone;
-
-  if (useOnboardingStore.getState().isGuest) return "guest";
-  return null;
+  if (!isFirebaseConfigured()) return null;
+  try {
+    return getFirebaseAuth().currentUser?.phoneNumber ?? null;
+  } catch {
+    return null;
+  }
 }
