@@ -17,7 +17,6 @@ import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -30,15 +29,13 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
-function starMixFromAverage(rating: number): number[] {
-  const r = Math.min(5, Math.max(0, rating));
-  const weights = [1, 2, 3, 4, 5].map((star) =>
-    Math.exp(-((star - r) * (star - r)) / 2),
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <Text className="mt-6 mb-2 text-[15px] font-semibold text-neutral-900">
+      {children}
+    </Text>
   );
-  const sum = weights.reduce((a, b) => a + b, 0);
-  return weights.map((w) => (w / sum) * 100);
 }
 
 export function VendorDetailScreen() {
@@ -66,18 +63,15 @@ export function VendorDetailScreen() {
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "#eef2fb" },
       headerTintColor: "#171717",
-      headerTitleStyle: { fontWeight: "800", fontSize: 16 },
+      headerTitleStyle: { fontWeight: "700", fontSize: 16 },
       title: vendor ? title : "Not found",
       headerRight:
         vendor != null
           ? () => (
-              <View className="mr-2 flex-row items-center gap-2 rounded-full border border-accent-tint bg-white px-3 py-2 shadow-soft">
-                <Ionicons name="diamond" size={15} color="#004aad" />
-                <Text className="text-[14px] font-extrabold text-accent-deep">
+              <View className="mr-2 flex-row items-center gap-1 rounded-lg bg-white px-2.5 py-1.5">
+                <Ionicons name="diamond-outline" size={14} color="#7C3AED" />
+                <Text className="text-[13px] font-semibold text-neutral-800">
                   {credits}
-                </Text>
-                <Text className="text-[11px] font-semibold text-neutral-500">
-                  cr
                 </Text>
               </View>
             )
@@ -117,8 +111,8 @@ export function VendorDetailScreen() {
     return (
       <Screen className="bg-[#eef2fb]">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#004aad" />
-          <Text className="mt-3 text-[13px] font-semibold text-neutral-500">
+          <ActivityIndicator size="large" color="#7C3AED" />
+          <Text className="mt-3 text-[13px] text-neutral-500">
             Loading vendor…
           </Text>
         </View>
@@ -130,7 +124,7 @@ export function VendorDetailScreen() {
     return (
       <Screen className="bg-[#eef2fb]">
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-center text-[16px] font-bold text-neutral-700">
+          <Text className="text-center text-[15px] text-neutral-700">
             {vendorError
               ? "Could not load this vendor. Check your connection and try again."
               : "This vendor is no longer available."}
@@ -139,18 +133,18 @@ export function VendorDetailScreen() {
             {vendorError ? (
               <Pressable
                 onPress={retry}
-                className="rounded-full bg-accent px-6 py-3"
+                className="rounded-xl bg-accent px-5 py-3"
               >
-                <Text className="text-[14px] font-extrabold text-white">
+                <Text className="text-[14px] font-semibold text-white">
                   Retry
                 </Text>
               </Pressable>
             ) : null}
             <Pressable
               onPress={() => router.back()}
-              className="rounded-full border border-neutral-200 bg-white px-6 py-3"
+              className="rounded-xl border border-neutral-200 bg-white px-5 py-3"
             >
-              <Text className="text-[14px] font-extrabold text-neutral-800">
+              <Text className="text-[14px] font-semibold text-neutral-800">
                 Go back
               </Text>
             </Pressable>
@@ -166,12 +160,18 @@ export function VendorDetailScreen() {
       : null;
 
   const gallery = vendorGallerySources(vendor);
-  const mix = starMixFromAverage(vendor.rating || 3.5);
 
   const serviceLines = [
     vendor.subCategory.trim(),
     vendor.servicesText.trim(),
   ].filter(Boolean);
+
+  const locationLine = [
+    vendor.areaLabel,
+    distanceKm != null ? `${distanceKm.toFixed(1)} km away` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Screen className="bg-[#eef2fb]">
@@ -180,166 +180,87 @@ export function VendorDetailScreen() {
 
         <ScrollView
           className="flex-1 px-4"
-          contentContainerStyle={{ paddingBottom: 48 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View entering={FadeInDown.duration(420)}>
-            <Text className="mt-2 text-[24px] font-extrabold leading-8 text-neutral-900">
-              {title}
-            </Text>
-            <View className="mt-3 flex-row flex-wrap items-center gap-2">
-              <View className="rounded-full bg-white px-3 py-1.5 shadow-soft">
-                <Text className="text-[12px] font-extrabold text-accent-deep">
-                  {vendor.category}
-                </Text>
-              </View>
-              {vendor.isVerified ? (
-                <View className="flex-row items-center gap-1 rounded-full bg-accent-soft px-3 py-1.5">
-                  <Ionicons name="shield-checkmark" size={14} color="#004aad" />
-                  <Text className="text-[12px] font-extrabold text-accent">
-                    Verified partner
-                  </Text>
-                </View>
-              ) : null}
-              <Text className="text-[13px] font-semibold text-neutral-600">
-                {vendor.areaLabel}
-                {distanceKm != null ? ` · ${distanceKm.toFixed(1)} km away` : ""}
+          <Text className="mt-1 text-[22px] font-bold leading-7 text-neutral-900">
+            {title}
+          </Text>
+
+          <Text className="mt-1 text-[14px] text-neutral-600">
+            {vendor.category}
+            {locationLine ? ` · ${locationLine}` : ""}
+          </Text>
+
+          <View className="mt-3 flex-row flex-wrap items-center gap-3">
+            <View className="flex-row items-center gap-1">
+              <Ionicons name="star" size={16} color="#eab308" />
+              <Text className="text-[15px] font-semibold text-neutral-900">
+                {vendor.rating > 0 ? vendor.rating.toFixed(1) : "—"}
+              </Text>
+              <Text className="text-[13px] text-neutral-500">
+                ({vendor.reviewCount.toLocaleString("en-IN")} reviews)
               </Text>
             </View>
-
-            <View className="mt-4 flex-row items-center gap-3">
+            <Text className="text-[14px] font-medium text-accent">
+              {formatStartingPrice(vendor)}
+            </Text>
+            {vendor.isVerified ? (
               <View className="flex-row items-center gap-1">
-                <Ionicons name="star" size={18} color="#ffd500" />
-                <Text className="text-[18px] font-extrabold text-neutral-900">
-                  {vendor.rating > 0 ? vendor.rating.toFixed(1) : "—"}
-                </Text>
+                <Ionicons name="shield-checkmark" size={14} color="#7C3AED" />
+                <Text className="text-[13px] text-accent">Verified</Text>
               </View>
-              <Text className="text-[14px] font-semibold text-neutral-600">
-                {vendor.reviewCount.toLocaleString("en-IN")} reviews
-              </Text>
-              <View className="h-4 w-px bg-neutral-200" />
-              <Text className="text-[14px] font-extrabold text-accent-deep">
-                {formatStartingPrice(vendor)}
-              </Text>
-            </View>
-          </Animated.View>
+            ) : null}
+          </View>
 
-          <Text className="mt-8 text-[13px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
-            Gallery
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="mt-3"
-            contentContainerStyle={{ gap: 12 }}
-          >
-            {(gallery.length ? gallery : ["placeholder"]).map((uri, idx) =>
-              uri === "placeholder" ? (
-                <View
-                  key="ph"
-                  className="h-36 w-52 overflow-hidden rounded-3xl border border-dashed border-neutral-300 bg-white"
-                >
-                  <LinearGradient
-                    colors={["#f0f6ff", "#ffffff"]}
-                    className="flex-1 items-center justify-center"
+          {gallery.length > 0 ? (
+            <>
+              <SectionTitle>Photos</SectionTitle>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 10 }}
+              >
+                {gallery.map((uri, idx) => (
+                  <Image
+                    key={`${uri}-${idx}`}
+                    source={{ uri }}
+                    className="h-28 w-40 rounded-xl bg-neutral-200"
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
+            </>
+          ) : null}
+
+          <SectionTitle>About</SectionTitle>
+          <View className="rounded-xl border border-neutral-200 bg-white p-4">
+            <Text className="text-[14px] leading-[22px] text-neutral-700">
+              {serviceDescriptionPreview(vendor, 460)}
+            </Text>
+            {serviceLines.length > 0 ? (
+              <View className="mt-3 gap-1.5 border-t border-neutral-100 pt-3">
+                <Text className="text-[13px] font-medium text-neutral-500">
+                  Services
+                </Text>
+                {serviceLines.map((line, i) => (
+                  <Text
+                    key={`${i}-${line.slice(0, 24)}`}
+                    className="text-[14px] leading-5 text-neutral-800"
                   >
-                    <Ionicons name="images-outline" size={28} color="#9ca3af" />
-                    <Text className="mt-2 text-center text-[12px] font-semibold text-neutral-500">
-                      Photos coming soon
-                    </Text>
-                  </LinearGradient>
-                </View>
-              ) : (
-                <Image
-                  key={`${uri}-${idx}`}
-                  source={{ uri }}
-                  className="h-36 w-52 rounded-3xl bg-neutral-200"
-                  resizeMode="cover"
-                />
-              ),
-            )}
-          </ScrollView>
-
-          <Text className="mt-8 text-[13px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
-            About
-          </Text>
-          <View className="mt-3 rounded-3xl border border-neutral-200 bg-white p-4 shadow-soft">
-            <Text className="text-[14px] leading-[21px] text-neutral-700">
-              {serviceDescriptionPreview(vendor, 460)}{" "}
-              Operating across {vendor.areaLabel} with coverage throughout Bengaluru.
-            </Text>
-          </View>
-
-          <Text className="mt-8 text-[13px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
-            Services offered
-          </Text>
-          <View className="mt-3 gap-2 rounded-3xl border border-neutral-200 bg-white p-4 shadow-soft">
-            {serviceLines.length ? (
-              serviceLines.map((line, i) => (
-                <View key={`${i}-${line.slice(0, 24)}`} className="flex-row gap-2">
-                  <Text className="text-accent">•</Text>
-                  <Text className="flex-1 text-[14px] leading-5 text-neutral-800">
-                    {line}
+                    · {line}
                   </Text>
-                </View>
-              ))
-            ) : (
-              <Text className="text-[14px] text-neutral-600">
-                Comprehensive {vendor.category.toLowerCase()} assistance tailored to your
-                request.
-              </Text>
-            )}
+                ))}
+              </View>
+            ) : null}
           </View>
 
-          <Text className="mt-8 text-[13px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
-            Reviews summary
-          </Text>
-          <View className="mt-3 rounded-3xl border border-neutral-200 bg-white p-4 shadow-soft">
-            <Text className="text-[14px] leading-[21px] text-neutral-700">
-              Customers highlight responsiveness and clarity on pricing. Detailed review
-              excerpts will sync once we connect the live reputation feed.
-            </Text>
-          </View>
-
-          <Text className="mt-8 text-[13px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
-            Rating shape
-          </Text>
-          <Text className="mt-1 text-[12px] font-medium text-neutral-500">
-            Illustrative spread inferred from the public average — not individual review
-            tallies.
-          </Text>
-          <View className="mt-3 rounded-3xl border border-neutral-200 bg-white p-4 shadow-soft">
-            {[5, 4, 3, 2, 1].map((star) => {
-              const pct = mix[star - 1] ?? 0;
-              return (
-                <View key={star} className="mb-2 flex-row items-center gap-2">
-                  <Text className="w-8 text-[12px] font-bold text-neutral-600">
-                    {star}★
-                  </Text>
-                  <View className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-100">
-                    <View
-                      className="h-2 rounded-full bg-brand-gold"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </View>
-                  <Text className="w-12 text-right text-[11px] font-semibold text-neutral-500">
-                    {pct.toFixed(0)}%
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-
-          <Text className="mt-8 text-[13px] font-extrabold uppercase tracking-[0.18em] text-neutral-500">
-            Contact
-          </Text>
-          <View className="mt-3">
-            <VendorContactRevealPanel
-              vendor={vendor}
-              unlocked={unlocked}
-              onReveal={handleReveal}
-            />
-          </View>
+          <SectionTitle>Contact</SectionTitle>
+          <VendorContactRevealPanel
+            vendor={vendor}
+            unlocked={unlocked}
+            onReveal={handleReveal}
+          />
         </ScrollView>
       </View>
     </Screen>

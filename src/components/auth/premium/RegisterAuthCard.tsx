@@ -2,6 +2,7 @@ import {
   AUTH_FONT,
   AUTH_PRIMARY,
   AUTH_PRIMARY_DEEP,
+  AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
 import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
 import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
@@ -105,7 +106,7 @@ export function RegisterAuthCard({
         style={{ marginTop: 16 }}
       >
         <LinearGradient
-          colors={["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
+          colors={[AUTH_PRIMARY_LIGHT, AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
           locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}

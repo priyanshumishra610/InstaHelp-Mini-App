@@ -2,6 +2,7 @@ import {
   AUTH_ACCENT_TEAL,
   AUTH_PRIMARY,
   AUTH_PRIMARY_DEEP,
+  AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
 import { AnimatedParticles } from "@/components/auth/premium/AnimatedParticles";
 import { AuthLightStreaks } from "@/components/auth/premium/AuthLightStreaks";
@@ -95,7 +96,7 @@ export function AuthPremiumBackdrop({ children }: PropsWithChildren) {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={[AUTH_PRIMARY_DEEP, AUTH_PRIMARY, "#3B82F6", AUTH_PRIMARY_DEEP]}
+        colors={[AUTH_PRIMARY_DEEP, AUTH_PRIMARY, AUTH_PRIMARY_LIGHT, AUTH_PRIMARY_DEEP]}
         locations={[0, 0.35, 0.72, 1]}
         start={{ x: 0.05, y: 0 }}
         end={{ x: 0.95, y: 1 }}

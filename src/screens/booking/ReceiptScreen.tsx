@@ -234,7 +234,7 @@ export function ReceiptScreen() {
             <Ionicons
               name={copied ? "checkmark" : "copy-outline"}
               size={18}
-              color={copied ? "#004aad" : "#525252"}
+              color={copied ? "#7C3AED" : "#525252"}
             />
             <Text
               className={`text-sm font-bold ${

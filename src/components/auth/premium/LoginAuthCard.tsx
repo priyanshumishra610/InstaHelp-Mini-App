@@ -8,6 +8,7 @@ import {
   AUTH_FONT,
   AUTH_PRIMARY,
   AUTH_PRIMARY_DEEP,
+  AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -103,7 +104,7 @@ export function LoginAuthCard({
         <LinearGradient
           colors={
             phoneReady
-              ? ["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]
+              ? [AUTH_PRIMARY_LIGHT, AUTH_PRIMARY, AUTH_PRIMARY_DEEP]
               : ["#94a3b8", "#64748b", "#475569"]
           }
           locations={[0, 0.45, 1]}

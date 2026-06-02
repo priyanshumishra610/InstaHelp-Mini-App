@@ -24,6 +24,7 @@ import {
 } from "@/utils/bookingActivity";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { pickOptionalImage } from "@/utils/pickOptionalImage";
+import { apiRegisterVendor } from "@/api/appsScriptClient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,6 +45,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -83,7 +85,10 @@ export function ProfileScreen() {
   const router = useRouter();
   const signOut = useSignOut();
   const phone = useAuthPhone();
-  const { data: profile } = useProfileQuery();
+  // Keep a query running to refresh store-backed profile in the background.
+  useProfileQuery();
+  // UI should render from the persisted local profile so edits reflect instantly.
+  const profile = useProfileStore((s) => s.profile);
   const bookings = useMergedBookings();
   const { refreshSession } = useAuth();
   const toggleFavorite = useProfileStore((s) => s.toggleFavorite);
@@ -91,6 +96,17 @@ export function ProfileScreen() {
   const removeAddress = useProfileStore((s) => s.removeAddress);
   const setProfileLocal = useProfileStore((s) => s.setProfile);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [vendorOpen, setVendorOpen] = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    if (profile.avatarSeed?.trim()) return;
+    void persistIfWeCan({
+      ...profile,
+      avatarSeed: Math.random().toString(36).slice(2, 10),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.phone]);
 
   const initial = (
     profile?.name?.trim()?.[0] ||
@@ -140,6 +156,26 @@ export function ProfileScreen() {
     Linking.openURL(url).catch(() => {});
   };
 
+  const submitVendorRegistration = async (payload: {
+    businessName: string;
+    businessType: string;
+    city: string;
+    email: string;
+    expectations: string[];
+  }) => {
+    if (!phone) throw new Error("Not signed in");
+    const res = await apiRegisterVendor({
+      phone,
+      name: profile?.name?.trim() || undefined,
+      email: payload.email.trim(),
+      businessName: payload.businessName.trim(),
+      businessType: payload.businessType,
+      city: payload.city.trim(),
+      expectations: payload.expectations,
+    });
+    if (!res.ok) throw new Error(res.error);
+  };
+
   const {
     isLoading: detecting,
     refresh: detectLocation,
@@ -152,6 +188,16 @@ export function ProfileScreen() {
     setProfileLocal(next);
     if (phone) await persistProfile(next).catch(() => {});
   };
+
+  const fallbackAvatarUri = useMemo(() => {
+    const seed =
+      profile?.avatarSeed?.trim() ||
+      phone?.replace(/\D/g, "")?.slice(-8) ||
+      "instahelp";
+    return `https://api.dicebear.com/7.x/fun-emoji/png?seed=${encodeURIComponent(
+      seed,
+    )}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+  }, [phone, profile?.avatarSeed]);
 
   const addCurrentLocation = async () => {
     if (savingLocation || detecting) return;
@@ -338,19 +384,11 @@ export function ProfileScreen() {
           className="mt-6 overflow-hidden rounded-[28px] border border-white/10 shadow-lg"
         >
           <LinearGradient
-            colors={["#003d8f", "#004aad", "#1a5fc4"]}
+            colors={["#6D28D9", "#7C3AED", "#8B5CF6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={{ padding: 24 }}
           >
-          <View
-            pointerEvents="none"
-            className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10"
-          />
-          <View
-            pointerEvents="none"
-            className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-brand-gold/20"
-          />
           <View className="absolute left-6 top-0 h-1 w-12 rounded-full bg-brand-gold" />
 
           <View className="flex-row items-start justify-between gap-3">
@@ -371,11 +409,11 @@ export function ProfileScreen() {
                       resizeMode="cover"
                     />
                   ) : (
-                    <View className="h-full w-full items-center justify-center">
-                      <Text className="text-[28px] font-extrabold text-white">
-                        {initial}
-                      </Text>
-                    </View>
+                    <Image
+                      source={{ uri: fallbackAvatarUri }}
+                      className="h-full w-full"
+                      resizeMode="cover"
+                    />
                   )}
                   {savingAvatar ? (
                     <View className="absolute inset-0 items-center justify-center bg-black/40">
@@ -384,7 +422,7 @@ export function ProfileScreen() {
                   ) : null}
                 </View>
                 <View className="absolute -bottom-0.5 -right-0.5 rounded-full border border-white/50 bg-white p-1.5 shadow-sm">
-                  <Ionicons name="camera" size={14} color="#004aad" />
+                  <Ionicons name="camera" size={14} color="#7C3AED" />
                 </View>
               </Pressable>
               <View className="flex-1">
@@ -561,11 +599,23 @@ export function ProfileScreen() {
           <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
             Account & preferences
           </Text>
-          <View className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white px-4 py-4">
-            <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
-              How you use InstaHelp
-            </Text>
-            <View className="mt-3 flex-row rounded-2xl bg-neutral-100 p-1">
+          <View className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+            <View className="px-4 pb-4 pt-4">
+              <View className="flex-row items-center gap-2">
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-accent-soft">
+                  <Ionicons name="person-circle-outline" size={18} color="#7C3AED" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-extrabold text-neutral-900">
+                    How you use InstaHelp
+                  </Text>
+                  <Text className="mt-0.5 text-[11px] leading-4 text-neutral-500">
+                    Personal vs business changes the kind of suggestions you see.
+                  </Text>
+                </View>
+              </View>
+
+              <View className="mt-4 flex-row overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-1">
               {(
                 [
                   { id: "consumer" as const, label: "Personal" },
@@ -577,13 +627,23 @@ export function ProfileScreen() {
                   <Pressable
                     key={opt.id}
                     onPress={() => void updateRole(opt.id)}
-                    className={`flex-1 rounded-xl py-2.5 ${
-                      on ? "bg-white shadow-sm" : ""
-                    }`}
+                    className={`flex-1 rounded-xl py-2.5 ${on ? "bg-white" : ""}`}
+                    style={
+                      on
+                        ? Platform.OS === "ios"
+                          ? {
+                              shadowColor: "#0f172a",
+                              shadowOffset: { width: 0, height: 6 },
+                              shadowOpacity: 0.08,
+                              shadowRadius: 12,
+                            }
+                          : { elevation: 2 }
+                        : undefined
+                    }
                   >
                     <Text
                       className={`text-center text-[13px] font-bold ${
-                        on ? "text-accent" : "text-neutral-500"
+                        on ? "text-neutral-900" : "text-neutral-500"
                       }`}
                     >
                       {opt.label}
@@ -592,53 +652,54 @@ export function ProfileScreen() {
                 );
               })}
             </View>
-            <Text className="mt-2 text-[11px] leading-4 text-neutral-500">
-              Business gets occasional local opportunity-style alerts tuned for
-              vendors.
-            </Text>
+              <Text className="mt-2 text-[11px] leading-4 text-neutral-500">
+                Business gets occasional local opportunity-style alerts tuned for vendors.
+              </Text>
+            </View>
 
-            <Text className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
-              Reach me on
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {(
-                [
-                  { id: "whatsapp" as const, label: "WhatsApp", icon: "logo-whatsapp" },
-                  { id: "call" as const, label: "Phone call", icon: "call-outline" },
-                  { id: "either" as const, label: "Either", icon: "shuffle-outline" },
-                ] as const
-              ).map((opt) => {
-                const on = preferredContact === opt.id;
-                return (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => void updatePreferredContact(opt.id)}
-                    className={`flex-row items-center gap-1.5 rounded-full px-3.5 py-2 ${
-                      on
-                        ? "bg-accent shadow-sm"
-                        : "border border-neutral-200 bg-neutral-50"
-                    }`}
-                  >
-                    <Ionicons
-                      name={opt.icon}
-                      size={14}
-                      color={on ? "#ffffff" : "#525252"}
-                    />
-                    <Text
-                      className={`text-xs font-bold ${
-                        on ? "text-accent-foreground" : "text-neutral-700"
+            <View className="h-px bg-neutral-100" />
+
+            <View className="px-4 pb-4 pt-4">
+              <View className="flex-row items-center gap-2">
+                <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
+                  <Ionicons name="chatbubble-ellipses-outline" size={16} color="#0f172a" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-extrabold text-neutral-900">Reach me on</Text>
+                  <Text className="mt-0.5 text-[11px] leading-4 text-neutral-500">
+                    Saved on this device so your concierge follows up the way you prefer.
+                  </Text>
+                </View>
+              </View>
+
+              <View className="mt-4 flex-row flex-wrap gap-2">
+                {(
+                  [
+                    { id: "whatsapp" as const, label: "WhatsApp", icon: "logo-whatsapp" },
+                    { id: "call" as const, label: "Phone call", icon: "call-outline" },
+                    { id: "either" as const, label: "Either", icon: "shuffle-outline" },
+                  ] as const
+                ).map((opt) => {
+                  const on = preferredContact === opt.id;
+                  return (
+                    <Pressable
+                      key={opt.id}
+                      onPress={() => void updatePreferredContact(opt.id)}
+                      className={`flex-row items-center gap-2 rounded-full px-4 py-2 active:opacity-90 ${
+                        on ? "border border-accent/30 bg-accent-soft" : "border border-neutral-200 bg-white"
                       }`}
                     >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+                      <Ionicons
+                        name={opt.icon}
+                        size={14}
+                        color={opt.id === "whatsapp" ? "#128C7E" : "#334155"}
+                      />
+                      <Text className="text-xs font-bold text-neutral-800">{opt.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
-            <Text className="mt-2 text-[11px] leading-4 text-neutral-500">
-              Lets your concierge know how you like follow-ups saved on this
-              device.
-            </Text>
           </View>
         </Animated.View>
 
@@ -663,6 +724,20 @@ export function ProfileScreen() {
               title="Gift cards"
               subtitle="Brands, wallet, Hubble checkout"
               onPress={() => router.push("/(tabs)/giftcards")}
+            />
+            <RowHairline />
+            <ActionRow
+              icon="game-controller-outline"
+              title="Games"
+              subtitle="+10 credits per game · up to 50/day"
+              onPress={() => router.push("/(tabs)/vendors/arcade")}
+            />
+            <RowHairline />
+            <ActionRow
+              icon="briefcase-outline"
+              title="Register as vendor"
+              subtitle="Share business details for onboarding"
+              onPress={() => setVendorOpen(true)}
             />
             <RowHairline />
             <ActionRow
@@ -728,7 +803,7 @@ export function ProfileScreen() {
                   <Ionicons
                     name="location-outline"
                     size={20}
-                    color="#004aad"
+                    color="#7C3AED"
                   />
                 </View>
                 <Text className="mt-3 text-center text-sm font-semibold text-neutral-800">
@@ -743,7 +818,7 @@ export function ProfileScreen() {
                 <View key={a.id}>
                   <View className="flex-row items-start gap-3 px-4 py-4">
                     <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-accent-soft">
-                      <Ionicons name="location" size={16} color="#004aad" />
+                      <Ionicons name="location" size={16} color="#7C3AED" />
                     </View>
                     <View className="min-w-0 flex-1">
                       <View className="flex-row flex-wrap items-center gap-2">
@@ -918,6 +993,20 @@ export function ProfileScreen() {
           setDetailsOpen(false);
         }}
       />
+
+      <VendorRegistrationModal
+        open={vendorOpen}
+        profile={profile}
+        onClose={() => setVendorOpen(false)}
+        onSubmit={async (payload) => {
+          await submitVendorRegistration(payload);
+          setVendorOpen(false);
+          Alert.alert(
+            "Request received",
+            "Thanks for reaching out. We’ve received your vendor details — our team will review them and share the next steps shortly.",
+          );
+        }}
+      />
     </Screen>
   );
 }
@@ -997,7 +1086,7 @@ function PremiumStatCard({
   const tones = {
     blue: {
       bg: "bg-accent-soft",
-      icon: "#004aad",
+      icon: "#7C3AED",
       ring: "border-accent-tint/60",
     },
     gold: {
@@ -1067,12 +1156,12 @@ function ActionRow({
         }`}
       >
         {loading ? (
-          <ActivityIndicator size="small" color="#004aad" />
+          <ActivityIndicator size="small" color="#7C3AED" />
         ) : (
           <Ionicons
             name={icon}
             size={18}
-            color={isWhatsApp ? "#128C7E" : "#004aad"}
+            color={isWhatsApp ? "#128C7E" : "#7C3AED"}
           />
         )}
       </View>
@@ -1149,6 +1238,7 @@ function EditProfileDetailsModal({
   const [anniversary, setAnniversary] = useState(profile?.anniversary ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!open) return;
@@ -1206,7 +1296,8 @@ function EditProfileDetailsModal({
         >
           <Pressable
             onPress={() => {}}
-            className="w-full rounded-t-3xl bg-white px-5 pb-8 pt-5"
+            className="w-full rounded-t-3xl bg-white px-5 pb-6 pt-5"
+            style={{ paddingBottom: Math.max(24, insets.bottom + 16) }}
           >
             <View className="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-200" />
             <Text className="text-lg font-extrabold text-neutral-900">
@@ -1299,6 +1390,281 @@ function EditProfileDetailsModal({
                 ) : (
                   <Text className="text-center text-sm font-bold text-accent-foreground">
                     Save changes
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Pressable>
+    </Modal>
+  );
+}
+
+type VendorExpectOption = { id: string; label: string };
+
+const VENDOR_TYPES: { id: string; label: string }[] = [
+  { id: "services", label: "Service provider" },
+  { id: "shop", label: "Local shop" },
+  { id: "agency", label: "Agency / team" },
+  { id: "freelancer", label: "Freelancer" },
+];
+
+const VENDOR_EXPECTATIONS: VendorExpectOption[] = [
+  { id: "get_leads", label: "More leads / customers" },
+  { id: "branding", label: "Brand visibility" },
+  { id: "online_listing", label: "Online listing & discovery" },
+  { id: "payments", label: "Help with payments & bookings" },
+  { id: "growth", label: "Business growth guidance" },
+];
+
+function VendorRegistrationModal({
+  open,
+  profile,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  profile: UserProfile | null | undefined;
+  onClose: () => void;
+  onSubmit: (payload: {
+    businessName: string;
+    businessType: string;
+    city: string;
+    email: string;
+    expectations: string[];
+  }) => Promise<void> | void;
+}) {
+  const insets = useSafeAreaInsets();
+  const [businessName, setBusinessName] = useState("");
+  const [city, setCity] = useState("");
+  const [email, setEmail] = useState("");
+  const [businessType, setBusinessType] = useState<string>(
+    VENDOR_TYPES[0]?.id ?? "services",
+  );
+  const [expectations, setExpectations] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setBusinessName("");
+    setCity(profile?.city?.trim() || "");
+    setEmail(profile?.email?.trim() || "");
+    setBusinessType(VENDOR_TYPES[0]?.id ?? "services");
+    setExpectations([]);
+    setError(null);
+  }, [open, profile?.city, profile?.email]);
+
+  const toggleExpectation = (id: string) => {
+    setExpectations((cur) => {
+      if (cur.includes(id)) return cur.filter((x) => x !== id);
+      if (cur.length >= 3) return cur;
+      return [...cur, id];
+    });
+  };
+
+  const submit = async () => {
+    const bn = businessName.trim();
+    const c = city.trim();
+    const e = email.trim();
+    if (bn.length < 2) {
+      setError("Enter your business name.");
+      return;
+    }
+    if (c.length < 2) {
+      setError("Enter your city.");
+      return;
+    }
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+    if (!emailOk) {
+      setError("Enter a valid email (we’ll send a confirmation).");
+      return;
+    }
+    if (!businessType) {
+      setError("Choose a business type.");
+      return;
+    }
+    if (expectations.length === 0) {
+      setError("Pick at least one expectation.");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    try {
+      await onSubmit({
+        businessName: bn,
+        businessType,
+        city: c,
+        email: e,
+        expectations,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not submit.");
+      return;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      transparent
+      visible={open}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        onPress={onClose}
+        className="flex-1 items-center justify-end bg-black/40"
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          className="w-full"
+        >
+          <Pressable
+            onPress={() => {}}
+            className="w-full rounded-t-3xl bg-white px-5 pt-5"
+            style={{ paddingBottom: Math.max(24, insets.bottom + 16) }}
+          >
+            <View className="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-200" />
+            <Text className="text-lg font-extrabold text-neutral-900">
+              Register as a vendor
+            </Text>
+            <Text className="mt-1 text-xs leading-5 text-neutral-500">
+              Share a few details — our team will review and reach out with onboarding steps.
+            </Text>
+
+            <View className="mt-5 gap-3">
+              <FieldBlock label="Business name">
+                <Input
+                  placeholder="Your business / brand name"
+                  value={businessName}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setBusinessName(t);
+                  }}
+                />
+              </FieldBlock>
+
+              <FieldBlock label="Business type">
+                <View className="flex-row flex-wrap gap-2">
+                  {VENDOR_TYPES.map((t) => {
+                    const on = businessType === t.id;
+                    return (
+                      <Pressable
+                        key={t.id}
+                        onPress={() => {
+                          setError(null);
+                          setBusinessType(t.id);
+                        }}
+                        className={`rounded-full px-4 py-2 active:opacity-90 ${
+                          on
+                            ? "border border-accent/30 bg-accent-soft"
+                            : "border border-neutral-200 bg-white"
+                        }`}
+                      >
+                        <Text className="text-xs font-bold text-neutral-800">
+                          {t.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </FieldBlock>
+
+              <FieldBlock label="City">
+                <Input
+                  placeholder="City"
+                  value={city}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setCity(t);
+                  }}
+                />
+              </FieldBlock>
+
+              <FieldBlock label="Email" hint="We’ll send a confirmation here">
+                <Input
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  placeholder="hello@email.com"
+                  value={email}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setEmail(t);
+                  }}
+                />
+              </FieldBlock>
+
+              <FieldBlock
+                label="What do you expect from InstaHelp?"
+                hint="Pick up to 3"
+              >
+                <View className="flex-row flex-wrap gap-2">
+                  {VENDOR_EXPECTATIONS.map((opt) => {
+                    const on = expectations.includes(opt.id);
+                    return (
+                      <Pressable
+                        key={opt.id}
+                        onPress={() => {
+                          setError(null);
+                          toggleExpectation(opt.id);
+                        }}
+                        className={`rounded-full px-4 py-2 active:opacity-90 ${
+                          on
+                            ? "bg-accent"
+                            : "border border-neutral-200 bg-neutral-50"
+                        }`}
+                      >
+                        <Text
+                          className={`text-xs font-bold ${
+                            on ? "text-accent-foreground" : "text-neutral-700"
+                          }`}
+                        >
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </FieldBlock>
+            </View>
+
+            {error ? (
+              <Text className="mt-3 text-xs font-semibold text-red-600">
+                {error}
+              </Text>
+            ) : null}
+
+            <View className="mt-5 flex-row gap-3">
+              <Pressable
+                onPress={onClose}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel"
+                className="flex-1 rounded-2xl border border-brand-line bg-white py-3.5 active:bg-neutral-50"
+              >
+                <Text className="text-center text-sm font-bold text-neutral-700">
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={submit}
+                disabled={saving}
+                accessibilityRole="button"
+                accessibilityLabel="Submit vendor registration"
+                className={`flex-1 rounded-2xl bg-accent py-3.5 active:opacity-90 ${
+                  saving ? "opacity-70" : ""
+                }`}
+              >
+                {saving ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text className="text-center text-sm font-bold text-accent-foreground">
+                    Submit
                   </Text>
                 )}
               </Pressable>

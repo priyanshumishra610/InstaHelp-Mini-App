@@ -23,7 +23,7 @@ const shadowFor = (
 ): StyleProp<ViewStyle> =>
   Platform.select({
     ios: {
-      shadowColor: active ? "#004aad" : "#0f172a",
+      shadowColor: active ? "#7C3AED" : "#0f172a",
       shadowOffset: { width: 0, height: active ? 3 : 1 },
       shadowOpacity: active ? 0.22 : 0.07,
       shadowRadius: active ? 10 : 4,
@@ -64,7 +64,7 @@ function MarketplaceChipInner({
             <Ionicons
               name={icon}
               size={compact ? 13 : 14}
-              color={active ? "#ffffff" : "#004aad"}
+              color={active ? "#ffffff" : "#7C3AED"}
             />
           ) : null}
           <Text

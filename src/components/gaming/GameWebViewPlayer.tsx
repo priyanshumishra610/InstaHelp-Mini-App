@@ -1,9 +1,15 @@
-import type { GamezopGame } from "@/constants/gamezopGames";
-import { usePlayRewardsStore } from "@/store/playRewardsStore";
+import {
+  getGamezopImageUrl,
+  type GamezopGame,
+} from "@/constants/gamezopGames";
+import {
+  awardGameOpenCredit,
+  notifyGameOpenCredit,
+} from "@/hooks/useGameOpenCredit";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -39,8 +45,8 @@ export function GameWebViewPlayer({ game, visible, onClose }: Props) {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const recordSession = usePlayRewardsStore((s) => s.recordGameSession);
-  const awardedRef = useRef(false);
+  const [splashImageFailed, setSplashImageFailed] = useState(false);
+  const openCreditAwardedRef = useRef(false);
 
   const backdropOpacity = useSharedValue(0);
   const spin = useSharedValue(0);
@@ -52,8 +58,16 @@ export function GameWebViewPlayer({ game, visible, onClose }: Props) {
       setProgress(0);
       setCanGoBack(false);
       setReloadKey(0);
-      awardedRef.current = false;
+      setSplashImageFailed(false);
+      openCreditAwardedRef.current = false;
       return;
+    }
+    if (game && !openCreditAwardedRef.current) {
+      openCreditAwardedRef.current = true;
+      const result = awardGameOpenCredit(game.title);
+      if (result.ok || result.reason === "daily_cap") {
+        notifyGameOpenCredit(result, game.title);
+      }
     }
     backdropOpacity.value = withTiming(1, { duration: 280 });
     spin.value = withRepeat(
@@ -61,17 +75,12 @@ export function GameWebViewPlayer({ game, visible, onClose }: Props) {
       -1,
       false,
     );
-  }, [backdropOpacity, spin, visible]);
+  }, [backdropOpacity, game, spin, visible]);
 
   const handleClose = useCallback(() => {
-    if (game && !awardedRef.current) {
-      awardedRef.current = true;
-      recordSession(game.rewardCoins);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
     backdropOpacity.value = withTiming(0, { duration: 200 });
     setTimeout(onClose, 180);
-  }, [backdropOpacity, game, onClose, recordSession]);
+  }, [backdropOpacity, onClose]);
 
   const loaderSpinStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value}deg` }],
@@ -122,7 +131,6 @@ export function GameWebViewPlayer({ game, visible, onClose }: Props) {
             <Text style={styles.barTitle} numberOfLines={1}>
               {game.title}
             </Text>
-            <Text style={styles.barSubtitle}>+{game.rewardCoins} coins on exit</Text>
           </View>
 
           <Pressable
@@ -155,6 +163,16 @@ export function GameWebViewPlayer({ game, visible, onClose }: Props) {
                 colors={[colors[0], colors[1], colors[2] ?? colors[1]]}
                 style={StyleSheet.absoluteFill}
               />
+              {!splashImageFailed ? (
+                <Image
+                  source={{ uri: getGamezopImageUrl(game.id, "cover") }}
+                  style={styles.splashCover}
+                  contentFit="cover"
+                  transition={240}
+                  cachePolicy="memory-disk"
+                  onError={() => setSplashImageFailed(true)}
+                />
+              ) : null}
               <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
               <Animated.View style={[styles.loaderRing, loaderSpinStyle]}>
                 <LinearGradient
@@ -254,12 +272,6 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#f8fafc",
   },
-  barSubtitle: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: "600",
-    color: "rgba(203,213,225,0.8)",
-  },
   progressTrack: {
     height: 3,
     backgroundColor: "rgba(255,255,255,0.08)",
@@ -290,6 +302,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 5,
+  },
+  splashCover: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.55,
   },
   loaderRing: {
     width: 64,

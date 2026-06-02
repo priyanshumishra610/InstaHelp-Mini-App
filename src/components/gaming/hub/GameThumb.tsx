@@ -1,6 +1,11 @@
-import type { GamezopGame } from "@/constants/gamezopGames";
+import {
+  getGamezopImageUrl,
+  type GamezopGame,
+} from "@/constants/gamezopGames";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 type Props = {
@@ -16,13 +21,15 @@ export function GameThumb({
   radius = 16,
   showInstantBadge = false,
 }: Props) {
+  const [failed, setFailed] = useState(false);
   const colors = game.gradient;
   const iconName = game.icon as keyof typeof Ionicons.glyphMap;
+  const thumbUri = getGamezopImageUrl(game.id, "thumb");
+  const showImage = !failed;
 
   return (
     <View style={{ width: size, height: size }}>
-      <LinearGradient
-        colors={[colors[0], colors[1], colors[2] ?? colors[1]]}
+      <View
         style={[
           styles.thumb,
           {
@@ -32,12 +39,36 @@ export function GameThumb({
           },
         ]}
       >
-        <Ionicons
-          name={iconName}
-          size={size * 0.42}
-          color="rgba(255,255,255,0.95)"
+        <LinearGradient
+          colors={[colors[0], colors[1], colors[2] ?? colors[1]]}
+          style={StyleSheet.absoluteFillObject}
         />
-      </LinearGradient>
+
+        {showImage ? (
+          <Image
+            source={{ uri: thumbUri }}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+            onError={() => setFailed(true)}
+          />
+        ) : (
+          <View style={styles.iconFallback}>
+            <Ionicons
+              name={iconName}
+              size={size * 0.42}
+              color="rgba(255,255,255,0.95)"
+            />
+          </View>
+        )}
+
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.35)"]}
+          style={styles.vignette}
+          pointerEvents="none"
+        />
+      </View>
 
       {showInstantBadge ? (
         <View style={styles.badge}>
@@ -50,10 +81,23 @@ export function GameThumb({
 
 const styles = StyleSheet.create({
   thumb: {
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
+  },
+  iconFallback: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  vignette: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "40%",
   },
   badge: {
     position: "absolute",

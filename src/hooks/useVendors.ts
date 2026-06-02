@@ -1,6 +1,6 @@
 import {
   subscribeVendors,
-  VENDOR_PAGE_SIZE,
+  VENDOR_EXPLORE_FETCH_LIMIT,
   type VendorQueryFilters,
 } from "@/firebase/vendors";
 import { useFirestoreCatalog } from "@/firebase/config";
@@ -28,10 +28,9 @@ export type UseVendorsResult = {
   source: "firestore" | "local_json";
 };
 
-function queryLocalCatalog(options: UseVendorsOptions, pageCount: number) {
+function queryLocalCatalog(options: UseVendorsOptions) {
   const catalog = getVendorCatalog();
-  const pageSize = VENDOR_PAGE_SIZE;
-  const all = catalog.query({
+  const vendors = catalog.query({
     search: options.search,
     areaKey: options.areaKey,
     cityKey: options.cityKey ?? null,
@@ -41,10 +40,9 @@ function queryLocalCatalog(options: UseVendorsOptions, pageCount: number) {
     sort: options.sort,
     userLocation: options.userLocation,
   });
-  const slice = all.slice(0, pageSize * pageCount);
   return {
-    vendors: slice,
-    hasMore: slice.length < all.length,
+    vendors,
+    hasMore: false,
   };
 }
 
@@ -56,8 +54,7 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const [pageCount, setPageCount] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
   const optionsRef = useRef(options);
@@ -65,14 +62,10 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
 
   const refresh = useCallback(() => {
     setRefreshing(true);
-    setPageCount(1);
     setRetryKey((k) => k + 1);
   }, []);
 
-  const loadMore = useCallback(() => {
-    if (!hasMore || loading) return;
-    setPageCount((p) => p + 1);
-  }, [hasMore, loading]);
+  const loadMore = useCallback(() => {}, []);
 
   const retry = useCallback(() => {
     setError(null);
@@ -89,7 +82,6 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
     const applyLocalCatalog = () => {
       const { vendors: local, hasMore: more } = queryLocalCatalog(
         optionsRef.current,
-        pageCount,
       );
       setVendors(local);
       setHasMore(more);
@@ -103,13 +95,13 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       return;
     }
 
-    setLoading((cur) => (refreshing ? cur : pageCount === 1));
+    setLoading((cur) => (refreshing ? cur : true));
 
     const unsub = subscribeVendors(
       {
         ...optionsRef.current,
-        pageCount,
-        pageSize: VENDOR_PAGE_SIZE,
+        pageCount: 1,
+        pageSize: VENDOR_EXPLORE_FETCH_LIMIT,
       },
       (rows) => {
         if (rows.length === 0) {
@@ -117,18 +109,15 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
           return;
         }
         setVendors(rows);
-        setHasMore(rows.length >= pageCount * VENDOR_PAGE_SIZE);
+        setHasMore(rows.length >= VENDOR_EXPLORE_FETCH_LIMIT);
         setLoading(false);
         setRefreshing(false);
         setError(null);
       },
       (err) => {
-        const { vendors: local } = queryLocalCatalog(
-          optionsRef.current,
-          pageCount,
-        );
+        const { vendors: local } = queryLocalCatalog(optionsRef.current);
         setVendors(local);
-        setHasMore(local.length >= pageCount * VENDOR_PAGE_SIZE);
+        setHasMore(false);
         setLoading(false);
         setRefreshing(false);
         setError(local.length ? null : err);
@@ -139,7 +128,6 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
   }, [
     enabled,
     firestore,
-    pageCount,
     retryKey,
     options.search,
     options.areaKey,
@@ -163,7 +151,7 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       refreshing,
       error,
       hasMore,
-      pageCount,
+      pageCount: 1,
       loadMore,
       refresh,
       retry,
@@ -175,7 +163,6 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       refreshing,
       error,
       hasMore,
-      pageCount,
       loadMore,
       refresh,
       retry,

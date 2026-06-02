@@ -16,7 +16,7 @@ export function GamingHubHeader({ onGiftPress, onMenuPress }: Props) {
       <View style={styles.actions}>
         <View style={styles.avatarWrap}>
           <LinearGradient
-            colors={["#7c3aed", "#4f46e5", "#2563eb"]}
+            colors={["#7c3aed", "#4f46e5", "#7C3AED"]}
             style={styles.avatar}
           >
             <View style={styles.bubbleA} />

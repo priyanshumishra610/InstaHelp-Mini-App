@@ -1,8 +1,13 @@
 import { Stack } from "expo-router";
 
+export const unstable_settings = {
+  initialRouteName: "index",
+};
+
 export default function VendorsStackLayout() {
   return (
     <Stack
+      initialRouteName="index"
       screenOptions={{
         headerShown: true,
         headerShadowVisible: false,
@@ -11,6 +16,10 @@ export default function VendorsStackLayout() {
         headerTitleStyle: { fontWeight: "800", fontSize: 17 },
         contentStyle: { backgroundColor: "#eef2fb" },
       }}
-    />
+    >
+      <Stack.Screen name="index" options={{ headerShown: false, title: "Explore" }} />
+      <Stack.Screen name="[vendorId]" options={{ title: "Vendor" }} />
+      <Stack.Screen name="arcade" options={{ headerShown: false }} />
+    </Stack>
   );
 }

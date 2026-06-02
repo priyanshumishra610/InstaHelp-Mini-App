@@ -1,6 +1,6 @@
 import { GameThumb } from "@/components/gaming/hub/GameThumb";
 import { HubSectionHeader } from "@/components/gaming/hub/HubSectionHeader";
-import { HUB_COLORS, type HubGameItem } from "@/constants/gamingHub";
+import { HUB_COLORS } from "@/constants/gamingHub";
 import type { GamezopGame } from "@/constants/gamezopGames";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -9,7 +9,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 const ICON_SIZE = 76;
 
 type Props = {
-  games: HubGameItem[];
+  games: GamezopGame[];
   onPlay: (game: GamezopGame) => void;
 };
 
@@ -22,29 +22,27 @@ export function RecommendedSection({ games, onPlay }: Props) {
         data={games}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(g) => `rec-${g.game.id}`}
+        keyExtractor={(g) => `rec-${g.id}`}
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => {
-          const label = item.label ?? item.game.title;
-          return (
+        renderItem={({ item: game }) => (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Play ${label}`}
+            accessibilityLabel={`Play ${game.title}`}
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onPlay(item.game);
+              onPlay(game);
             }}
             style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
           >
             <GameThumb
-              game={item.game}
+              game={game}
               size={ICON_SIZE}
               radius={16}
               showInstantBadge
             />
             <View style={styles.labelRow}>
-              <Text style={styles.label} numberOfLines={1}>
-                {label}
+              <Text style={styles.label} numberOfLines={2}>
+                {game.title}
               </Text>
               <Ionicons
                 name="chevron-forward"
@@ -53,8 +51,7 @@ export function RecommendedSection({ games, onPlay }: Props) {
               />
             </View>
           </Pressable>
-          );
-        }}
+        )}
       />
     </View>
   );

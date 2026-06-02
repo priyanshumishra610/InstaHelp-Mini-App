@@ -80,12 +80,12 @@ export function HelpSupportScreen() {
 
         <Animated.View entering={FadeInUp.duration(420).delay(60)} className="mt-6">
           <LinearGradient
-            colors={["#004aad", "#003a85", "#1e3a8a"]}
+            colors={["#7C3AED", "#5B21B6", "#5B21B6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             className="overflow-hidden rounded-[28px] p-6"
             style={{
-              shadowColor: "#004aad",
+              shadowColor: "#7C3AED",
               shadowOpacity: 0.25,
               shadowRadius: 20,
               shadowOffset: { width: 0, height: 10 },

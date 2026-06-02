@@ -127,7 +127,7 @@ export function RateScreen() {
 
           {!isCompleted ? (
             <View className="mt-5 flex-row items-center gap-3 rounded-2xl border border-accent-tint bg-accent-soft p-4">
-              <Ionicons name="information-circle" size={18} color="#003a85" />
+              <Ionicons name="information-circle" size={18} color="#5B21B6" />
               <Text className="flex-1 text-xs font-medium text-accent-deep">
                 Best to rate after the job is marked completed. Your input is
                 saved either way.

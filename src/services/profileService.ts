@@ -31,6 +31,7 @@ export async function refreshProfile(): Promise<UserProfile | null> {
       gender: res.data.gender ?? (samePhone ? prev?.gender : undefined),
       city: res.data.city?.trim() || (samePhone ? prev?.city?.trim() : undefined) || null,
       avatarUri: samePhone ? prev?.avatarUri : undefined,
+      avatarSeed: samePhone ? prev?.avatarSeed : undefined,
       role: res.data.role ?? (samePhone ? prev?.role : undefined),
       preferredContact:
         res.data.preferredContact ?? (samePhone ? prev?.preferredContact : undefined),
@@ -70,6 +71,7 @@ export async function persistProfile(next: UserProfile): Promise<UserProfile> {
       gender: res.data.gender ?? next.gender,
       city: res.data.city ?? next.city,
       avatarUri: next.avatarUri,
+      avatarSeed: next.avatarSeed,
       role: next.role,
       preferredContact: next.preferredContact,
     });

@@ -61,7 +61,7 @@ export function ExperiencesScreen() {
           <>
             <Animated.View entering={FadeInDown.duration(400)}>
               <LinearGradient
-                colors={["#003a85", "#004aad", "#3b82f6"]}
+                colors={["#5B21B6", "#7C3AED", "#8B5CF6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="mt-2 overflow-hidden rounded-3xl px-5 py-5"

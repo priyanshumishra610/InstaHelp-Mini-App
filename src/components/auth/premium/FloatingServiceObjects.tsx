@@ -1,4 +1,4 @@
-import { AUTH_ACCENT_TEAL, AUTH_PRIMARY } from "@/constants/authPremium";
+import { AUTH_ACCENT_TEAL, AUTH_PRIMARY, AUTH_PRIMARY_LIGHT } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
@@ -28,7 +28,7 @@ const ICONS: FloatIcon[] = [
   {
     name: "location",
     color: "#fff",
-    gradient: ["#3B82F6", AUTH_PRIMARY],
+    gradient: [AUTH_PRIMARY_LIGHT, AUTH_PRIMARY],
     size: 22,
     style: { top: "10%", left: "5%" },
     delay: 0,

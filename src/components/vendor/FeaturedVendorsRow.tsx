@@ -33,7 +33,7 @@ export function FeaturedVendorsRow({ userLocation }: Props) {
           className="flex-row items-center gap-1 rounded-full border border-accent/15 bg-white px-3 py-1.5"
         >
           <Text className="text-[11px] font-bold text-accent-deep">See all</Text>
-          <Ionicons name="chevron-forward" size={14} color="#004aad" />
+          <Ionicons name="chevron-forward" size={14} color="#7C3AED" />
         </Pressable>
       </View>
 

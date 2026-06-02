@@ -183,7 +183,7 @@ export function RequestScreen() {
               end={{ x: 1, y: 1 }}
               className="mt-2 overflow-hidden rounded-3xl border border-accent-tint/80 p-5"
               style={{
-                shadowColor: "#004aad",
+                shadowColor: "#7C3AED",
                 shadowOpacity: 0.08,
                 shadowRadius: 16,
                 shadowOffset: { width: 0, height: 8 },
@@ -434,7 +434,7 @@ export function RequestScreen() {
                     </Text>
                   </View>
                   <View className="h-9 w-9 items-center justify-center rounded-full bg-white">
-                    <Ionicons name="add" size={20} color="#004aad" />
+                    <Ionicons name="add" size={20} color="#7C3AED" />
                   </View>
                 </Pressable>
               )}

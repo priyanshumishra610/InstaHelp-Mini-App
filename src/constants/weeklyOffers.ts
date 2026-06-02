@@ -12,6 +12,9 @@ export const WEEKLY_OFFERS: WeeklyOffer[] = [
     timerEndsAt: Date.now() + 1000 * 60 * 60 * 24 * 5,
     gradient: ["#f8fafc", "#e8f0fc"],
     icon: "home-outline",
+    image: {
+      uri: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1200&q=70",
+    },
     action: "https://trawel.in/coorgwildernessresort#featured-offer",
   },
   {
@@ -21,6 +24,9 @@ export const WEEKLY_OFFERS: WeeklyOffer[] = [
     cta: "Explore",
     gradient: ["#fafaf9", "#f3f0ea"],
     icon: "briefcase-outline",
+    image: {
+      uri: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=70",
+    },
     action: "category:business",
   },
   {
@@ -30,6 +36,9 @@ export const WEEKLY_OFFERS: WeeklyOffer[] = [
     cta: "Get Started",
     gradient: ["#fafbfc", "#eef1f8"],
     icon: "code-slash-outline",
+    image: {
+      uri: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=70",
+    },
     action: "category:tech-creative",
   },
 ];

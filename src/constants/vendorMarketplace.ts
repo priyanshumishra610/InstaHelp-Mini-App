@@ -1,6 +1,15 @@
 export const VENDOR_REVEAL_CREDIT_COST = 10;
 export const VENDOR_INITIAL_CREDITS = 25;
 
+/** Credits when a user opens any game (WebView or native), up to daily caps below. */
+export const GAME_OPEN_CREDIT_REWARD = 10;
+
+/** Max vendor credits from game opens per local calendar day (5 opens × 10). */
+export const GAME_OPEN_DAILY_MAX_CREDITS = 50;
+
+export const GAME_OPEN_DAILY_MAX_COUNT =
+  GAME_OPEN_DAILY_MAX_CREDITS / GAME_OPEN_CREDIT_REWARD;
+
 /** Daily mini-game prize (won once per local calendar day). */
 export const BONUS_GAME_TIC_TAC_TOE_CREDITS = 10;
 

@@ -1,6 +1,8 @@
 import {
-  ARCADE_DAILY_BONUS_CREDITS_TOTAL,
   BANGALORE_CITY_CENTER,
+  GAME_OPEN_CREDIT_REWARD,
+  GAME_OPEN_DAILY_MAX_COUNT,
+  GAME_OPEN_DAILY_MAX_CREDITS,
   VENDOR_REVEAL_CREDIT_COST,
 } from "@/constants/vendorMarketplace";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -25,7 +27,6 @@ import { haversineKm } from "@/services/vendors/vendorGeo";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { calendarDayKey } from "@/utils/calendarDay";
-import { hasBurnedLeadCredits } from "@/utils/vendorLeadEligibility";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -100,7 +101,7 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
   const heroCardShadow =
     Platform.OS === "ios"
       ? {
-          shadowColor: "#003a85",
+          shadowColor: "#5B21B6",
           shadowOffset: { width: 0, height: 12 },
           shadowOpacity: 0.12,
           shadowRadius: 24,
@@ -146,50 +147,28 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
     bonusWhackE !== todayKey ||
     bonusWhackM !== todayKey ||
     bonusWhackH !== todayKey;
-  const showEarnMiniGame = useVendorLeadStore((s) =>
-    hasBurnedLeadCredits(s.transactions),
-  );
-
   return (
     <Animated.View entering={FadeInDown.delay(40).springify().damping(18)}>
       <View className="px-4 pb-1 pt-1">
-        <LinearGradient
-          colors={["#dde7fb", "#e8eef8", "#f0f4fc"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.9, y: 1 }}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 0,
-            height: Math.min(420, windowWidth * 0.92),
-          }}
-          pointerEvents="none"
-        />
-
-        <View className="overflow-hidden rounded-[26px] border border-white/70 bg-white/75">
-          <LinearGradient
-            colors={["rgba(255,255,255,0.95)", "rgba(248,251,255,0.88)"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="absolute inset-0"
-          />
-
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-10 h-40 w-40 rounded-full bg-accent/10"
-            style={{ opacity: 0.9 }}
-          />
-          <View
-            pointerEvents="none"
-            className="absolute bottom-2 left-0 h-24 w-24 rounded-full bg-brand-gold/15"
-            style={{ transform: [{ translateX: -32 }] }}
-          />
+        <View
+          className="overflow-hidden rounded-[26px] border border-neutral-200 bg-slate-50"
+          style={
+            Platform.OS === "ios"
+              ? {
+                  shadowColor: "#0f172a",
+                  shadowOffset: { width: 0, height: 10 },
+                  shadowOpacity: 0.06,
+                  shadowRadius: 18,
+                }
+              : { elevation: 2 }
+          }
+        >
+          <View pointerEvents="none" className="absolute inset-0 bg-white/55" />
 
           <View className="relative px-4 pb-5 pt-4">
             <View className="flex-row items-start justify-between gap-3">
               <View className="max-w-[68%]">
-                <Text className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-accent-muted">
+                <Text className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-neutral-500">
                   InstaHelp explore
                 </Text>
                 <Text className="mt-2 text-[22px] font-extrabold leading-[28px] text-neutral-950">
@@ -210,7 +189,7 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
                     className="flex-row items-center gap-1.5 rounded-full border border-accent/15 bg-accent-soft px-3 py-1.5"
                     style={heroCardShadow}
                   >
-                    <Ionicons name="ribbon-outline" size={14} color="#004aad" />
+                    <Ionicons name="ribbon-outline" size={14} color="#7C3AED" />
                     <Text className="text-[11px] font-extrabold text-accent-deep">
                       {filteredLen.toLocaleString("en-IN")} showing now
                     </Text>
@@ -231,68 +210,60 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
                 onPress={onOpenHistory}
                 accessibilityRole="button"
                 accessibilityLabel="View credit history"
-                className="overflow-hidden rounded-2xl border border-accent/20 active:opacity-90"
+                className="overflow-hidden rounded-2xl border border-neutral-200 bg-white active:opacity-90"
                 style={heroCardShadow}
               >
-                <LinearGradient
-                  colors={["#004aad", "#1e56c9"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="items-center px-3.5 py-3"
-                >
-                  <Ionicons name="diamond-outline" size={18} color="#ffd500" />
-                  <Text className="mt-1 text-xl font-black text-white">
-                    {credits}
-                  </Text>
-                  <Text className="text-[9px] font-bold uppercase tracking-widest text-white/85">
+                <View className="items-center px-3.5 py-3">
+                  <View className="h-9 w-9 items-center justify-center rounded-xl bg-accent-soft">
+                    <Ionicons name="diamond-outline" size={18} color="#7C3AED" />
+                  </View>
+                  <Text className="mt-1 text-xl font-black text-neutral-900">{credits}</Text>
+                  <Text className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                     credits
                   </Text>
-                  <Ionicons name="chevron-down" size={12} color="#ffffff" />
-                </LinearGradient>
+                  <Ionicons name="chevron-down" size={12} color="#7C3AED" />
+                </View>
               </Pressable>
             </View>
 
-            {showEarnMiniGame ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open bonus credit mini-game"
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-                    () => {},
-                  );
-                  router.push("/(tabs)/vendors/earn-game");
-                }}
-                className="mt-4 flex-row items-center gap-3 overflow-hidden rounded-2xl border border-accent/20 bg-accent-soft/40 px-4 py-3 active:opacity-90"
-                style={
-                  Platform.OS === "ios"
-                    ? {
-                        shadowColor: "#004aad",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.08,
-                        shadowRadius: 8,
-                      }
-                    : { elevation: 2 }
-                }
-              >
-                <LinearGradient
-                  colors={["#ffd500", "#f5c542"]}
-                  className="h-11 w-11 items-center justify-center rounded-xl"
-                >
-                  <Ionicons name="game-controller" size={20} color="#1a1a1a" />
-                </LinearGradient>
-                <View className="flex-1">
-                  <Text className="text-[14px] font-extrabold text-neutral-900">
-                    Arcade · up to {ARCADE_DAILY_BONUS_CREDITS_TOTAL} credits/day
-                  </Text>
-                  <Text className="mt-0.5 text-[11px] font-semibold text-neutral-600">
-                    {canClaimBonusCredits
-                      ? "Grid + Hangman +10 each · Whack tiers +5 / +10 / +15 per win."
-                      : "Today's arcade payouts claimed — practise any game freely."}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color="#004aad" />
-              </Pressable>
-            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open InstaHelp games arcade"
+              onPress={() => {
+                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+                  () => {},
+                );
+                router.push("/(tabs)/vendors/arcade");
+              }}
+              className="mt-4 flex-row items-center gap-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white px-4 py-3 active:opacity-90"
+              style={
+                Platform.OS === "ios"
+                  ? {
+                      shadowColor: "#0f172a",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 10,
+                    }
+                  : { elevation: 2 }
+              }
+            >
+              <View className="h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
+                <Ionicons name="game-controller" size={20} color="#92400e" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[14px] font-extrabold text-neutral-900">
+                  Games · +{GAME_OPEN_CREDIT_REWARD} credits per game
+                </Text>
+                <Text className="mt-0.5 text-[11px] font-semibold text-neutral-600">
+                  Up to {GAME_OPEN_DAILY_MAX_COUNT} opens ({GAME_OPEN_DAILY_MAX_CREDITS}{" "}
+                  credits) per day.
+                  {canClaimBonusCredits
+                    ? " Win classics for extra bonus credits."
+                    : " Today's win bonuses claimed — keep playing!"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#334155" />
+            </Pressable>
 
             <View
               className="mt-5 flex-row items-center rounded-2xl border border-neutral-100 bg-white px-3"
@@ -427,7 +398,7 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
                 accessibilityLabel="Clear all filters"
                 className="mt-2 flex-row items-center justify-center gap-2 self-start rounded-full border border-dashed border-neutral-300 px-4 py-2 active:bg-neutral-50"
               >
-                <Ionicons name="refresh-outline" size={16} color="#004aad" />
+                <Ionicons name="refresh-outline" size={16} color="#7C3AED" />
                 <Text className="text-[12px] font-extrabold text-accent-deep">
                   Clear all filters
                 </Text>
@@ -506,8 +477,6 @@ export function VendorsExploreScreen() {
     loading,
     refreshing,
     error,
-    hasMore,
-    loadMore,
     refresh,
     retry,
     source,
@@ -699,25 +668,10 @@ export function VendorsExploreScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={refresh}
-                tintColor="#004aad"
+                tintColor="#7C3AED"
               />
             }
-            onEndReached={() => {
-              if (hasMore && !loading) loadMore();
-            }}
-            onEndReachedThreshold={0.35}
-            ListFooterComponent={
-              hasMore ? (
-                <View className="items-center py-6">
-                  <ActivityIndicator color="#004aad" />
-                  <Text className="mt-2 text-[12px] font-semibold text-neutral-500">
-                    Loading more vendors…
-                  </Text>
-                </View>
-              ) : (
-                <View className="h-6" />
-              )
-            }
+            ListFooterComponent={<View className="h-6" />}
             ListHeaderComponent={ListHeaderComponent}
             renderSectionHeader={({ section }) => (
               <View className="border-b border-neutral-200/70 bg-[#eef2fb] px-4 pb-3 pt-5">
@@ -743,7 +697,7 @@ export function VendorsExploreScreen() {
                     style={
                       Platform.OS === "ios"
                         ? {
-                            shadowColor: "#004aad",
+                            shadowColor: "#7C3AED",
                             shadowOffset: { width: 0, height: 2 },
                             shadowOpacity: 0.08,
                             shadowRadius: 6,
@@ -754,7 +708,7 @@ export function VendorsExploreScreen() {
                     <Ionicons
                       name="chevron-down"
                       size={16}
-                      color="#004aad"
+                      color="#7C3AED"
                     />
                   </View>
                 </View>

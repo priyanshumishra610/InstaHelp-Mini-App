@@ -63,7 +63,7 @@
       [
         "expo-notifications",
         {
-          "color": "#004aad"
+          "color": "#7C3AED"
         }
       ],
       "./plugins/withTruecallerAndroid.js",

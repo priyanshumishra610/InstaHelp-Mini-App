@@ -110,7 +110,7 @@ function ProgressBar({ percent }: { percent: number }) {
           {
             height: "100%",
             borderRadius: 999,
-            backgroundColor: "#3b82f6",
+            backgroundColor: "#8B5CF6",
           },
           style,
         ]}

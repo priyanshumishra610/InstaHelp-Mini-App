@@ -1,9 +1,13 @@
 import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
-import type { GamezopGame } from "@/constants/gamezopGames";
+import {
+  getGamezopImageUrl,
+  type GamezopGame,
+} from "@/constants/gamezopGames";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Animated, {
   Easing,
@@ -25,6 +29,7 @@ type Props = {
 };
 
 export function GameCard({ game, index = 0, onPress }: Props) {
+  const [imageFailed, setImageFailed] = useState(false);
   const floatY = useSharedValue(0);
 
   useEffect(() => {
@@ -65,7 +70,18 @@ export function GameCard({ game, index = 0, onPress }: Props) {
         >
           <View style={styles.glowRing} />
           <View style={styles.thumb}>
-            <Ionicons name={iconName} size={36} color="rgba(255,255,255,0.95)" />
+            {!imageFailed ? (
+              <Image
+                source={{ uri: getGamezopImageUrl(game.id, "thumb") }}
+                style={StyleSheet.absoluteFillObject}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <Ionicons name={iconName} size={36} color="rgba(255,255,255,0.95)" />
+            )}
           </View>
           <BlurView intensity={24} tint="dark" style={styles.rewardBadge}>
             <Ionicons name="gift" size={11} color="#fde68a" />
@@ -153,6 +169,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 22,
+    overflow: "hidden",
     backgroundColor: "rgba(0,0,0,0.18)",
     alignItems: "center",
     justifyContent: "center",

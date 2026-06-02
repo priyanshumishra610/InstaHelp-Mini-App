@@ -1,6 +1,7 @@
 import { Screen } from "@/components/ui/Screen";
 import { MiniGameWinOverlay } from "@/components/vendors/MiniGameWinOverlay";
 import { BONUS_GAME_HANGMAN_CREDITS } from "@/constants/vendorMarketplace";
+import { useGameOpenCreditOnMount } from "@/hooks/useGameOpenCredit";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import { calendarDayKey } from "@/utils/calendarDay";
 import { Ionicons } from "@expo/vector-icons";
@@ -62,6 +63,7 @@ function randomWord(seed?: number): string {
 }
 
 export function HangmanGameScreen() {
+  useGameOpenCreditOnMount("Hangman");
   const tryAwardHangmanBonus = useVendorLeadStore((s) => s.tryAwardHangmanBonus);
   const credits = useVendorLeadStore((s) => s.credits);
   const claimedDayKey = useVendorLeadStore((s) => s.bonusHangmanAwardDayKey);
@@ -175,7 +177,7 @@ export function HangmanGameScreen() {
 
             <View className="mt-3 flex-row flex-wrap gap-2">
               <View className="flex-row items-center gap-1.5 rounded-xl border border-neutral-100 bg-neutral-50 px-2.5 py-1.5">
-                <Ionicons name="wallet-outline" size={16} color="#004aad" />
+                <Ionicons name="wallet-outline" size={16} color="#7C3AED" />
                 <Text className="text-[12px] font-extrabold text-neutral-800">
                   {credits} cr
                 </Text>

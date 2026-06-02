@@ -194,14 +194,14 @@ export function BookingDetailScreen() {
             {booking.description}
           </Text>
           <View className="mt-4 flex-row items-center gap-2">
-            <Ionicons name="time-outline" size={14} color="#004aad" />
+            <Ionicons name="time-outline" size={14} color="#7C3AED" />
             <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
               Preferred time · {booking.preferredTime || "Flexible"}
             </Text>
           </View>
           {booking.notes ? (
             <View className="mt-2 flex-row items-start gap-2">
-              <Ionicons name="document-text-outline" size={14} color="#004aad" />
+              <Ionicons name="document-text-outline" size={14} color="#7C3AED" />
               <Text className="flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300">
                 Notes · {booking.notes}
               </Text>
@@ -260,7 +260,7 @@ export function BookingDetailScreen() {
                   {phaseCard.subtitle}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#004aad" />
+              <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
             </Pressable>
           ) : null}
           {actions.map((a) => (
@@ -290,7 +290,7 @@ export function BookingDetailScreen() {
                   {a.subtitle}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#004aad" />
+              <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
             </Pressable>
           ))}
         </View>

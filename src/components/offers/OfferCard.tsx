@@ -58,7 +58,10 @@ function OfferCardComponent({
     const inputRange = [(index - 1) * stride, index * stride, (index + 1) * stride];
     const scale = interpolate(scrollX.value, inputRange, [0.94, 1, 0.94], Extrapolation.CLAMP);
     const translateY = interpolate(scrollX.value, inputRange, [6, 0, 6], Extrapolation.CLAMP);
-    const opacity = interpolate(scrollX.value, inputRange, [0.88, 1, 0.88], Extrapolation.CLAMP);
+    // Avoid fading critical content (e.g. the featured weekly offer) via parent opacity.
+    const opacity = isWeekOffer
+      ? 1
+      : interpolate(scrollX.value, inputRange, [0.94, 1, 0.94], Extrapolation.CLAMP);
     return {
       transform: [{ scale }, { translateY }],
       opacity,
@@ -83,11 +86,40 @@ function OfferCardComponent({
           elevation: isWeekOffer ? 10 : 6,
         }}
       >
+        {offer.image ? (
+          <Image
+            source={offer.image}
+            resizeMode="cover"
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
+          />
+        ) : null}
+        {offer.image ? (
+          <LinearGradient
+            colors={["rgba(15,23,42,0.64)", "rgba(15,23,42,0.22)", "rgba(15,23,42,0.58)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              left: 0,
+            }}
+          />
+        ) : null}
         <LinearGradient
           colors={
-            isWeekOffer
-              ? ["#eef5ff", "#dfeeff", "#f6f9ff"]
-              : [offer.gradient[0], offer.gradient[1]]
+            offer.image
+              ? ["rgba(255,255,255,0)", "rgba(255,255,255,0)"]
+              : isWeekOffer
+                ? ["#eef5ff", "#dfeeff", "#f6f9ff"]
+                : [offer.gradient[0], offer.gradient[1]]
           }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -133,12 +165,16 @@ function OfferCardComponent({
                   style={{
                     alignSelf: "flex-start",
                     borderColor: isWeekOffer ? "rgba(67, 103, 224, 0.18)" : "rgba(23,23,23,0.08)",
-                    backgroundColor: isWeekOffer ? "rgba(255,255,255,0.84)" : "rgba(255,255,255,0.7)",
+                    backgroundColor: offer.image
+                      ? "rgba(255,255,255,0.26)"
+                      : isWeekOffer
+                        ? "rgba(255,255,255,0.84)"
+                        : "rgba(255,255,255,0.7)",
                   }}
                 >
                   <Text
                     className="text-[10px] font-bold uppercase tracking-[0.14em]"
-                    style={{ color: isWeekOffer ? "#3b4f91" : "#525252" }}
+                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#3b4f91" : "#525252" }}
                   >
                     {offer.tag}
                   </Text>
@@ -149,12 +185,16 @@ function OfferCardComponent({
                   className="rounded-full px-2.5 py-1"
                   style={{
                     alignSelf: "flex-start",
-                    backgroundColor: isWeekOffer ? "rgba(0, 74, 173, 0.14)" : `${ACCENT}14`,
+                    backgroundColor: offer.image
+                      ? "rgba(255,255,255,0.24)"
+                      : isWeekOffer
+                        ? "rgba(124, 58, 237, 0.14)"
+                        : `${ACCENT}14`,
                   }}
                 >
                   <Text
                     className="text-[10px] font-extrabold uppercase tracking-wide"
-                    style={{ color: isWeekOffer ? "#00377e" : ACCENT_DEEP }}
+                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#5B21B6" : ACCENT_DEEP }}
                   >
                     {offer.badge}
                   </Text>
@@ -166,6 +206,7 @@ function OfferCardComponent({
                   fontSize: isWeekOffer ? 19 : 18,
                   lineHeight: isWeekOffer ? 23 : 22,
                   textAlign: "left",
+                  color: offer.image ? "#ffffff" : "#171717",
                 }}
               >
                 {offer.title}
@@ -175,7 +216,7 @@ function OfferCardComponent({
                 numberOfLines={2}
                 style={{
                   fontSize: isWeekOffer ? 13.5 : 13,
-                  color: isWeekOffer ? "#3f4f78" : "#525252",
+                  color: offer.image ? "rgba(255,255,255,0.92)" : isWeekOffer ? "#3f4f78" : "#525252",
                   textAlign: "left",
                 }}
               >
@@ -189,11 +230,11 @@ function OfferCardComponent({
                   <Ionicons
                     name="time-outline"
                     size={12}
-                    color={isWeekOffer ? "#33539e" : "#737373"}
+                    color={offer.image ? "#e5e7eb" : isWeekOffer ? "#33539e" : "#737373"}
                   />
                   <Text
                     className="text-[11px] font-semibold"
-                    style={{ color: isWeekOffer ? "#33539e" : "#737373" }}
+                    style={{ color: offer.image ? "#e5e7eb" : isWeekOffer ? "#33539e" : "#737373" }}
                   >
                     {countdown}
                   </Text>
@@ -202,27 +243,33 @@ function OfferCardComponent({
             </View>
 
             <View className="items-center justify-center">
-              {offer.image ? (
-                <Image
-                  source={offer.image}
-                  resizeMode="contain"
-                  style={{ width: 56, height: 56, opacity: 0.92 }}
-                />
-              ) : offer.icon ? (
+              {offer.icon ? (
                 <View
                   className="items-center justify-center rounded-2xl border"
                   style={{
                     width: 56,
                     height: 56,
-                    borderColor: isWeekOffer ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.8)",
-                    backgroundColor: isWeekOffer ? "rgba(255,255,255,0.78)" : "rgba(255,255,255,0.55)",
+                    borderColor: offer.image
+                      ? "rgba(255,255,255,0.75)"
+                      : isWeekOffer
+                        ? "rgba(255,255,255,0.92)"
+                        : "rgba(255,255,255,0.8)",
+                    backgroundColor: offer.image
+                      ? "rgba(17,24,39,0.28)"
+                      : isWeekOffer
+                        ? "rgba(255,255,255,0.78)"
+                        : "rgba(255,255,255,0.55)",
                     shadowColor: ACCENT,
                     shadowOpacity: isWeekOffer ? 0.2 : 0.12,
                     shadowRadius: isWeekOffer ? 16 : 12,
                     shadowOffset: { width: 0, height: isWeekOffer ? 6 : 4 },
                   }}
                 >
-                  <Ionicons name={offer.icon} size={26} color={ACCENT} />
+                  <Ionicons
+                    name={offer.icon}
+                    size={26}
+                    color={offer.image ? "#f3f4f6" : ACCENT}
+                  />
                 </View>
               ) : null}
             </View>

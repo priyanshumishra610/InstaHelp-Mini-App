@@ -1,11 +1,12 @@
 import { TAB_BAR_BASE_HEIGHT, WhatsAppFab } from "@/components/support/WhatsAppFab";
+import { ACCENT } from "@/constants/theme";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
 import { useAuth } from "@/providers/AuthProvider";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, Tabs } from "expo-router";
+import { Redirect, Tabs, router } from "expo-router";
 import { useEffect, useMemo } from "react";
 import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -46,7 +47,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#004aad",
+          tabBarActiveTintColor: ACCENT,
           tabBarInactiveTintColor: "#9ca3af",
           tabBarStyle: {
             borderTopColor: "#ececec",
@@ -83,6 +84,18 @@ export default function TabsLayout() {
               />
             ),
           }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              const vendorsRoute = navigation
+                .getState()
+                .routes.find((r) => r.name === "vendors");
+              const stackIndex = vendorsRoute?.state?.index ?? 0;
+              if (stackIndex > 0) {
+                e.preventDefault();
+                router.navigate("/(tabs)/vendors");
+              }
+            },
+          })}
         />
         <Tabs.Screen
           name="bookings"

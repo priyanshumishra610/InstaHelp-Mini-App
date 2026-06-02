@@ -109,15 +109,6 @@ export function HubbleWebViewScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
       <View className="relative flex-1 bg-white">
-        <View className="border-b border-gray-100 bg-slate-50 px-3 py-2">
-          <View className="flex-row items-center gap-2 py-1.5">
-            <Ionicons name="shield-checkmark" size={20} color={ACCENT} />
-            <Text className="flex-1 text-xs font-semibold leading-4 text-slate-700">
-              Opening gift cards directly. Guests can browse without InstaHelp or Hubble auth.
-            </Text>
-          </View>
-        </View>
-
         <View className="relative flex-1">
         {!sdkReady ? (
           <View className="absolute inset-0 z-10 items-center justify-center bg-white/80">

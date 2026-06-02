@@ -17,20 +17,3 @@ export const SHOP_SEARCH_PLACEHOLDERS = [
   "Search gifts",
   "Search gadgets",
 ] as const;
-
-export const FLIPKART_WIDGET_SCRIPT =
-  "https://affiliate.flipkart.com/affiliate/widgets/FKAffiliateWidgets.js";
-
-export const FLIPKART_SEARCH_WIDGET = {
-  wrid: "WRID-143512974042930177",
-  widgetType: "searchWidget",
-  height: 250,
-  width: 300,
-} as const;
-
-export const FLIPKART_BANNER_WIDGET = {
-  wrid: "WRID-177859445145299748",
-  widgetType: "Push Content",
-  height: 90,
-  width: 728,
-} as const;

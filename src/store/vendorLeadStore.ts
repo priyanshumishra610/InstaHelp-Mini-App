@@ -1,6 +1,8 @@
 import {
   BONUS_GAME_HANGMAN_CREDITS,
   BONUS_GAME_TIC_TAC_TOE_CREDITS,
+  GAME_OPEN_CREDIT_REWARD,
+  GAME_OPEN_DAILY_MAX_CREDITS,
   VENDOR_INITIAL_CREDITS,
   VENDOR_REVEAL_CREDIT_COST,
   WHACK_LEVEL_CONFIG,
@@ -14,7 +16,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 const MAX_TX = 100;
 
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 
 function newTx(partial: Omit<CreditTransaction, "id" | "createdAt">): CreditTransaction {
   return {
@@ -32,12 +34,18 @@ export type BonusGameAwardResult =
   | { ok: true }
   | { ok: false; reason: "already_claimed_today" };
 
+export type GameOpenCreditResult =
+  | { ok: true; amount: number; opensRemaining: number }
+  | { ok: false; reason: "daily_cap" };
+
 type VendorLeadPersistedBonusSlice = {
   bonusTicTacToeAwardDayKey: string | null;
   bonusHangmanAwardDayKey: string | null;
   bonusWhackEasyDayKey: string | null;
   bonusWhackMediumDayKey: string | null;
   bonusWhackHardDayKey: string | null;
+  gameOpenCreditsDayKey: string | null;
+  gameOpenCreditsAwardedToday: number;
 };
 
 type VendorLeadState = VendorLeadPersistedBonusSlice & {
@@ -57,6 +65,9 @@ type VendorLeadState = VendorLeadPersistedBonusSlice & {
   /** Win Whack-a-mole tier — separate daily slot per difficulty. */
   tryAwardWhackAMoleBonus: (level: WhackDifficulty) => BonusGameAwardResult;
 
+  /** +10 vendor credits per game open, max 50/day (5 opens). */
+  tryAwardGameOpenCredit: (gameLabel: string) => GameOpenCreditResult;
+
   /** Idempotent reveal: spends credits once per vendor (persisted locally). */
   tryRevealVendor: (vendorId: string) => VendorRevealResult;
   isVendorUnlocked: (vendorId: string) => boolean;
@@ -72,6 +83,8 @@ export const useVendorLeadStore = create<VendorLeadState>()(
       bonusWhackEasyDayKey: null,
       bonusWhackMediumDayKey: null,
       bonusWhackHardDayKey: null,
+      gameOpenCreditsDayKey: null,
+      gameOpenCreditsAwardedToday: 0,
       transactions: [
         newTx({
           kind: "credit_add",
@@ -157,6 +170,44 @@ export const useVendorLeadStore = create<VendorLeadState>()(
         return { ok: true };
       },
 
+      tryAwardGameOpenCredit: (gameLabel) => {
+        const dayKey = calendarDayKey();
+        const s = get();
+        const awardedToday =
+          s.gameOpenCreditsDayKey === dayKey ? s.gameOpenCreditsAwardedToday : 0;
+
+        if (awardedToday >= GAME_OPEN_DAILY_MAX_CREDITS) {
+          return { ok: false, reason: "daily_cap" };
+        }
+
+        const amount = Math.min(
+          GAME_OPEN_CREDIT_REWARD,
+          GAME_OPEN_DAILY_MAX_CREDITS - awardedToday,
+        );
+        const balanceAfter = s.credits + amount;
+        const label = gameLabel.trim() || "Game";
+        const tx = newTx({
+          kind: "credit_add",
+          delta: amount,
+          balanceAfter,
+          note: `Opened game: ${label}`,
+        });
+        const nextAwarded = awardedToday + amount;
+        const opensRemaining = Math.max(
+          0,
+          Math.floor(
+            (GAME_OPEN_DAILY_MAX_CREDITS - nextAwarded) / GAME_OPEN_CREDIT_REWARD,
+          ),
+        );
+        set({
+          credits: balanceAfter,
+          gameOpenCreditsDayKey: dayKey,
+          gameOpenCreditsAwardedToday: nextAwarded,
+          transactions: [tx, ...s.transactions].slice(0, MAX_TX),
+        });
+        return { ok: true, amount, opensRemaining };
+      },
+
       addCredits: (amount, note) => {
         if (amount <= 0) return;
         set((s) => {
@@ -239,6 +290,10 @@ export const useVendorLeadStore = create<VendorLeadState>()(
         migrated.bonusWhackEasyDayKey ??= null;
         migrated.bonusWhackMediumDayKey ??= null;
         migrated.bonusWhackHardDayKey ??= null;
+        if ((fromVersion ?? 0) < 3) {
+          migrated.gameOpenCreditsDayKey ??= null;
+          migrated.gameOpenCreditsAwardedToday ??= 0;
+        }
         return migrated;
       },
       partialize: (s): VendorLeadPersistedBonusSlice & Pick<VendorLeadState, "credits" | "unlockedVendorIds" | "transactions"> => ({
@@ -249,6 +304,8 @@ export const useVendorLeadStore = create<VendorLeadState>()(
         bonusWhackEasyDayKey: s.bonusWhackEasyDayKey,
         bonusWhackMediumDayKey: s.bonusWhackMediumDayKey,
         bonusWhackHardDayKey: s.bonusWhackHardDayKey,
+        gameOpenCreditsDayKey: s.gameOpenCreditsDayKey,
+        gameOpenCreditsAwardedToday: s.gameOpenCreditsAwardedToday,
         transactions: s.transactions.slice(0, MAX_TX),
       }),
     },

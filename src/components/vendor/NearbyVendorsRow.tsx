@@ -24,7 +24,7 @@ export function NearbyVendorsRow({ userLocation }: Props) {
             Nearby
           </Text>
           <Text className="mt-1 text-[18px] font-extrabold text-neutral-900">
-            Pros closest to you
+            Nearby Pros closest to you..
           </Text>
         </View>
         <Pressable
@@ -32,7 +32,7 @@ export function NearbyVendorsRow({ userLocation }: Props) {
           className="flex-row items-center gap-1 rounded-full border border-accent/15 bg-white px-3 py-1.5"
         >
           <Text className="text-[11px] font-bold text-accent-deep">Explore</Text>
-          <Ionicons name="navigate-outline" size={14} color="#004aad" />
+          <Ionicons name="navigate-outline" size={14} color="#7C3AED" />
         </Pressable>
       </View>
 

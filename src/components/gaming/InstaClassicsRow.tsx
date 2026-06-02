@@ -16,7 +16,7 @@ type ClassicGame = {
   key: string;
   title: string;
   credits: string;
-  href: "/(tabs)/vendors/earn-game/grid" | "/(tabs)/vendors/earn-game/hangman" | "/(tabs)/vendors/earn-game/whack";
+  href: "/(tabs)/vendors/arcade/grid" | "/(tabs)/vendors/arcade/hangman" | "/(tabs)/vendors/arcade/whack";
   icon: keyof typeof Ionicons.glyphMap;
   gradient: readonly [string, string];
 };
@@ -26,15 +26,15 @@ const CLASSICS: ClassicGame[] = [
     key: "grid",
     title: "Insta Grid",
     credits: `+${BONUS_GAME_TIC_TAC_TOE_CREDITS}/day`,
-    href: "/(tabs)/vendors/earn-game/grid",
+    href: "/(tabs)/vendors/arcade/grid",
     icon: "grid-outline",
-    gradient: ["#004aad", "#2563eb"],
+    gradient: ["#7C3AED", "#7C3AED"],
   },
   {
     key: "hangman",
     title: "Hangman",
     credits: `+${BONUS_GAME_HANGMAN_CREDITS}/day`,
-    href: "/(tabs)/vendors/earn-game/hangman",
+    href: "/(tabs)/vendors/arcade/hangman",
     icon: "book-outline",
     gradient: ["#7c3aed", "#9333ea"],
   },
@@ -42,7 +42,7 @@ const CLASSICS: ClassicGame[] = [
     key: "whack",
     title: "Whack-a-mole",
     credits: `+${BONUS_WHACK_EASY_CREDITS}/+${BONUS_WHACK_MEDIUM_CREDITS}/+${BONUS_WHACK_HARD_CREDITS}`,
-    href: "/(tabs)/vendors/earn-game/whack",
+    href: "/(tabs)/vendors/arcade/whack",
     icon: "flash-outline",
     gradient: ["#059669", "#14b8a6"],
   },

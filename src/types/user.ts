@@ -25,6 +25,11 @@ export type UserProfile = {
    * concierge sheet.
    */
   avatarUri?: string;
+  /**
+   * Fallback avatar seed used to generate a cute placeholder when `avatarUri`
+   * isn't set. Kept on device only.
+   */
+  avatarSeed?: string;
   /** Consumer vs local business — drives opportunity-style notification copy. */
   role?: "consumer" | "business";
   /**

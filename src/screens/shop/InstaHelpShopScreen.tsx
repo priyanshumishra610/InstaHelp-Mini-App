@@ -1,144 +1,418 @@
-import { ShopWidgetCard } from "@/components/shop/ShopWidgetCard";
 import { Screen } from "@/components/ui/Screen";
 import {
-  FLIPKART_BANNER_WIDGET,
-  FLIPKART_SEARCH_WIDGET,
   SHOP_CATEGORIES,
-  SHOP_SEARCH_PLACEHOLDERS,
   type ShopCategoryId,
 } from "@/constants/shop";
-import { buildFlipkartWidgetHtml } from "@/utils/flipkartWidgetHtml";
+import {
+  SHOP_MOCK_PRODUCTS,
+  type ShopProduct,
+} from "@/constants/shopMockProducts";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
+  FlatList,
+  Image,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useWindowDimensions } from "react-native";
 
-const BANNER_HTML = buildFlipkartWidgetHtml(FLIPKART_BANNER_WIDGET);
-const SEARCH_HTML = buildFlipkartWidgetHtml(FLIPKART_SEARCH_WIDGET);
+function formatINR(n: number) {
+  try {
+    return n.toLocaleString("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    });
+  } catch {
+    return `₹${Math.round(n).toLocaleString("en-IN")}`;
+  }
+}
 
-const BANNER_ASPECT = FLIPKART_BANNER_WIDGET.width / FLIPKART_BANNER_WIDGET.height;
-const SEARCH_ASPECT = FLIPKART_SEARCH_WIDGET.width / FLIPKART_SEARCH_WIDGET.height;
+function categoryLabel(category: ShopCategoryId) {
+  return SHOP_CATEGORIES.find((c) => c.id === category)?.label ?? "All";
+}
 
-const CATEGORY_COPY: Partial<
-  Record<ShopCategoryId, { banner: string; search: string }>
-> = {
-  electronics: {
-    banner: "Top electronics picks & launch deals",
-    search: "Search phones, laptops & gadgets",
-  },
-  beauty: {
-    banner: "Beauty bestsellers & self-care",
-    search: "Search skincare, makeup & wellness",
-  },
-  travel: {
-    banner: "Travel essentials & luggage",
-    search: "Search bags, accessories & gear",
-  },
-  gaming: {
-    banner: "Gaming gear & accessories",
-    search: "Search consoles, controllers & more",
-  },
-  fashion: {
-    banner: "Fashion trends & wardrobe staples",
-    search: "Search apparel, footwear & bags",
-  },
-  decor: {
-    banner: "Home decor & lifestyle upgrades",
-    search: "Search furniture, lighting & decor",
-  },
-  gifts: {
-    banner: "Gift ideas for every occasion",
-    search: "Search curated gift picks",
-  },
-};
+function initialsFromTitle(title: string) {
+  return title
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
+}
 
-function ShopSearchBar() {
-  const [placeholderIndex, setPlaceholderIndex] = useState(0);
-  const placeholderOpacity = useSharedValue(1);
+function getSearchPlaceholder(category: ShopCategoryId) {
+  if (category === "all") return "Search products (mock catalog)";
+  return `Search ${categoryLabel(category)} (mock catalog)`;
+}
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      placeholderOpacity.value = withSequence(
-        withTiming(0, { duration: 180 }),
-        withTiming(1, { duration: 220 }),
-      );
-      setPlaceholderIndex((i) => (i + 1) % SHOP_SEARCH_PLACEHOLDERS.length);
-    }, 2800);
-    return () => clearInterval(id);
-  }, [placeholderOpacity]);
-
-  const placeholderStyle = useAnimatedStyle(() => ({
-    opacity: placeholderOpacity.value,
-  }));
-
-  const glow = useSharedValue(0.4);
-  useEffect(() => {
-    glow.value = withRepeat(
-      withSequence(
-        withTiming(0.85, { duration: 2200 }),
-        withTiming(0.4, { duration: 2200 }),
-      ),
-      -1,
-      false,
-    );
-  }, [glow]);
-
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glow.value,
-  }));
+function ProductTile({
+  product,
+  qtyInCart,
+  onAdd,
+  onOpen,
+}: {
+  product: ShopProduct;
+  qtyInCart: number;
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
+  const initials = initialsFromTitle(product.title);
+  const [thumbFailed, setThumbFailed] = useState(false);
 
   return (
-    <Animated.View entering={FadeInDown.duration(420).delay(120)} style={styles.searchWrap}>
-      <Animated.View style={[styles.searchGlow, glowStyle]} pointerEvents="none" />
-      <View style={styles.searchCard}>
-        {Platform.OS === "ios" ? (
-          <BlurView intensity={36} tint="light" style={StyleSheet.absoluteFill} />
-        ) : null}
-        <LinearGradient
-          colors={["rgba(255,255,255,0.95)", "rgba(240,246,255,0.9)"]}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.searchRow}>
-          <Ionicons name="search" size={20} color="#004aad" />
-          <Animated.Text
-            style={[styles.searchPlaceholder, placeholderStyle]}
-            numberOfLines={1}
-          >
-            {SHOP_SEARCH_PLACEHOLDERS[placeholderIndex]}
-          </Animated.Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Voice search preview"
-            hitSlop={8}
-            style={styles.micBtn}
-          >
-            <Ionicons name="mic-outline" size={20} color="#525252" />
-          </Pressable>
+    <View style={styles.productCard}>
+      <Pressable
+        onPress={onOpen}
+        style={({ pressed }) => [styles.tilePress, pressed && { opacity: 0.97 }]}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${product.title}`}
+      >
+        <View style={styles.thumbWrap}>
+          {thumbFailed ? (
+            <View style={styles.thumbFallback}>
+              <Text style={styles.thumbFallbackText}>{initials || "IH"}</Text>
+            </View>
+          ) : (
+            <Image
+              source={{ uri: product.imageUrl }}
+              style={styles.thumb}
+              resizeMode="cover"
+              onError={() => setThumbFailed(true)}
+            />
+          )}
+          {product.badge ? (
+            <View style={styles.productBadgeOverlay}>
+              <Text style={styles.productBadgeOverlayText}>{product.badge}</Text>
+            </View>
+          ) : null}
         </View>
+
+        <Text style={styles.productTitleText} numberOfLines={2}>
+          {product.title}
+        </Text>
+
+        <Text style={styles.productMeta} numberOfLines={1}>
+          {product.rating.toFixed(1)} ★ · {product.reviewCount.toLocaleString("en-IN")} reviews
+        </Text>
+
+        <Text style={styles.productHighlights} numberOfLines={1}>
+          {product.highlights.slice(0, 2).join(" · ")}
+        </Text>
+      </Pressable>
+
+      <View style={styles.tileBottomRow}>
+        <Text style={styles.productPrice}>{formatINR(product.price)}</Text>
+        <Pressable
+          onPress={onAdd}
+          accessibilityRole="button"
+          accessibilityLabel={`Add ${product.title} to cart`}
+          style={({ pressed }) => [
+            styles.addBtn,
+            qtyInCart > 0 && styles.addBtnActive,
+            pressed && { opacity: 0.93 },
+          ]}
+        >
+          {qtyInCart > 0 ? (
+            <Text style={[styles.addBtnText, styles.addBtnTextActive]}>
+              Added ×{qtyInCart}
+            </Text>
+          ) : (
+            <View style={styles.addBtnRow}>
+              <Ionicons name="cart-outline" size={16} color="#ffffff" />
+              <Text style={[styles.addBtnText, styles.addBtnTextNew]}>Add</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
-      <Text style={styles.searchHint}>
-        Tap widgets below to browse — search bar is visual preview only
-      </Text>
-    </Animated.View>
+    </View>
+  );
+}
+
+export function InstaHelpShopScreen() {
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const [category, setCategory] = useState<ShopCategoryId>("all");
+  const [search, setSearch] = useState("");
+
+  const [cart, setCart] = useState<Record<string, number>>({});
+  const cartCount = useMemo(
+    () => Object.values(cart).reduce((sum, n) => sum + n, 0),
+    [cart],
+  );
+
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const selectedProduct = useMemo(
+    () => SHOP_MOCK_PRODUCTS.find((p) => p.id === selectedProductId) ?? null,
+    [selectedProductId],
+  );
+  const [heroImgFailed, setHeroImgFailed] = useState(false);
+
+  const filteredProducts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+
+    const byCategory =
+      category === "all"
+        ? SHOP_MOCK_PRODUCTS
+        : SHOP_MOCK_PRODUCTS.filter((p) => p.categoryId === category);
+
+    if (!q) return byCategory;
+
+    return byCategory.filter((p) => {
+      const hay = `${p.title} ${p.description} ${p.highlights.join(" ")}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [category, search]);
+
+  const addToCart = (productId: string) => {
+    setCart((prev) => ({
+      ...prev,
+      [productId]: (prev[productId] ?? 0) + 1,
+    }));
+  };
+
+  const GRID_GUTTER = 12;
+  const GRID_SIDE = 16;
+  const tileWidth = useMemo(() => {
+    const w = windowWidth - GRID_SIDE * 2 - GRID_GUTTER;
+    return Math.floor(w / 2);
+  }, [windowWidth]);
+
+  return (
+    <Screen className="bg-[#f4f7fc]">
+      <FlatList
+        data={filteredProducts}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        showsVerticalScrollIndicator={false}
+        columnWrapperStyle={styles.gridRow}
+        contentContainerStyle={[
+          styles.gridContainer,
+          { paddingBottom: 120 + insets.bottom },
+        ]}
+        ListHeaderComponent={
+          <>
+            {/* Header */}
+            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+              <LinearGradient
+                colors={["#5B21B6", "#7C3AED", "#8B5CF6", "#8B5CF6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {Platform.OS === "ios" ? (
+                <BlurView
+                  intensity={18}
+                  tint="dark"
+                  style={StyleSheet.absoluteFill}
+                />
+              ) : null}
+
+              <View style={styles.headerOrb1} pointerEvents="none" />
+              <View style={styles.headerOrb2} pointerEvents="none" />
+
+              <View style={styles.headerTopRow}>
+                <View style={styles.headerTitleBlock}>
+                  <Text style={styles.headerTitle}>InstaHelp Shop</Text>
+                  <Text style={styles.headerSubtitle}>
+                    Mock catalog · add to cart works locally
+                  </Text>
+                </View>
+
+                <View style={styles.cartPill} accessibilityLabel="Cart count">
+                  <Ionicons name="cart-outline" size={16} color="#5B21B6" />
+                  <Text style={styles.cartPillText}>{cartCount}</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.body}>
+              <View style={styles.searchWrap}>
+                <View style={styles.searchCard}>
+                  <Ionicons name="search" size={18} color="#7C3AED" />
+                  <TextInput
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder={getSearchPlaceholder(category)}
+                    placeholderTextColor="rgba(82, 82, 82, 0.55)"
+                    style={styles.searchInput}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                  />
+                  {search.trim().length > 0 ? (
+                    <Pressable
+                      hitSlop={6}
+                      onPress={() => setSearch("")}
+                      accessibilityRole="button"
+                      accessibilityLabel="Clear search"
+                      style={styles.clearBtn}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#6b7280" />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+
+              <ShopCategoryTabs
+                active={category}
+                onChange={(id) => {
+                  setCategory(id);
+                  setSearch("");
+                }}
+              />
+
+              <View style={styles.resultsHeader}>
+                <Text style={styles.resultsTitle}>Products</Text>
+                <Text style={styles.resultsCount}>
+                  {filteredProducts.length} item
+                  {filteredProducts.length === 1 ? "" : "s"}
+                </Text>
+              </View>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          <View style={[styles.body, { paddingTop: 6 }]}>
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={26} color="#7C3AED" />
+              <Text style={styles.emptyTitle}>No matches</Text>
+              <Text style={styles.emptySubtitle}>
+                Try a different search or pick another category.
+              </Text>
+            </View>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={{ width: tileWidth, marginBottom: GRID_GUTTER }}>
+            <ProductTile
+              product={item}
+              qtyInCart={cart[item.id] ?? 0}
+              onAdd={() => addToCart(item.id)}
+              onOpen={() => {
+                setHeroImgFailed(false);
+                setSelectedProductId(item.id);
+              }}
+            />
+          </View>
+        )}
+      />
+
+      {/* Product details modal */}
+        <Modal
+          visible={selectedProduct != null}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSelectedProductId(null)}
+        >
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setSelectedProductId(null)}
+          />
+
+          <View style={styles.modalCard}>
+            {selectedProduct ? (
+              <>
+                {heroImgFailed ? (
+                  <View style={styles.modalHeroFallback}>
+                    <Text style={styles.modalHeroFallbackText}>
+                      {initialsFromTitle(selectedProduct.title) || "IH"}
+                    </Text>
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: selectedProduct.imageUrl }}
+                    style={styles.modalHero}
+                    resizeMode="cover"
+                    onError={() => setHeroImgFailed(true)}
+                  />
+                )}
+
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle} numberOfLines={2}>
+                    {selectedProduct.title}
+                  </Text>
+                  <Pressable
+                    onPress={() => setSelectedProductId(null)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close"
+                    style={styles.modalCloseBtn}
+                  >
+                    <Ionicons name="close" size={20} color="#6b7280" />
+                  </Pressable>
+                </View>
+
+                <View style={styles.modalInfoRow}>
+                  <Text style={styles.modalPrice}>
+                    {formatINR(selectedProduct.price)}
+                  </Text>
+                  <Text style={styles.modalMeta}>
+                    {selectedProduct.rating.toFixed(1)} ★ ·{" "}
+                    {selectedProduct.reviewCount.toLocaleString("en-IN")}{" "}
+                    reviews
+                  </Text>
+                </View>
+
+                <ScrollView
+                  style={styles.modalBody}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Text style={styles.modalSectionTitle}>About</Text>
+                  <Text style={styles.modalDescription}>
+                    {selectedProduct.description}
+                  </Text>
+
+                  <Text style={styles.modalSectionTitle}>Highlights</Text>
+                  <View style={styles.highlightsList}>
+                    {selectedProduct.highlights.map((h, i) => (
+                      <View key={`${selectedProduct.id}-${i}`} style={styles.highlightItem}>
+                        <Ionicons name="checkmark-circle" size={16} color="#7C3AED" />
+                        <Text style={styles.highlightText}>{h}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                <View style={styles.modalFooter}>
+                  <Pressable
+                    onPress={() => addToCart(selectedProduct.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Add to cart"
+                    style={({ pressed }) => [
+                      styles.modalPrimaryBtn,
+                      pressed && { opacity: 0.94 },
+                    ]}
+                  >
+                    <View style={styles.modalPrimaryRow}>
+                      <Ionicons name="cart-outline" size={18} color="#ffffff" />
+                      <Text style={styles.modalPrimaryText}>
+                        Add to cart
+                      </Text>
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setSelectedProductId(null)}
+                    accessibilityRole="button"
+                    style={styles.modalSecondaryBtn}
+                  >
+                    <Text style={styles.modalSecondaryText}>Close</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+          </View>
+        </Modal>
+    </Screen>
   );
 }
 
@@ -150,7 +424,7 @@ function ShopCategoryTabs({
   onChange: (id: ShopCategoryId) => void;
 }) {
   return (
-    <Animated.View entering={FadeInDown.duration(400).delay(160)}>
+    <View style={styles.tabsWrap}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -168,7 +442,7 @@ function ShopCategoryTabs({
             >
               {on ? (
                 <LinearGradient
-                  colors={["#003a85", "#004aad", "#3b82f6"]}
+                  colors={["#5B21B6", "#7C3AED", "#8B5CF6"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.tabPillActive}
@@ -180,142 +454,33 @@ function ShopCategoryTabs({
                   <Text style={styles.tabLabel}>{cat.label}</Text>
                 </View>
               )}
-              {on ? <View style={styles.tabUnderline} /> : null}
             </Pressable>
           );
         })}
       </ScrollView>
-    </Animated.View>
-  );
-}
-
-export function InstaHelpShopScreen() {
-  const insets = useSafeAreaInsets();
-  const [category, setCategory] = useState<ShopCategoryId>("all");
-
-  const copy = useMemo(() => {
-    if (category === "all") {
-      return {
-        banner: "Featured deals & seasonal offers",
-        search: "Search across Flipkart catalog",
-      };
-    }
-    return (
-      CATEGORY_COPY[category] ?? {
-        banner: "Curated picks for you",
-        search: "Search products",
-      }
-    );
-  }, [category]);
-
-  const showBanner =
-    category === "all" ||
-    ["electronics", "fashion", "gifts", "travel"].includes(category);
-
-  const floatY = useSharedValue(0);
-  useEffect(() => {
-    floatY.value = withRepeat(
-      withSequence(
-        withTiming(-4, { duration: 2400 }),
-        withTiming(4, { duration: 2400 }),
-      ),
-      -1,
-      true,
-    );
-  }, [floatY]);
-
-  const floatStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: floatY.value }],
-  }));
-
-  return (
-    <Screen className="bg-[#f4f7fc]">
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: 140 + insets.bottom,
-        }}
-      >
-        {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <LinearGradient
-            colors={["#003a85", "#004aad", "#1e5bb8", "#3b82f6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {Platform.OS === "ios" ? (
-            <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
-          ) : null}
-          <View style={styles.headerOrb1} pointerEvents="none" />
-          <View style={styles.headerOrb2} pointerEvents="none" />
-
-          <Animated.View entering={FadeIn.duration(400)} style={styles.headerContent}>
-            <View style={styles.previewPill}>
-              <Ionicons name="flask-outline" size={12} color="#ffd500" />
-              <Text style={styles.previewPillText}>Widget preview</Text>
-            </View>
-            <Text style={styles.headerTitle}>InstaHelp Shop</Text>
-            <Text style={styles.headerSubtitle}>
-              Discover trending products & deals
-            </Text>
-          </Animated.View>
-        </View>
-
-        <View style={styles.body}>
-          <ShopSearchBar />
-          <ShopCategoryTabs active={category} onChange={setCategory} />
-
-          <Animated.View style={floatStyle}>
-            {showBanner ? (
-              <ShopWidgetCard
-                title="Deals banner"
-                subtitle={copy.banner}
-                html={BANNER_HTML}
-                aspectRatio={BANNER_ASPECT}
-                delay={200}
-                badge="Flipkart"
-              />
-            ) : null}
-
-            <View style={showBanner ? styles.cardGap : undefined}>
-              <ShopWidgetCard
-                title="Product search"
-                subtitle={copy.search}
-                html={SEARCH_HTML}
-                aspectRatio={SEARCH_ASPECT}
-                delay={showBanner ? 280 : 200}
-                badge="Live embed"
-              />
-            </View>
-          </Animated.View>
-
-          <Animated.View
-            entering={FadeInUp.duration(420).delay(340)}
-            style={styles.disclaimer}
-          >
-            <Ionicons name="information-circle-outline" size={16} color="#737373" />
-            <Text style={styles.disclaimerText}>
-              Prototype only — no checkout or cart. Use this screen to judge how
-              Flipkart affiliate widgets feel inside InstaHelp.
-            </Text>
-          </Animated.View>
-        </View>
-      </ScrollView>
-    </Screen>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  gridContainer: {
+    paddingBottom: 120,
+    paddingHorizontal: 16,
+  },
+  gridRow: {
+    justifyContent: "space-between",
+  },
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 28,
+    paddingBottom: 18,
     overflow: "hidden",
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
   },
   headerOrb1: {
     position: "absolute",
     right: -24,
-    top: 12,
+    top: 8,
     width: 120,
     height: 120,
     borderRadius: 60,
@@ -330,119 +495,110 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: "rgba(255,213,0,0.15)",
   },
-  headerContent: {
-    paddingTop: 8,
-  },
-  previewPill: {
-    alignSelf: "flex-start",
+  headerTopRow: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.14)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginBottom: 12,
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
   },
-  previewPillText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "rgba(255,255,255,0.95)",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
+  headerTitleBlock: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: "800",
     color: "#ffffff",
     letterSpacing: -0.8,
   },
   headerSubtitle: {
     marginTop: 6,
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 14,
     color: "rgba(255,255,255,0.88)",
     fontWeight: "500",
-    maxWidth: 300,
+    lineHeight: 20,
+  },
+  cartPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.85)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 6,
+  },
+  cartPillText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#5B21B6",
   },
   body: {
-    marginTop: -16,
+    marginTop: 10,
     paddingHorizontal: 16,
   },
   searchWrap: {
-    marginBottom: 16,
-  },
-  searchGlow: {
-    position: "absolute",
-    left: 8,
-    right: 8,
-    top: 6,
-    bottom: 28,
-    borderRadius: 20,
-    backgroundColor: "#004aad",
+    marginBottom: 12,
   },
   searchCard: {
-    borderRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.85)",
-    shadowColor: "#004aad",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 5,
-  },
-  searchRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "rgba(0,74,173,0.10)",
+    shadowColor: "#7C3AED",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 2,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-  searchPlaceholder: {
+  searchInput: {
     flex: 1,
     fontSize: 15,
     fontWeight: "600",
-    color: "#525252",
+    color: "#111827",
+    padding: 0,
+    margin: 0,
   },
-  micBtn: {
-    height: 36,
-    width: 36,
-    borderRadius: 18,
+  clearBtn: {
+    height: 28,
+    width: 28,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,74,173,0.08)",
+    backgroundColor: "rgba(99,102,241,0.10)",
   },
-  searchHint: {
-    marginTop: 8,
-    marginLeft: 4,
-    fontSize: 11,
-    color: "#94a3b8",
-    fontWeight: "500",
+  tabsWrap: {
+    marginTop: 2,
+    marginBottom: 14,
   },
   tabsContent: {
     paddingVertical: 4,
-    paddingRight: 8,
+    paddingRight: 6,
     gap: 8,
   },
   tabPressable: {
     alignItems: "center",
+    justifyContent: "center",
   },
   tabPill: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.1)",
+    borderColor: "rgba(0,74,173,0.10)",
   },
   tabPillActive: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 999,
-    shadowColor: "#004aad",
+    shadowColor: "#7C3AED",
     shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -458,36 +614,308 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: "#ffffff",
   },
-  tabUnderline: {
-    marginTop: 6,
-    width: 28,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: "#ffd500",
-    shadowColor: "#ffd500",
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  cardGap: {
-    marginTop: 16,
-  },
-  disclaimer: {
-    marginTop: 20,
+  resultsHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.75)",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 2,
+    marginBottom: 10,
+  },
+  resultsTitle: {
+    fontSize: 15,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  resultsCount: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6b7280",
+  },
+  productsList: {
+    gap: 12,
+  },
+  productCard: {
+    borderRadius: 18,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "rgba(0,74,173,0.10)",
+    overflow: "hidden",
+  },
+  tilePress: {
+    padding: 10,
+  },
+  thumbWrap: {
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: 10,
+    backgroundColor: "rgba(17,24,39,0.06)",
+  },
+  thumb: {
+    width: "100%",
+    height: 120,
+    backgroundColor: "rgba(17,24,39,0.06)",
+  },
+  thumbFallback: {
+    width: "100%",
+    height: 120,
+    backgroundColor: "rgba(124,58,237,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  thumbFallbackText: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#5B21B6",
+  },
+  productBadgeOverlay: {
+    position: "absolute",
+    left: 8,
+    top: 8,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: "rgba(17,24,39,0.78)",
+  },
+  productBadgeOverlayText: {
+    fontSize: 10,
+    fontWeight: "900",
+    color: "#ffffff",
+  },
+  productTitleText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#111827",
+    minHeight: 38,
+  },
+  productMeta: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6b7280",
+  },
+  productHighlights: {
+    marginTop: 5,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  tileBottomRow: {
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    gap: 10,
+  },
+  productPrice: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  addBtn: {
+    borderRadius: 14,
+    backgroundColor: "rgba(124,58,237,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(124,58,237,0.25)",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addBtnActive: {
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
+  },
+  addBtnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  addBtnText: {
+    fontSize: 12,
+    fontWeight: "900",
+    color: "#7C3AED",
+  },
+  addBtnTextNew: {
+    color: "#ffffff",
+  },
+  addBtnTextActive: {
+    color: "#ffffff",
+  },
+  emptyState: {
+    marginTop: 18,
+    borderRadius: 20,
+    backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "rgba(0,74,173,0.08)",
-    padding: 14,
+    padding: 18,
+    alignItems: "center",
   },
-  disclaimerText: {
-    flex: 1,
+  emptyTitle: {
+    marginTop: 10,
+    fontSize: 15,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  emptySubtitle: {
+    marginTop: 6,
     fontSize: 12,
+    fontWeight: "600",
+    color: "#6b7280",
+    textAlign: "center",
     lineHeight: 18,
-    color: "#737373",
-    fontWeight: "500",
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  modalCard: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    bottom: 14,
+    borderRadius: 22,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "rgba(0,74,173,0.10)",
+    maxHeight: "80%",
+    overflow: "hidden",
+  },
+  modalHero: {
+    width: "100%",
+    height: 170,
+    backgroundColor: "rgba(17,24,39,0.06)",
+  },
+  modalHeroFallback: {
+    width: "100%",
+    height: 170,
+    backgroundColor: "rgba(124,58,237,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalHeroFallbackText: {
+    fontSize: 24,
+    fontWeight: "900",
+    color: "#5B21B6",
+  },
+  modalHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  modalCloseBtn: {
+    height: 32,
+    width: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(107,114,128,0.10)",
+  },
+  modalInfoRow: {
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 6,
+  },
+  modalPrice: {
+    fontSize: 16,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  modalMeta: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6b7280",
+    textAlign: "right",
+  },
+  modalBody: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 4,
+  },
+  modalSectionTitle: {
+    marginTop: 12,
+    fontSize: 13,
+    fontWeight: "900",
+    color: "#111827",
+  },
+  modalDescription: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4b5563",
+    lineHeight: 20,
+  },
+  highlightsList: {
+    marginTop: 10,
+    gap: 10,
+  },
+  highlightItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(0,74,173,0.08)",
+    backgroundColor: "rgba(124,58,237,0.06)",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  highlightText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+    flex: 1,
+  },
+  modalFooter: {
+    padding: 14,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,74,173,0.10)",
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+  },
+  modalPrimaryBtn: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: "#7C3AED",
+    paddingVertical: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalPrimaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  modalPrimaryText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#ffffff",
+  },
+  modalSecondaryBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(0,74,173,0.18)",
+    backgroundColor: "rgba(255,255,255,0.98)",
+  },
+  modalSecondaryText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#111827",
   },
 });
+

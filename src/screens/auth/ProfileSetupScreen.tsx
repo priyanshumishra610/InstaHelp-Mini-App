@@ -328,7 +328,7 @@ export function ProfileSetupScreen() {
                 ]}
               >
                 {loading ? (
-                  <ActivityIndicator color="#0f172a" />
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <Text
                     style={[
@@ -445,23 +445,37 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   continueBtn: {
-    borderRadius: 14,
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 320,
+    borderRadius: 999,
     paddingVertical: 16,
+    paddingHorizontal: 28,
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.18)",
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    justifyContent: "center",
+    backgroundColor: "#2F2F3D",
+    marginTop: 28,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.28)",
+    minHeight: 54,
+    overflow: "hidden",
   },
   continueBtnActive: {
-    backgroundColor: "#E5E7EB",
-    borderColor: "#E5E7EB",
+    backgroundColor: AUTH_PRIMARY,
+    borderColor: "rgba(255,255,255,0.45)",
     shadowColor: AUTH_PRIMARY,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  continueLabel: { fontSize: 16, color: "rgba(255,255,255,0.55)" },
-  continueLabelActive: { color: "#0f172a" },
+  continueLabel: {
+    fontSize: 16,
+    color: "rgba(255,255,255,0.55)",
+    textAlign: "center",
+  },
+  continueLabelActive: {
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
 });

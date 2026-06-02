@@ -1,8 +1,13 @@
 import { HUB_COLORS } from "@/constants/gamingHub";
-import type { GamezopGame } from "@/constants/gamezopGames";
+import {
+  getGamezopImageUrl,
+  type GamezopGame,
+} from "@/constants/gamezopGames";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -13,8 +18,10 @@ type Props = {
 
 /** Wide promotional card matching Gaming Hub ad slot */
 export function GamingAdBanner({ game, displayTitle, onPlay }: Props) {
+  const [imageFailed, setImageFailed] = useState(false);
   const colors = game.gradient;
   const label = displayTitle ?? game.title;
+  const brickUri = getGamezopImageUrl(game.id, "brick");
 
   return (
     <View style={styles.wrap}>
@@ -27,14 +34,16 @@ export function GamingAdBanner({ game, displayTitle, onPlay }: Props) {
         }}
         style={({ pressed }) => [styles.banner, pressed && styles.bannerPressed]}
       >
-        <LinearGradient
-          colors={["#2d2640", colors[0], colors[1]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradient}
-        >
+        <View style={styles.gradient}>
+          <LinearGradient
+            colors={["#1a0b2e", colors[0], colors[1]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFillObject}
+          />
+
           <View style={styles.adPill}>
-            <Text style={styles.adText}>Ad</Text>
+            <Text style={styles.adText}>Featured</Text>
             <Ionicons
               name="information-circle-outline"
               size={12}
@@ -42,25 +51,25 @@ export function GamingAdBanner({ game, displayTitle, onPlay }: Props) {
             />
           </View>
 
-          <View style={styles.mazeArt}>
-            <View style={styles.mazeRow}>
-              <View style={[styles.mazeCell, styles.mazeWall]} />
-              <View style={[styles.mazeCell, styles.mazePath]} />
-              <View style={[styles.mazeCell, styles.mazeWall]} />
-              <View style={[styles.mazeCell, styles.mazePath]} />
-            </View>
-            <View style={styles.mazeRow}>
-              <View style={[styles.mazeCell, styles.mazePath]} />
-              <View style={[styles.mazeCell, styles.mazeWall]} />
-              <View style={[styles.mazeCell, styles.mazePath]} />
-              <View style={[styles.mazeCell, styles.mazeWall]} />
-            </View>
-            <View style={styles.mazeRow}>
-              <View style={[styles.mazeCell, styles.mazeWall]} />
-              <View style={[styles.mazeCell, styles.mazePath]} />
-              <View style={[styles.mazeCell, styles.mazeWall]} />
-              <View style={[styles.mazeCell, styles.mazeHighlight]} />
-            </View>
+          <View style={styles.artWrap}>
+            {!imageFailed ? (
+              <Image
+                source={{ uri: brickUri }}
+                style={styles.artImage}
+                contentFit="contain"
+                transition={220}
+                cachePolicy="memory-disk"
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <View style={styles.artFallback}>
+                <Ionicons
+                  name={game.icon as keyof typeof Ionicons.glyphMap}
+                  size={48}
+                  color="rgba(255,255,255,0.9)"
+                />
+              </View>
+            )}
           </View>
 
           <Text style={styles.gameLabel}>{label}</Text>
@@ -70,7 +79,7 @@ export function GamingAdBanner({ game, displayTitle, onPlay }: Props) {
               <Text style={styles.ctaText}>Play Now</Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </Pressable>
     </View>
   );
@@ -91,9 +100,10 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   gradient: {
-    minHeight: 168,
+    minHeight: 200,
     padding: 14,
     alignItems: "center",
+    overflow: "hidden",
   },
   adPill: {
     flexDirection: "row",
@@ -104,44 +114,45 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 6,
     backgroundColor: HUB_COLORS.adBadge,
+    zIndex: 2,
   },
   adText: {
     fontSize: 11,
     fontWeight: "700",
     color: "rgba(255,255,255,0.85)",
   },
-  mazeArt: {
+  artWrap: {
+    width: "100%",
+    height: 120,
     marginTop: 8,
-    marginBottom: 6,
-    gap: 4,
+    marginBottom: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  mazeRow: {
-    flexDirection: "row",
-    gap: 4,
+  artImage: {
+    width: "100%",
+    height: "100%",
+    maxWidth: 320,
   },
-  mazeCell: {
-    width: 28,
-    height: 28,
-    borderRadius: 4,
-  },
-  mazeWall: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  mazePath: {
-    backgroundColor: "rgba(255,255,255,0.15)",
-  },
-  mazeHighlight: {
-    backgroundColor: "rgba(59,130,246,0.85)",
+  artFallback: {
+    width: 88,
+    height: 88,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   gameLabel: {
     fontSize: 15,
     fontWeight: "800",
     color: HUB_COLORS.textPrimary,
     marginBottom: 10,
+    zIndex: 2,
   },
   ctaWrap: {
     width: "100%",
     alignItems: "center",
+    zIndex: 2,
   },
   cta: {
     backgroundColor: HUB_COLORS.accentBlue,

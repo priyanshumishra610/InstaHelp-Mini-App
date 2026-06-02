@@ -76,7 +76,7 @@ function MarketplaceVendorCardInner({
               />
             ) : (
               <LinearGradient
-                colors={["#004aad", "#3b82f6"]}
+                colors={["#7C3AED", "#8B5CF6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="h-16 w-16 items-center justify-center rounded-2xl"
@@ -97,7 +97,7 @@ function MarketplaceVendorCardInner({
                 </Text>
                 {vendor.isVerified ? (
                   <View className="flex-row items-center gap-1 rounded-full bg-accent-soft px-2 py-1">
-                    <Ionicons name="shield-checkmark" size={12} color="#004aad" />
+                    <Ionicons name="shield-checkmark" size={12} color="#7C3AED" />
                     <Text className="text-[10px] font-extrabold uppercase tracking-wide text-accent">
                       Verified
                     </Text>
@@ -124,7 +124,7 @@ function MarketplaceVendorCardInner({
 
               <View className="mt-2 flex-row flex-wrap items-center gap-x-2 gap-y-1">
                 <View className="flex-row items-center gap-1">
-                  <Ionicons name="location-outline" size={14} color="#004aad" />
+                  <Ionicons name="location-outline" size={14} color="#7C3AED" />
                   <Text className="text-[12px] font-semibold text-neutral-700">
                     {vendor.areaLabel}
                     {distanceKm != null ? ` · ${distanceKm.toFixed(1)} km` : ""}
@@ -162,7 +162,7 @@ function MarketplaceVendorCardInner({
             />
             <View className="flex-row items-center justify-between px-4 py-2.5">
               <View className="flex-row items-center gap-2">
-                <Ionicons name="lock-closed" size={16} color="#004aad" />
+                <Ionicons name="lock-closed" size={16} color="#7C3AED" />
                 <Text className="font-mono text-[14px] font-extrabold tracking-wider text-neutral-800">
                   {maskPhoneForDisplay(vendor.phone)}
                 </Text>
@@ -175,7 +175,7 @@ function MarketplaceVendorCardInner({
               className="border-t border-white/40"
             >
               <LinearGradient
-                colors={["#003a85", "#004aad"]}
+                colors={["#5B21B6", "#7C3AED"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="flex-row items-center justify-center gap-2 py-3"

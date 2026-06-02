@@ -1,5 +1,6 @@
 import {
-  GAMEZOP_GAMES,
+  findGameById,
+  gamesByIds,
   getFeaturedGames,
   type GamezopGame,
 } from "@/constants/gamezopGames";
@@ -8,49 +9,47 @@ export type MyGameEntry = GamezopGame & {
   lastPlayedLabel: string;
 };
 
-export type HubGameItem = {
-  game: GamezopGame;
-  label?: string;
-};
+function requireGame(id: string): GamezopGame {
+  const game = findGameById(id);
+  if (!game) {
+    throw new Error(`Unknown game id: ${id}`);
+  }
+  return game;
+}
 
 export const MY_GAMES: MyGameEntry[] = [
   {
-    ...GAMEZOP_GAMES[0],
-    title: "Neon Stack",
+    ...requireGame("gTD1yQp3R"),
     lastPlayedLabel: "Yesterday",
   },
   {
-    ...GAMEZOP_GAMES[1],
-    title: "Puzzle Blitz",
+    ...requireGame("9lpHai56Q"),
     lastPlayedLabel: "14/05/2026",
   },
   {
-    ...GAMEZOP_GAMES[4],
-    title: "Coin Runner",
+    ...requireGame("rkWfy2pXq0r"),
     lastPlayedLabel: "2 days ago",
   },
 ];
 
-export const RECOMMENDED_GAMES: HubGameItem[] = [
-  { game: GAMEZOP_GAMES[2], label: "Soccer Star" },
-  { game: GAMEZOP_GAMES[3], label: "Space War" },
-  { game: GAMEZOP_GAMES[0], label: "Stack Hero" },
-  { game: GAMEZOP_GAMES[1], label: "Puzzle Pop" },
-  { game: GAMEZOP_GAMES[4], label: "Coin Dash" },
-  { game: GAMEZOP_GAMES[7], label: "Hyper Lane" },
-];
+export const RECOMMENDED_GAMES: GamezopGame[] = gamesByIds([
+  "UCS62KJ8c",
+  "Skz4pzkDqyX",
+  "gTD1yQp3R",
+  "9lpHai56Q",
+  "rkWfy2pXq0r",
+]);
 
-export const TOP_INSTANT_PLAYS: HubGameItem[] = [
-  { game: GAMEZOP_GAMES[9], label: "Sprint Coins" },
-  { game: GAMEZOP_GAMES[8], label: "Orb Blaster" },
-  { game: GAMEZOP_GAMES[6], label: "Turbo Drift" },
-  { game: GAMEZOP_GAMES[5], label: "Block Rush" },
-  { game: GAMEZOP_GAMES[3], label: "Galaxy Strike" },
-  { game: GAMEZOP_GAMES[1], label: "Mind Maze" },
-];
+export const TOP_INSTANT_PLAYS: GamezopGame[] = gamesByIds([
+  "rkWfy2pXq0r",
+  "Skz4pzkDqyX",
+  "UCS62KJ8c",
+  "gTD1yQp3R",
+  "9lpHai56Q",
+]);
 
 export const FEATURED_AD_GAME: GamezopGame =
-  getFeaturedGames().find((g) => g.id === "9lpHai56Q") ?? GAMEZOP_GAMES[1];
+  getFeaturedGames().find((g) => g.id === "9lpHai56Q") ?? requireGame("9lpHai56Q");
 
 export const HUB_COLORS = {
   bgTop: "#2a1454",
@@ -60,6 +59,6 @@ export const HUB_COLORS = {
   cardBorder: "rgba(255,255,255,0.1)",
   textPrimary: "#ffffff",
   textSecondary: "#9ca3af",
-  accentBlue: "#3b82f6",
+  accentBlue: "#8B5CF6",
   adBadge: "rgba(0,0,0,0.45)",
 } as const;

@@ -12,6 +12,7 @@ const SPREADSHEET_ID = "1GxiZMq0-34BdDk5kC7Hp5hhpPBUped1xtNjNcytC-yY";
 
 const BOOKING_SHEET_NAME = "Bookings";
 const PROFILE_SHEET_NAME = "Profiles";
+const VENDOR_LEADS_SHEET_NAME = "VendorLeads";
 
 /**
  * Headers for the Bookings sheet.
@@ -55,6 +56,20 @@ const PROFILE_HEADERS = [
   "updatedAt",
 ];
 
+const VENDOR_LEADS_HEADERS = [
+  "id",
+  "phone",
+  "name",
+  "email",
+  "businessName",
+  "businessType",
+  "city",
+  "expectationsJson",
+  "status",
+  "createdAt",
+  "updatedAt",
+];
+
 function doGet() {
   return jsonResponse_({ ok: true, data: "InstaHelp Apps Script alive" });
 }
@@ -77,6 +92,8 @@ function doPost(e) {
         return jsonResponse_({ ok: true, data: getUserProfile_(body.phone) });
       case "updateProfile":
         return jsonResponse_({ ok: true, data: updateProfile_(body) });
+      case "registerVendor":
+        return jsonResponse_({ ok: true, data: registerVendor_(body) });
       default:
         throw new Error("Unknown action: " + action);
     }
@@ -86,6 +103,85 @@ function doPost(e) {
       error: err && err.message ? err.message : String(err),
     });
   }
+}
+
+function registerVendor_(body) {
+  requireString_(body.phone, "phone");
+  requireString_(body.email, "email");
+  requireString_(body.businessName, "businessName");
+  requireString_(body.businessType, "businessType");
+  requireString_(body.city, "city");
+
+  const expectations = Array.isArray(body.expectations)
+    ? body.expectations
+        .filter((x) => typeof x === "string" && String(x).trim())
+        .map((x) => String(x).trim())
+    : [];
+
+  if (!expectations.length) {
+    throw new Error("Missing required field: expectations");
+  }
+
+  const sheet = ensureSheet_(VENDOR_LEADS_SHEET_NAME, VENDOR_LEADS_HEADERS);
+  const now = new Date().toISOString();
+  const phone = normalizePhone_(body.phone);
+  const id = "vd_" + Utilities.getUuid();
+
+  const row = {
+    id: id,
+    phone: phone,
+    name: stringOr_(body.name, ""),
+    email: stringOr_(body.email, ""),
+    businessName: stringOr_(body.businessName, ""),
+    businessType: stringOr_(body.businessType, ""),
+    city: stringOr_(body.city, ""),
+    expectationsJson: JSON.stringify(expectations),
+    status: "new",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  appendRowByHeaders_(sheet, VENDOR_LEADS_HEADERS, row);
+  forceTextColumn_(sheet, getHeaderColumn1Based_(sheet, "phone"));
+
+  sendVendorThanksEmail_(row.email, row.name, row.businessName);
+
+  return { id: id, status: "new" };
+}
+
+function sendVendorThanksEmail_(toEmail, name, businessName) {
+  const email = stringOr_(toEmail, "");
+  if (!email) return;
+
+  const safeName = stringOr_(name, "").trim();
+  const greet = safeName ? "Hi " + safeName.split(" ")[0] + "," : "Hi,";
+  const biz = stringOr_(businessName, "").trim();
+
+  const subject = "Thanks for reaching out — InstaHelp Vendor onboarding";
+
+  const html =
+    '<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.55;color:#0f172a">' +
+    "<p style=\"margin:0 0 12px 0\">" +
+    greet +
+    "</p>" +
+    "<p style=\"margin:0 0 12px 0\">" +
+    "Thanks for your interest in joining InstaHelp as a vendor" +
+    (biz ? " for <b>" + biz + "</b>" : "") +
+    ". We've received your details and our team will review them shortly." +
+    "</p>" +
+    "<p style=\"margin:0 0 12px 0\">" +
+    "You'll hear from us soon with the next steps to get you listed and onboarded." +
+    "</p>" +
+    "<p style=\"margin:18px 0 0 0;font-size:12px;color:#475569\">" +
+    "— InstaHelp Team" +
+    "</p>" +
+    "</div>";
+
+  MailApp.sendEmail({
+    to: email,
+    subject: subject,
+    htmlBody: html,
+  });
 }
 
 function createBooking_(body) {

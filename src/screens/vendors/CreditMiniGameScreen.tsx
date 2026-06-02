@@ -3,6 +3,7 @@ import { MiniGameWinOverlay } from "@/components/vendors/MiniGameWinOverlay";
 import {
   BONUS_GAME_TIC_TAC_TOE_CREDITS,
 } from "@/constants/vendorMarketplace";
+import { useGameOpenCreditOnMount } from "@/hooks/useGameOpenCredit";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import { calendarDayKey } from "@/utils/calendarDay";
 import { Ionicons } from "@expo/vector-icons";
@@ -88,13 +89,14 @@ const CARD_SHADOW_IOS = {
   shadowRadius: 28,
 };
 const SOFT_SHADOW_IOS = {
-  shadowColor: "#004aad",
+  shadowColor: "#7C3AED",
   shadowOffset: { width: 0, height: 8 },
   shadowOpacity: 0.08,
   shadowRadius: 20,
 };
 
 export function CreditMiniGameScreen() {
+  useGameOpenCreditOnMount("Insta Grid");
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
   const tryAwardTicTacToeBonus = useVendorLeadStore(
@@ -200,14 +202,14 @@ export function CreditMiniGameScreen() {
       return {
         icon: "hand-left-outline" as const,
         label: "Your turn",
-        tint: "#004aad",
+        tint: "#7C3AED",
       };
     }
     if (phase === "user_won") {
       return {
         icon: "trophy-outline" as const,
         label: "You won!",
-        tint: claimedToday ? "#059669" : "#004aad",
+        tint: claimedToday ? "#059669" : "#7C3AED",
       };
     }
     if (phase === "ai_won") {
@@ -245,7 +247,7 @@ export function CreditMiniGameScreen() {
             >
               <View className="overflow-hidden rounded-[27px]">
                 <LinearGradient
-                  colors={["#004aad", "#1e5fd4", "#3b82f6"]}
+                  colors={["#7C3AED", "#8B5CF6", "#8B5CF6"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   className="px-5 pb-10 pt-5"
@@ -272,7 +274,7 @@ export function CreditMiniGameScreen() {
                 >
                   <View className="flex-row flex-wrap gap-2">
                     <View className="min-w-[46%] flex-1 flex-row items-center gap-2 rounded-2xl border border-neutral-100 bg-neutral-50/80 px-3 py-2">
-                      <Ionicons name="wallet-outline" size={18} color="#004aad" />
+                      <Ionicons name="wallet-outline" size={18} color="#7C3AED" />
                       <Text className="text-[14px] font-extrabold text-neutral-800">
                         {credits} cr
                       </Text>
@@ -426,12 +428,12 @@ export function CreditMiniGameScreen() {
             </View>
 
             <LinearGradient
-              colors={["#004aad", "#003a85"]}
+              colors={["#7C3AED", "#5B21B6"]}
               className="mt-8 overflow-hidden rounded-full"
               style={
                 Platform.OS === "ios"
                   ? {
-                      shadowColor: "#004aad",
+                      shadowColor: "#7C3AED",
                       shadowOffset: { width: 0, height: 10 },
                       shadowOpacity: 0.35,
                       shadowRadius: 16,
@@ -457,7 +459,7 @@ export function CreditMiniGameScreen() {
                 Platform.OS === "ios" ? SOFT_SHADOW_IOS : { elevation: 2 }
               }
             >
-              <Ionicons name="arrow-back" size={18} color="#004aad" />
+              <Ionicons name="arrow-back" size={18} color="#7C3AED" />
               <Text className="text-[13px] font-extrabold text-accent-deep">
                 Arcade
               </Text>

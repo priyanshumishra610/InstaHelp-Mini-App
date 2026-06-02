@@ -5,6 +5,7 @@ import {
   AUTH_FONT,
   AUTH_PRIMARY,
   AUTH_PRIMARY_DEEP,
+  AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -38,7 +39,7 @@ export function WelcomeAuthCard({ onLogin, onRegister, compact }: Props) {
       <View style={styles.actions}>
         <PremiumPressable onPress={onLogin} glow accessibilityRole="button">
           <LinearGradient
-            colors={["#3B82F6", AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
+            colors={[AUTH_PRIMARY_LIGHT, AUTH_PRIMARY, AUTH_PRIMARY_DEEP]}
             locations={[0, 0.5, 1]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}

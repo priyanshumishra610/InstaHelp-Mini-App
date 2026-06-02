@@ -1,3 +1,4 @@
+import { ACCENT } from "@/constants/theme";
 import { cn } from "@/utils/cn";
 import type { PropsWithChildren } from "react";
 import { ActivityIndicator, Pressable, Text } from "react-native";
@@ -60,7 +61,7 @@ export function Button({
   };
 
   const indicatorColor =
-    variant === "outline" || variant === "ghost" ? "#004aad" : "#ffffff";
+    variant === "outline" || variant === "ghost" ? ACCENT : "#ffffff";
 
   return (
     <Pressable

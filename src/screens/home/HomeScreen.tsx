@@ -10,6 +10,11 @@ import { FeaturedVendorsRow } from "@/components/vendor/FeaturedVendorsRow";
 import { NearbyVendorsRow } from "@/components/vendor/NearbyVendorsRow";
 import { LEGAL_PRIVACY_URL, LEGAL_TERMS_URL } from "@/config/env";
 import { DISCOVERY_CATEGORIES } from "@/constants/discoveryCategories";
+import {
+  GAME_OPEN_CREDIT_REWARD,
+  GAME_OPEN_DAILY_MAX_COUNT,
+  GAME_OPEN_DAILY_MAX_CREDITS,
+} from "@/constants/vendorMarketplace";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
@@ -86,6 +91,11 @@ const TOPICS: { id: string; label: string; message: string }[] = [
       "Hi InstaHelp! I'd like to review my past bookings and service history.",
   },
 ];
+
+const HOME_VENDOR_MARKETPLACE_BG =
+  "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1600&q=70";
+const HOME_GAMES_BG =
+  "https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=70";
 
 const SERVICE_OPTIONS: SelectOption[] = [
   { value: "cleaning", label: "Cleaning" },
@@ -545,7 +555,7 @@ export function HomeScreen() {
                 }
                 className="h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white"
               >
-                <Ionicons name="chatbubble-ellipses" size={18} color="#004aad" />
+                <Ionicons name="chatbubble-ellipses" size={18} color="#7C3AED" />
               </Pressable>
             </View>
             <Animated.View
@@ -737,12 +747,12 @@ export function HomeScreen() {
                     className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full bg-accent-soft"
                   >
                     {deviceLocation.isLoading ? (
-                      <ActivityIndicator color="#004aad" size="small" />
+                      <ActivityIndicator color="#7C3AED" size="small" />
                     ) : (
                       <Ionicons
                         name="locate"
                         size={18}
-                        color="#004aad"
+                        color="#7C3AED"
                       />
                     )}
                   </Pressable>
@@ -750,7 +760,7 @@ export function HomeScreen() {
 
                 {deviceLocation.isLoading && !address ? (
                   <View className="ml-1 mt-1.5 flex-row items-center gap-1.5">
-                    <ActivityIndicator color="#004aad" size="small" />
+                    <ActivityIndicator color="#7C3AED" size="small" />
                     <Text className="text-[11px] font-semibold text-accent-deep">
                       Detecting your location...
                     </Text>
@@ -760,7 +770,7 @@ export function HomeScreen() {
                     <Ionicons
                       name="checkmark-circle"
                       size={12}
-                      color="#004aad"
+                      color="#7C3AED"
                     />
                     <Text className="text-[11px] font-semibold text-accent-deep">
                       Auto-filled from your current location
@@ -929,8 +939,13 @@ export function HomeScreen() {
               accessibilityLabel="Explore vendor marketplace"
               className="overflow-hidden rounded-3xl border border-accent-tint shadow-soft"
             >
+              <Image
+                source={{ uri: HOME_VENDOR_MARKETPLACE_BG }}
+                className="absolute inset-0 h-full w-full"
+                resizeMode="cover"
+              />
               <LinearGradient
-                colors={["#003a85", "#004aad", "#3b82f6"]}
+                colors={["rgba(20,24,35,0.74)", "rgba(61,31,109,0.68)", "rgba(32,15,66,0.74)"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 className="px-5 py-5"
@@ -957,6 +972,56 @@ export function HomeScreen() {
                   </View>
                   <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
                     <Ionicons name="sparkles" size={26} color="#ffd500" />
+                  </View>
+                </View>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInUp.duration(480).delay(260)}
+            className="mt-3 px-5"
+          >
+            <Pressable
+              onPress={() => router.push("/(tabs)/vendors/arcade")}
+              accessibilityRole="button"
+              accessibilityLabel="Open InstaHelp games arcade"
+              className="overflow-hidden rounded-3xl border border-violet-300/40 shadow-soft"
+            >
+              <Image
+                source={{ uri: HOME_GAMES_BG }}
+                className="absolute inset-0 h-full w-full"
+                resizeMode="cover"
+              />
+              <LinearGradient
+                colors={["rgba(8,12,30,0.78)", "rgba(36,16,74,0.72)", "rgba(18,8,40,0.8)"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="px-5 py-5"
+              >
+                <View className="flex-row items-center justify-between gap-4">
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <View className="rounded-full bg-[#ffd500]/20 px-2.5 py-1">
+                        <Text className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[#ffd500]">
+                          Play & Earn
+                        </Text>
+                      </View>
+                      <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
+                        Arcade
+                      </Text>
+                    </View>
+                    <Text className="mt-3 text-[20px] font-extrabold leading-7 text-white">
+                      Games
+                    </Text>
+                    <Text className="mt-1 text-[13px] leading-[19px] text-white/85">
+                      +{GAME_OPEN_CREDIT_REWARD} credits every time you open a game — up to{" "}
+                      {GAME_OPEN_DAILY_MAX_COUNT} opens ({GAME_OPEN_DAILY_MAX_CREDITS} credits)
+                      per day. No unlock required.
+                    </Text>
+                  </View>
+                  <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
+                    <Ionicons name="game-controller" size={26} color="#ffd500" />
                   </View>
                 </View>
               </LinearGradient>

@@ -81,3 +81,22 @@ export type UpdateProfilePayload = Pick<UserProfile, "name" | "addresses" | "fav
 export async function apiUpdateProfile(payload: UpdateProfilePayload) {
   return postJson<UserProfile>({ action: "updateProfile", ...payload });
 }
+
+export type VendorRegistrationPayload = {
+  phone: string;
+  name?: string;
+  email: string;
+  businessName: string;
+  businessType: string;
+  city: string;
+  expectations: string[];
+};
+
+export type VendorRegistrationResult = {
+  id: string;
+  status: string;
+};
+
+export async function apiRegisterVendor(payload: VendorRegistrationPayload) {
+  return postJson<VendorRegistrationResult>({ action: "registerVendor", ...payload });
+}

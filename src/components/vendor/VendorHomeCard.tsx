@@ -1,7 +1,7 @@
 import { formatStartingPrice } from "@/services/vendors/vendorPresentation";
+import { vendorGallerySources } from "@/services/vendors/vendorPresentation";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import type { VendorRecord } from "@/types/vendorMarketplace";
-import { Ionicons } from "@expo/vector-icons";
 import { Image, Pressable, Text, View } from "react-native";
 
 type Props = {
@@ -10,9 +10,25 @@ type Props = {
   onPress: () => void;
 };
 
+// Fallbacks sourced from `assets/Resort list.csv` image columns.
+const RESORT_DATA_FALLBACK_IMAGES = [
+  "https://assets.hyatt.com/content/dam/hyatt/hyattdam/images/2016/10/10/1651/Grand-Hyatt-Goa-P029-Hotel-Pool.jpg/Grand-Hyatt-Goa-P029-Hotel-Pool.16x9.jpg?imwidth=2560",
+  "https://cdn.sanity.io/images/ocl5w36p/prod5/5c70cae58e378301924776dfce5ca539f25197a0-1920x1440.jpg?w=768&auto=format&dpr=2",
+  "https://cache.marriott.com/content/dam/marriott-renditions/GOIWH/goiwh-porte-2327-hor-clsc.jpg?output-quality=70&interpolation=progressive-bilinear&downsize=1336px:*",
+  "https://assets.hyatt.com/content/dam/hyatt/hyattdam/images/2022/05/27/0750/GOIAL-P0280-Exterior-Aerial-View.jpg/GOIAL-P0280-Exterior-Aerial-View.16x9.jpg?imwidth=2560",
+  "https://cache.marriott.com/is/image/marriotts7prod/xr-goixr-lobby-entrance-41750:Classic-Hor?wid=1336&fit=constrain",
+  "https://www.ahstatic.com/photos/8861_ho_01_p_2048x1536.jpg",
+  "https://hotel.hardrock.com/goa/files/6021/HRH_Goa_Pool_10.jpeg",
+];
+
 export function VendorHomeCard({ vendor, distanceKm, onPress }: Props) {
   const title = vendorDisplayName(vendor);
   const price = formatStartingPrice(vendor);
+  const vendorImages = vendorGallerySources(vendor);
+  const fallbackIndex =
+    vendor.id.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) %
+    RESORT_DATA_FALLBACK_IMAGES.length;
+  const imageUrl = vendorImages[0] ?? RESORT_DATA_FALLBACK_IMAGES[fallbackIndex];
 
   return (
     <Pressable
@@ -28,17 +44,11 @@ export function VendorHomeCard({ vendor, distanceKm, onPress }: Props) {
       }}
     >
       <View className="h-[92px] bg-accent-soft">
-        {vendor.profileImageUrl ? (
-          <Image
-            source={{ uri: vendor.profileImageUrl }}
-            className="h-full w-full"
-            resizeMode="cover"
-          />
-        ) : (
-          <View className="flex-1 items-center justify-center">
-            <Ionicons name="storefront-outline" size={28} color="#004aad" />
-          </View>
-        )}
+        <Image
+          source={{ uri: imageUrl }}
+          className="h-full w-full"
+          resizeMode="cover"
+        />
         {vendor.isVerified ? (
           <View className="absolute right-2 top-2 rounded-full bg-white/95 px-2 py-0.5">
             <Text className="text-[9px] font-extrabold text-accent-deep">

@@ -27,6 +27,25 @@ export type GamezopGame = {
 };
 
 const BASE = "https://zv1y2i8p.play.gamezop.com/g";
+const STATIC_BASE = "https://static.gamezop.com";
+
+export type GamezopImageKind = "thumb" | "cover" | "brick" | "square";
+
+/** Official Gamezop CDN assets (see Gamezop All Games API `images` field). */
+export function getGamezopImageUrl(
+  gameId: string,
+  kind: GamezopImageKind = "thumb",
+): string {
+  const file =
+    kind === "cover"
+      ? "cover.jpg"
+      : kind === "brick"
+        ? "brick.png"
+        : kind === "square"
+          ? "square.png"
+          : "thumb.png";
+  return `${STATIC_BASE}/${gameId}/${file}`;
+}
 
 export const GAMEZOP_CATEGORIES: GameCategory[] = [
   { id: "trending", title: "Trending", subtitle: "Hot picks right now" },
@@ -38,113 +57,64 @@ export const GAMEZOP_CATEGORIES: GameCategory[] = [
   { id: "play-earn", title: "Play & Earn", subtitle: "Bonus coins on every run" },
 ];
 
+/** Titles verified from Gamezop embed page titles. */
 export const GAMEZOP_GAMES: GamezopGame[] = [
   {
     id: "gTD1yQp3R",
-    title: "Neon Stack",
-    tagline: "Stack blocks. Beat your high score.",
+    title: "Final War Dead Zone",
+    tagline: "Survive the dead zone.",
     url: `${BASE}/gTD1yQp3R`,
-    categories: ["trending", "arcade", "play-earn"],
+    categories: ["trending", "action", "arcade", "play-earn"],
     rewardCoins: 10,
     gradient: ["#6366f1", "#8b5cf6", "#a855f7"],
-    icon: "layers",
+    icon: "skull",
     featured: true,
     playEarn: true,
   },
   {
     id: "9lpHai56Q",
-    title: "Puzzle Blitz",
-    tagline: "Match fast. Think faster.",
+    title: "Assassin's Hunt",
+    tagline: "Wild West action.",
     url: `${BASE}/9lpHai56Q`,
-    categories: ["trending", "puzzle", "quick", "play-earn"],
+    categories: ["trending", "action", "quick", "play-earn"],
     rewardCoins: 12,
-    gradient: ["#0ea5e9", "#06b6d4", "#14b8a6"],
-    icon: "extension-puzzle",
+    gradient: ["#f97316", "#ea580c", "#c2410c"],
+    icon: "eye",
     featured: true,
     playEarn: true,
   },
   {
     id: "UCS62KJ8c",
-    title: "Turbo Drift",
-    tagline: "Drift through neon circuits.",
+    title: "Blocks Adventure",
+    tagline: "Jungle block puzzle saga.",
     url: `${BASE}/UCS62KJ8c`,
-    categories: ["trending", "racing", "action"],
+    categories: ["trending", "puzzle", "arcade"],
     rewardCoins: 15,
-    gradient: ["#f97316", "#ef4444", "#dc2626"],
-    icon: "car-sport",
+    gradient: ["#22c55e", "#10b981", "#059669"],
+    icon: "grid",
     featured: true,
   },
   {
     id: "Skz4pzkDqyX",
-    title: "Galaxy Strike",
-    tagline: "Dodge. Shoot. Survive.",
+    title: "Escape Run",
+    tagline: "Run and escape danger.",
     url: `${BASE}/Skz4pzkDqyX`,
     categories: ["action", "arcade", "quick"],
     rewardCoins: 10,
     gradient: ["#ec4899", "#d946ef", "#a855f7"],
-    icon: "rocket",
+    icon: "footsteps",
     featured: true,
   },
   {
     id: "rkWfy2pXq0r",
-    title: "Coin Runner",
-    tagline: "Collect coins. Unlock boosts.",
+    title: "Fruit Chop",
+    tagline: "Slice fruit. Beat the clock.",
     url: `${BASE}/rkWfy2pXq0r`,
     categories: ["arcade", "quick", "play-earn"],
     rewardCoins: 8,
-    gradient: ["#22c55e", "#10b981", "#059669"],
-    icon: "cash",
+    gradient: ["#84cc16", "#65a30d", "#4d7c0f"],
+    icon: "nutrition",
     playEarn: true,
-  },
-  {
-    id: "gTD1yQp3R-arcade",
-    title: "Block Rush",
-    tagline: "Arcade stacking challenge.",
-    url: `${BASE}/gTD1yQp3R`,
-    categories: ["arcade"],
-    rewardCoins: 8,
-    gradient: ["#3b82f6", "#2563eb"],
-    icon: "grid",
-  },
-  {
-    id: "9lpHai56Q-puzzle",
-    title: "Mind Maze",
-    tagline: "Solve under pressure.",
-    url: `${BASE}/9lpHai56Q`,
-    categories: ["puzzle"],
-    rewardCoins: 10,
-    gradient: ["#14b8a6", "#0d9488"],
-    icon: "bulb",
-  },
-  {
-    id: "UCS62KJ8c-racing",
-    title: "Hyper Lane",
-    tagline: "One lane. Full throttle.",
-    url: `${BASE}/UCS62KJ8c`,
-    categories: ["racing"],
-    rewardCoins: 12,
-    gradient: ["#f59e0b", "#ea580c"],
-    icon: "speedometer",
-  },
-  {
-    id: "Skz4pzkDqyX-action",
-    title: "Orb Blaster",
-    tagline: "Chain combos for mega points.",
-    url: `${BASE}/Skz4pzkDqyX`,
-    categories: ["action"],
-    rewardCoins: 14,
-    gradient: ["#e11d48", "#be123c"],
-    icon: "flash",
-  },
-  {
-    id: "rkWfy2pXq0r-quick",
-    title: "Sprint Coins",
-    tagline: "Quick session. Big rewards.",
-    url: `${BASE}/rkWfy2pXq0r`,
-    categories: ["quick"],
-    rewardCoins: 6,
-    gradient: ["#84cc16", "#65a30d"],
-    icon: "timer",
   },
 ];
 
@@ -158,4 +128,10 @@ export function getGamesByCategory(categoryId: GameCategoryId): GamezopGame[] {
 
 export function findGameById(id: string): GamezopGame | undefined {
   return GAMEZOP_GAMES.find((g) => g.id === id);
+}
+
+export function gamesByIds(ids: string[]): GamezopGame[] {
+  return ids
+    .map((id) => findGameById(id))
+    .filter((g): g is GamezopGame => g != null);
 }

@@ -20,6 +20,7 @@ const seedProfile = (phone: string): UserProfile => ({
   email: null,
   birthday: null,
   anniversary: null,
+  avatarSeed: Math.random().toString(36).slice(2, 10),
   addresses: [],
   favorites: [],
 });

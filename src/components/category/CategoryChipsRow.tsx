@@ -48,7 +48,7 @@ export function CategoryChipsRow() {
                 <Ionicons
                   name={(cat.icon as IoniconName) ?? "grid-outline"}
                   size={16}
-                  color="#004aad"
+                  color="#7C3AED"
                 />
                 <Text className="text-[12px] font-bold text-neutral-800">
                   {cat.name}

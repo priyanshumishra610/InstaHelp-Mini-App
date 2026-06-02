@@ -4,6 +4,7 @@ import {
   WHACK_LEVEL_CONFIG,
   type WhackDifficulty,
 } from "@/constants/vendorMarketplace";
+import { useGameOpenCreditOnMount } from "@/hooks/useGameOpenCredit";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import { calendarDayKey } from "@/utils/calendarDay";
 import { Ionicons } from "@expo/vector-icons";
@@ -36,6 +37,7 @@ function whackDayKeyForDifficulty(
 }
 
 export function WhackAMoleGameScreen() {
+  useGameOpenCreditOnMount("Whack-a-mole");
   const tryAwardWhackBonus = useVendorLeadStore(
     (s) => s.tryAwardWhackAMoleBonus,
   );

@@ -30,7 +30,11 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 
+/** Page size for small curated lists (featured, nearby). Explore loads the full catalog. */
 export const VENDOR_PAGE_SIZE = 24;
+
+/** Upper bound when loading the full explore catalog (local JSON + Firestore). */
+export const VENDOR_EXPLORE_FETCH_LIMIT = 6000;
 
 export type VendorQueryFilters = {
   search: string;
