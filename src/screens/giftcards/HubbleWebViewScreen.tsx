@@ -1,9 +1,7 @@
-import { HUBBLE_IS_CONFIGURED } from "@/constants/hubble";
 import { ACCENT } from "@/constants/theme";
 import { useHubble } from "@/hooks/useHubble";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import * as Linking from "expo-linking";
 import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,10 +11,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import WebView from "react-native-webview";
-
-/** Official Hubble RN WebView parameters (for your integration / Hubble support). */
-const HUBBLE_RN_DOCS =
-  "https://docs.myhubble.money/sdk/platform-guides/react-native";
 
 function normalizeSdkPath(parts: { sdkPath?: string; brandId?: string }) {
   if (parts.brandId) return `buy/${parts.brandId}`;
@@ -64,7 +58,6 @@ export function HubbleWebViewScreen() {
   }, [params.amount, params.category, params.coupon, params.showBackButton]);
 
   const [reloadNonce, setReloadNonce] = useState(0);
-  const [tipsOpen, setTipsOpen] = useState(true);
 
   const exitStore = useCallback(() => router.back(), [router]);
 
@@ -77,6 +70,7 @@ export function HubbleWebViewScreen() {
     resetSessionFlags,
     sdkReady,
     loadError,
+    isConfigured,
   } = useHubble({
     sdkPath,
     extraQuery,
@@ -90,11 +84,7 @@ export function HubbleWebViewScreen() {
     setReloadNonce((n) => n + 1);
   }, [resetSessionFlags]);
 
-  const openDocs = useCallback(() => {
-    void Linking.openURL(HUBBLE_RN_DOCS);
-  }, []);
-
-  if (!HUBBLE_IS_CONFIGURED || !sourceUri) {
+  if (!isConfigured || !sourceUri) {
     return (
       <SafeAreaView className="flex-1 bg-white px-5" edges={["top", "left", "right"]}>
         <View className="mt-10 gap-3">
@@ -120,49 +110,12 @@ export function HubbleWebViewScreen() {
     <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
       <View className="relative flex-1 bg-white">
         <View className="border-b border-gray-100 bg-slate-50 px-3 py-2">
-          <Pressable
-            onPress={() => setTipsOpen((o) => !o)}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: tipsOpen }}
-            className="flex-row items-center justify-between gap-2 py-1.5"
-          >
-            <View className="flex-1 flex-row items-center gap-2">
-              <Ionicons name="information-circle" size={20} color={ACCENT} />
-              <Text className="flex-1 text-xs font-semibold leading-4 text-slate-700">
-                Seeing “Access Denied” or a Hubble sign-in? Tap for fixes.
-              </Text>
-            </View>
-            <Ionicons
-              name={tipsOpen ? "chevron-up" : "chevron-down"}
-              size={18}
-              color="#64748b"
-            />
-          </Pressable>
-          {tipsOpen ? (
-            <View className="mt-1 gap-2 pb-2">
-              <Text className="text-[11px] leading-4 text-slate-600">
-                The store runs inside Hubble&apos;s WebView. “Access Denied” usually means your
-                gift-card Client ID and App Secret don&apos;t match the environment (dev vs production
-                SDK URL), or Hubble must enable <Text className="font-bold">lazy login</Text> for your app
-                so browsing works without a separate token. Check the same keys in your Expo production
-                profile that you use for store builds.
-              </Text>
-              <Pressable
-                onPress={openDocs}
-                accessibilityRole="link"
-                accessibilityLabel="Open Hubble React Native documentation"
-                className="self-start rounded-lg bg-white px-3 py-2 active:opacity-90"
-                style={{
-                  borderWidth: 1,
-                  borderColor: "rgba(0,74,173,0.2)",
-                }}
-              >
-                <Text className="text-[11px] font-bold text-accent">
-                  Open Hubble RN integration guide ↗
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
+          <View className="flex-row items-center gap-2 py-1.5">
+            <Ionicons name="shield-checkmark" size={20} color={ACCENT} />
+            <Text className="flex-1 text-xs font-semibold leading-4 text-slate-700">
+              Opening gift cards directly. Guests can browse without InstaHelp or Hubble auth.
+            </Text>
+          </View>
         </View>
 
         <View className="relative flex-1">
@@ -203,7 +156,8 @@ export function HubbleWebViewScreen() {
           domStorageEnabled
           startInLoadingState
           webviewDebuggingEnabled={__DEV__}
-          cacheEnabled
+          cacheEnabled={false}
+          incognito
           setSupportMultipleWindows
           javaScriptCanOpenWindowsAutomatically
           onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}

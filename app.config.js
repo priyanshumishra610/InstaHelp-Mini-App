@@ -68,6 +68,8 @@ function buildPublicEnv() {
     "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
     "EXPO_PUBLIC_FIREBASE_APP_ID",
     "EXPO_PUBLIC_VENDOR_CATALOG_SOURCE",
+    "EXPO_PUBLIC_TRUECALLER_CLIENT_ID",
+    "EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION",
   ];
 
   /** @type {Record<string, string>} */
@@ -94,12 +96,19 @@ module.exports = ({ config }) => {
       }
     : config.android;
 
+  const publicEnv = buildPublicEnv();
+  const truecallerAndroidClientId =
+    process.env.EXPO_PUBLIC_TRUECALLER_CLIENT_ID ??
+    publicEnv.EXPO_PUBLIC_TRUECALLER_CLIENT_ID ??
+    "";
+
   return {
     ...config,
     android: patchedAndroid,
     extra: {
       ...config.extra,
-      publicEnv: buildPublicEnv(),
+      publicEnv,
+      truecallerAndroidClientId,
     },
   };
 };

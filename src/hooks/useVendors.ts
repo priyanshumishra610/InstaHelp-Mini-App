@@ -34,6 +34,7 @@ function queryLocalCatalog(options: UseVendorsOptions, pageCount: number) {
   const all = catalog.query({
     search: options.search,
     areaKey: options.areaKey,
+    cityKey: options.cityKey ?? null,
     category: options.category,
     verifiedOnly: options.verifiedOnly,
     availableNowOnly: options.availableNowOnly,
@@ -85,7 +86,7 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       return;
     }
 
-    if (!firestore) {
+    const applyLocalCatalog = () => {
       const { vendors: local, hasMore: more } = queryLocalCatalog(
         optionsRef.current,
         pageCount,
@@ -95,6 +96,10 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       setLoading(false);
       setRefreshing(false);
       setError(null);
+    };
+
+    if (!firestore) {
+      applyLocalCatalog();
       return;
     }
 
@@ -107,6 +112,10 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
         pageSize: VENDOR_PAGE_SIZE,
       },
       (rows) => {
+        if (rows.length === 0) {
+          applyLocalCatalog();
+          return;
+        }
         setVendors(rows);
         setHasMore(rows.length >= pageCount * VENDOR_PAGE_SIZE);
         setLoading(false);
@@ -114,9 +123,15 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
         setError(null);
       },
       (err) => {
-        setError(err);
+        const { vendors: local } = queryLocalCatalog(
+          optionsRef.current,
+          pageCount,
+        );
+        setVendors(local);
+        setHasMore(local.length >= pageCount * VENDOR_PAGE_SIZE);
         setLoading(false);
         setRefreshing(false);
+        setError(local.length ? null : err);
       },
     );
 
@@ -128,6 +143,7 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
     retryKey,
     options.search,
     options.areaKey,
+    options.cityKey,
     options.category,
     options.city,
     options.verifiedOnly,

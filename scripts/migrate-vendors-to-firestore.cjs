@@ -2,7 +2,7 @@
  * Batch-import vendor catalog into Firestore.
  *
  * Prerequisites:
- *   1. `npm run build:vendors` (optional — uses bangalore-vendors.json by default)
+ *   1. `npm run build:vendors` (optional — uses all-vendors.json by default)
  *   2. Firebase Admin service account JSON
  *   3. `.env` with EXPO_PUBLIC_FIREBASE_PROJECT_ID
  *
@@ -19,7 +19,7 @@ const path = require("path");
 const admin = require("firebase-admin");
 
 const ROOT = path.join(__dirname, "..");
-const VENDORS_JSON = path.join(ROOT, "src", "data", "bangalore-vendors.json");
+const VENDORS_JSON = path.join(ROOT, "src", "data", "all-vendors.json");
 const BATCH_SIZE = 400;
 
 function buildSearchTokens(input) {

@@ -21,6 +21,8 @@ export type AuthDestination =
 export type AuthRoutingOptions = {
   /** Persisted browsing session without phone sign-in (Skip on login screen). */
   isGuest?: boolean;
+  /** Signed-in users can postpone profile completion. */
+  deferProfile?: boolean;
 };
 
 export function authStatusToDestination(
@@ -28,13 +30,14 @@ export function authStatusToDestination(
   options?: AuthRoutingOptions,
 ): AuthDestination | null {
   const isGuest = options?.isGuest ?? false;
+  const deferProfile = options?.deferProfile ?? false;
   switch (status) {
     case "loading":
       return null;
     case "unauthenticated":
       return isGuest ? "/(tabs)" : "/(auth)/phone";
     case "needs-profile":
-      return "/(auth)/profile";
+      return deferProfile ? "/(tabs)" : "/(auth)/profile";
     case "authenticated":
       return "/(tabs)";
     default:

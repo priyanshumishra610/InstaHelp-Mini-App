@@ -1,5 +1,7 @@
 export type UserGender = "male" | "female" | "other" | "prefer_not_to_say";
 
+export type AuthProviderKind = "otp" | "truecaller";
+
 export type FirestoreAddress = {
   id: string;
   label: string;
@@ -22,6 +24,12 @@ export type FirestoreUser = {
   referralCode: string;
   profileImage: string | null;
   birthday: string | null;
+  anniversary: string | null;
+  /** Present when synced from Firebase Auth profile / OAuth providers */
+  email?: string | null;
+  /** Tracks which identity path last updated the Firebase user */
+  authProvider?: AuthProviderKind | "";
+  updatedAt?: string | null;
   wishlist: string[];
   addresses: FirestoreAddress[];
   savedServices: string[];
@@ -29,11 +37,13 @@ export type FirestoreUser = {
 
 export type FirestoreUserCreate = Omit<
   FirestoreUser,
-  "uid" | "createdAt" | "referralCode"
+  "uid" | "createdAt" | "referralCode" | "updatedAt"
 > & {
   uid: string;
   fullName?: string;
   gender?: UserGender | "";
+  email?: string | null;
+  authProvider?: AuthProviderKind | "";
 };
 
 export function isProfileComplete(user: FirestoreUser | null | undefined): boolean {

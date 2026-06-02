@@ -1,6 +1,5 @@
-import { useAuth } from "@/providers/AuthProvider";
+import { useSheetAuthStore } from "@/store/sheetAuthStore";
 
 export function useAuthPhone(): string | null {
-  const { firebaseUser } = useAuth();
-  return firebaseUser?.phoneNumber ?? null;
+  return useSheetAuthStore((s) => s.phone);
 }

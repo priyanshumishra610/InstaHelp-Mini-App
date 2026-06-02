@@ -27,9 +27,8 @@ export type VendorCatalogSource = "firestore" | "local_json";
 
 export function getVendorCatalogSource(): VendorCatalogSource {
   const explicit = getPublicEnv("EXPO_PUBLIC_VENDOR_CATALOG_SOURCE");
-  if (explicit === "local_json") return "local_json";
   if (explicit === "firestore" && isFirebaseConfigured()) return "firestore";
-  if (isFirebaseConfigured()) return "firestore";
+  // Default to bundled CSV catalog; opt in to Firestore after migration.
   return "local_json";
 }
 

@@ -1,7 +1,7 @@
 import { TAB_BAR_BASE_HEIGHT, WhatsAppFab } from "@/components/support/WhatsAppFab";
-import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
-import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
 import { useAuth } from "@/providers/AuthProvider";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
-  const { status, isReady } = useAuth();
+  const { isReady } = useAuth();
   const phone = useAuthPhone();
   const destination = useAuthDestination();
   const favoriteServiceIds = useProfileStore((s) => s.profile?.favorites);
@@ -35,7 +35,7 @@ export default function TabsLayout() {
     return null;
   }
 
-  if (status !== "authenticated" || destination !== "/(tabs)") {
+  if (destination !== "/(tabs)") {
     return <Redirect href={destination ?? "/(auth)/phone"} />;
   }
 
@@ -87,10 +87,30 @@ export default function TabsLayout() {
         <Tabs.Screen
           name="bookings"
           options={{
-            title: "Activity",
+            // Keep route accessible via navigation, but remove from bottom navbar.
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="experiences"
+          options={{
+            title: "Experiences",
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons
-                name={focused ? "time" : "time-outline"}
+                name={focused ? "compass" : "compass-outline"}
+                color={color}
+                size={size}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="shop"
+          options={{
+            title: "Shop",
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons
+                name={focused ? "bag" : "bag-outline"}
                 color={color}
                 size={size}
               />

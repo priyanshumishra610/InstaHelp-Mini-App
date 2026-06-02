@@ -1,0 +1,12 @@
+{
+  "name": "instahelp-truecaller",
+  "version": "1.0.0",
+  "description": "Official Truecaller Android OAuth SDK bridge for InstaHelp (Expo)",
+  "main": "src/index.ts",
+  "license": "MIT",
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  }
+}

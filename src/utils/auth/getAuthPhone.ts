@@ -1,12 +1,6 @@
-import { getFirebaseAuth } from "@/firebase/auth";
-import { isFirebaseConfigured } from "@/firebase/config";
+import { useSheetAuthStore } from "@/store/sheetAuthStore";
 
-/** Active signed-in phone from Firebase Auth session. */
+/** Active signed-in phone from sheet auth session (Firebase disabled). */
 export function getAuthPhone(): string | null {
-  if (!isFirebaseConfigured()) return null;
-  try {
-    return getFirebaseAuth().currentUser?.phoneNumber ?? null;
-  } catch {
-    return null;
-  }
+  return useSheetAuthStore.getState().phone;
 }

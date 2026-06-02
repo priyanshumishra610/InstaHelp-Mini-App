@@ -2,50 +2,50 @@ import { CategoryChipsRow } from "@/components/category/CategoryChipsRow";
 import { TrendingServicesRow } from "@/components/category/TrendingServicesRow";
 import { DiscoveryCategoryNav } from "@/components/discovery/DiscoveryCategoryNav";
 import { DiscoverySection } from "@/components/discovery/DiscoverySection";
-import { FeaturedVendorsRow } from "@/components/vendor/FeaturedVendorsRow";
-import { NearbyVendorsRow } from "@/components/vendor/NearbyVendorsRow";
-import { DISCOVERY_CATEGORIES } from "@/constants/discoveryCategories";
-import type { DiscoveryService } from "@/types/discovery";
-import type { WeeklyOffer } from "@/types/offers";
+import { Input } from "@/components/ui/Input";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Screen } from "@/components/ui/Screen";
-import { Input } from "@/components/ui/Input";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { createBookingLocalFirst } from "@/services/bookingService";
+import { FeaturedVendorsRow } from "@/components/vendor/FeaturedVendorsRow";
+import { NearbyVendorsRow } from "@/components/vendor/NearbyVendorsRow";
+import { LEGAL_PRIVACY_URL, LEGAL_TERMS_URL } from "@/config/env";
+import { DISCOVERY_CATEGORIES } from "@/constants/discoveryCategories";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
 import { useVendorUserLocation } from "@/hooks/useVendorUserLocation";
+import { createBookingLocalFirst } from "@/services/bookingService";
+import type { DiscoveryService } from "@/types/discovery";
+import type { WeeklyOffer } from "@/types/offers";
 import { discoverySelection } from "@/utils/discoveryHaptics";
 import { openWhatsApp } from "@/utils/whatsapp";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Linking,
-  type ImageSourcePropType,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Linking,
+    Platform,
+    Pressable,
+    Text,
+    View,
+    type ImageSourcePropType,
 } from "react-native";
 import Animated, {
-  Easing,
-  FadeInDown,
-  FadeInUp,
-  interpolate,
-  useAnimatedReaction,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
+    Easing,
+    FadeInDown,
+    FadeInUp,
+    interpolate,
+    useAnimatedReaction,
+    useAnimatedScrollHandler,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withTiming,
 } from "react-native-reanimated";
 
 const TOPICS: { id: string; label: string; message: string }[] = [
@@ -288,7 +288,6 @@ export function HomeScreen() {
   const [description, setDescription] = useState("");
   const [source, setSource] = useState<string>("");
   const [paid, setPaid] = useState<string>("");
-  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -378,7 +377,6 @@ export function HomeScreen() {
     if (description.trim().length < 8) next.description = "A bit more detail";
     if (!source) next.source = "Required";
     if (!paid) next.paid = "Required";
-    if (!consent) next.consent = "Consent required";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -413,7 +411,7 @@ export function HomeScreen() {
         address: addressTrimmed,
         source: sourceLabel,
         paidStatus: paidLabel,
-        consent,
+        consent: true,
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Try again";
@@ -443,7 +441,6 @@ export function HomeScreen() {
     setDescription("");
     setSource("");
     setPaid("");
-    setConsent(false);
     setSubmitting(false);
     router.push("/(tabs)/bookings");
   };
@@ -629,58 +626,9 @@ export function HomeScreen() {
             <FastestPathImageSlider />
           </Animated.View>
 
-          <FeaturedVendorsRow userLocation={vendorCoords} />
-          <CategoryChipsRow />
-          <TrendingServicesRow />
-          <NearbyVendorsRow userLocation={vendorCoords} />
-
-          <Animated.View
-            entering={FadeInUp.duration(480).delay(200)}
-            className="mt-5 px-5"
-          >
-            <Pressable
-              onPress={() => router.push("/(tabs)/vendors")}
-              accessibilityRole="button"
-              accessibilityLabel="Explore Bangalore vendors marketplace"
-              className="overflow-hidden rounded-3xl border border-accent-tint shadow-soft"
-            >
-              <LinearGradient
-                colors={["#003a85", "#004aad", "#3b82f6"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="px-5 py-5"
-              >
-                <View className="flex-row items-center justify-between gap-4">
-                  <View className="flex-1">
-                    <View className="flex-row items-center gap-2">
-                      <View className="rounded-full bg-white/15 px-2.5 py-1">
-                        <Text className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white">
-                          New
-                        </Text>
-                      </View>
-                      <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">
-                        Bangalore only
-                      </Text>
-                    </View>
-                    <Text className="mt-3 text-[20px] font-extrabold leading-7 text-white">
-                      Vendor marketplace
-                    </Text>
-                    <Text className="mt-1 text-[13px] leading-[19px] text-white/85">
-                      Live vendor listings across Bengaluru — updated instantly
-                      from the cloud. Reveal contacts with credits.
-                    </Text>
-                  </View>
-                  <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-                    <Ionicons name="sparkles" size={26} color="#ffd500" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
-
           {/* Divider */}
           <Animated.View
-            entering={FadeInUp.duration(400).delay(220)}
+            entering={FadeInUp.duration(400).delay(200)}
             className="mt-7 flex-row items-center gap-3 px-8"
           >
             <View className="h-px flex-1 bg-neutral-200" />
@@ -692,7 +640,7 @@ export function HomeScreen() {
 
           {/* Form */}
           <Animated.View
-            entering={FadeInUp.duration(500).delay(260)}
+            entering={FadeInUp.duration(500).delay(220)}
             className="mt-5 px-5"
           >
             <View className="rounded-3xl border border-neutral-200 bg-white p-5">
@@ -924,25 +872,6 @@ export function HomeScreen() {
                 ) : null}
               </View>
 
-              {/* Consent */}
-              <View className="mt-5">
-                <Checkbox
-                  checked={consent}
-                  error={!!errors.consent}
-                  onChange={(v) => {
-                    setConsent(v);
-                    if (errors.consent)
-                      setErrors((e) => ({ ...e, consent: "" }));
-                  }}
-                  label="I consent to InstaHelp acting as an intermediation platform to connect me with third-party service providers for this request."
-                />
-                {errors.consent ? (
-                  <Text className="ml-8 mt-1 text-[11px] text-red-500">
-                    {errors.consent}
-                  </Text>
-                ) : null}
-              </View>
-
               {/* Submit */}
               <Pressable
                 onPress={handleSubmit}
@@ -963,17 +892,75 @@ export function HomeScreen() {
                 )}
               </Pressable>
 
-              <View className="mt-3 flex-row items-center justify-center gap-1.5">
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={12}
-                  color="#737373"
-                />
-                <Text className="text-[11px] text-neutral-500">
-                  Private. We never share your details without consent.
+              <Text className="mt-3 text-center text-[11px] leading-[17px] text-neutral-500">
+                By submitting, you allow us to contact and assist you. See our{" "}
+                <Text
+                  className="text-neutral-600 underline"
+                  onPress={() => Linking.openURL(LEGAL_TERMS_URL).catch(() => {})}
+                >
+                  Terms and Conditions
+                </Text>{" "}
+                and{" "}
+                <Text
+                  className="text-neutral-600 underline"
+                  onPress={() =>
+                    Linking.openURL(LEGAL_PRIVACY_URL).catch(() => {})
+                  }
+                >
+                  Privacy Policy
                 </Text>
-              </View>
+                .
+              </Text>
             </View>
+          </Animated.View>
+
+          <FeaturedVendorsRow userLocation={vendorCoords} />
+          <CategoryChipsRow />
+          <TrendingServicesRow />
+          <NearbyVendorsRow userLocation={vendorCoords} />
+
+          <Animated.View
+            entering={FadeInUp.duration(480).delay(200)}
+            className="mt-5 px-5"
+          >
+            <Pressable
+              onPress={() => router.push("/(tabs)/vendors")}
+              accessibilityRole="button"
+              accessibilityLabel="Explore vendor marketplace"
+              className="overflow-hidden rounded-3xl border border-accent-tint shadow-soft"
+            >
+              <LinearGradient
+                colors={["#003a85", "#004aad", "#3b82f6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="px-5 py-5"
+              >
+                <View className="flex-row items-center justify-between gap-4">
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <View className="rounded-full bg-white/15 px-2.5 py-1">
+                        <Text className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white">
+                          New
+                        </Text>
+                      </View>
+                      <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/80">
+                        All India
+                      </Text>
+                    </View>
+                    <Text className="mt-3 text-[20px] font-extrabold leading-7 text-white">
+                      Vendor marketplace
+                    </Text>
+                    <Text className="mt-1 text-[13px] leading-[19px] text-white/85">
+                      4,500+ vendor listings across India — search by city,
+                      category, or area. Reveal contacts with credits.
+                    </Text>
+                  </View>
+                  <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
+                    <Ionicons name="sparkles" size={26} color="#ffd500" />
+                  </View>
+                </View>
+              </LinearGradient>
+            </Pressable>
           </Animated.View>
 
           <Animated.View

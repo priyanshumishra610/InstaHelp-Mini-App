@@ -43,6 +43,12 @@ const BOOKING_HEADERS = [
 const PROFILE_HEADERS = [
   "phone",
   "name",
+  "age",
+  "gender",
+  "city",
+  "email",
+  "birthday",
+  "anniversary",
   "addressesJson",
   "favoritesJson",
   "createdAt",
@@ -57,17 +63,22 @@ function doPost(e) {
   try {
     const body = parseBody_(e);
 
-    switch (body.action) {
+    const action = String(body.action || "").trim();
+
+    switch (action) {
       case "createBooking":
         return jsonResponse_({ ok: true, data: createBooking_(body) });
       case "getBookings":
         return jsonResponse_({ ok: true, data: getBookings_(body.phone) });
+      case "register":
+      case "registerPhone":
+        return jsonResponse_({ ok: true, data: registerPhone_(body) });
       case "getUserProfile":
         return jsonResponse_({ ok: true, data: getUserProfile_(body.phone) });
       case "updateProfile":
         return jsonResponse_({ ok: true, data: updateProfile_(body) });
       default:
-        throw new Error("Unknown action: " + body.action);
+        throw new Error("Unknown action: " + action);
     }
   } catch (err) {
     return jsonResponse_({
@@ -157,6 +168,26 @@ function getBookings_(phone) {
     }));
 }
 
+function emptyProfile_(phone) {
+  return {
+    phone: normalizePhone_(phone),
+    name: "",
+    age: null,
+    gender: null,
+    city: null,
+    email: null,
+    birthday: null,
+    anniversary: null,
+    addresses: [],
+    favorites: [],
+  };
+}
+
+function registerPhone_(body) {
+  requireString_(body.phone, "phone");
+  return upsertProfile_(body);
+}
+
 function getUserProfile_(phone) {
   requireString_(phone, "phone");
 
@@ -167,12 +198,7 @@ function getUserProfile_(phone) {
   );
 
   if (!row) {
-    return {
-      phone: target,
-      name: "",
-      addresses: [],
-      favorites: [],
-    };
+    return emptyProfile_(phone);
   }
 
   return profileFromRow_(row);
@@ -180,45 +206,137 @@ function getUserProfile_(phone) {
 
 function updateProfile_(body) {
   requireString_(body.phone, "phone");
+  return upsertProfile_(body);
+}
+
+function upsertProfile_(body) {
+  requireString_(body.phone, "phone");
 
   const sheet = ensureSheet_(PROFILE_SHEET_NAME, PROFILE_HEADERS);
-  const now = new Date().toISOString();
   const phone = normalizePhone_(body.phone);
-  const addresses = Array.isArray(body.addresses) ? body.addresses : [];
-  const favorites = Array.isArray(body.favorites) ? body.favorites : [];
+  const target = normalizePhone_(phone);
+  const existing = getObjects_(sheet).find(
+    (profile) => normalizePhone_(profile.phone) === target,
+  );
+
+  const rowData = buildProfileRowData_(body, existing);
+  upsertRowByHeaders_(sheet, "phone", phone, rowData);
+  forceTextColumn_(sheet, getHeaderColumn1Based_(sheet, "phone"));
+
+  return profileFromRow_(rowData);
+}
+
+function buildProfileRowData_(body, existing) {
+  const addresses = Array.isArray(body.addresses)
+    ? body.addresses
+    : existing
+      ? parseJsonArray_(existing.addressesJson)
+      : [];
+  const favorites = Array.isArray(body.favorites)
+    ? body.favorites
+    : existing
+      ? parseJsonArray_(existing.favoritesJson)
+      : [];
+
+  return {
+    phone: normalizePhone_(body.phone),
+    name:
+      body.name != null
+        ? stringOr_(body.name, "")
+        : stringOr_(existing && existing.name, ""),
+    age:
+      body.age != null && body.age !== ""
+        ? body.age
+        : existing
+          ? existing.age
+          : "",
+    gender:
+      body.gender != null
+        ? stringOr_(body.gender, "")
+        : stringOr_(existing && existing.gender, ""),
+    city:
+      body.city != null
+        ? stringOr_(body.city, "")
+        : stringOr_(existing && existing.city, ""),
+    email:
+      body.email != null
+        ? stringOr_(body.email, "")
+        : stringOr_(existing && existing.email, ""),
+    birthday:
+      body.birthday != null
+        ? stringOr_(body.birthday, "")
+        : stringOr_(existing && existing.birthday, ""),
+    anniversary:
+      body.anniversary != null
+        ? stringOr_(body.anniversary, "")
+        : stringOr_(existing && existing.anniversary, ""),
+    addressesJson: JSON.stringify(addresses),
+    favoritesJson: JSON.stringify(favorites),
+  };
+}
+
+function upsertRowByHeaders_(sheet, keyHeader, keyValue, dataByHeader) {
+  const lastCol = Math.max(sheet.getLastColumn(), PROFILE_HEADERS.length);
+  const headerRow = sheet
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map((value) => String(value || "").trim());
+
+  const keyCol = headerRow.indexOf(keyHeader);
+  if (keyCol < 0) {
+    throw new Error("Missing column: " + keyHeader);
+  }
+
   const values = sheet.getDataRange().getValues();
-  const phoneCol = PROFILE_HEADERS.indexOf("phone");
-  const existingIndex = values.findIndex((row, index) => {
-    return index > 0 && normalizePhone_(row[phoneCol]) === phone;
+  const now = new Date().toISOString();
+  const normalizedKey = normalizePhone_(keyValue);
+  let existingIndex = -1;
+  let existingRow = null;
+
+  for (let i = 1; i < values.length; i++) {
+    if (normalizePhone_(values[i][keyCol]) === normalizedKey) {
+      existingIndex = i;
+      existingRow = values[i];
+      break;
+    }
+  }
+
+  const createdAtCol = headerRow.indexOf("createdAt");
+  const updatedAtCol = headerRow.indexOf("updatedAt");
+
+  const row = headerRow.map((header, colIndex) => {
+    if (header && Object.prototype.hasOwnProperty.call(dataByHeader, header)) {
+      const value = dataByHeader[header];
+      return value === undefined || value === null ? "" : value;
+    }
+    if (existingRow) {
+      return existingRow[colIndex];
+    }
+    return "";
   });
 
-  const row = [
-    phone,
-    body.name || "",
-    JSON.stringify(addresses),
-    JSON.stringify(favorites),
-    existingIndex > 0
-      ? values[existingIndex][PROFILE_HEADERS.indexOf("createdAt")]
-      : now,
-    now,
-  ];
+  if (existingIndex < 0 && createdAtCol >= 0) {
+    row[createdAtCol] = dataByHeader.createdAt || now;
+  }
+  if (updatedAtCol >= 0) {
+    row[updatedAtCol] = now;
+  }
 
-  if (existingIndex > 0) {
-    sheet
-      .getRange(existingIndex + 1, 1, 1, PROFILE_HEADERS.length)
-      .setValues([row]);
+  if (existingIndex >= 0) {
+    sheet.getRange(existingIndex + 1, 1, 1, row.length).setValues([row]);
   } else {
     sheet.appendRow(row);
   }
+}
 
-  forceTextColumn_(sheet, PROFILE_HEADERS.indexOf("phone") + 1);
-
-  return {
-    phone: phone,
-    name: body.name || "",
-    addresses: addresses,
-    favorites: favorites,
-  };
+function getHeaderColumn1Based_(sheet, headerName) {
+  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const headerRow = sheet
+    .getRange(1, 1, 1, lastCol)
+    .getValues()[0]
+    .map((value) => String(value || "").trim());
+  const index = headerRow.indexOf(headerName);
+  return index >= 0 ? index + 1 : 1;
 }
 
 function getSpreadsheet_() {
@@ -322,9 +440,26 @@ function profileFromRow_(row) {
   return {
     phone: String(row.phone || ""),
     name: String(row.name || ""),
+    age: parseAge_(row.age),
+    gender: nullableString_(row.gender),
+    city: nullableString_(row.city),
+    email: nullableString_(row.email),
+    birthday: nullableString_(row.birthday),
+    anniversary: nullableString_(row.anniversary),
     addresses: parseJsonArray_(row.addressesJson),
     favorites: parseJsonArray_(row.favoritesJson),
   };
+}
+
+function parseAge_(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const n = Number(value);
+  return isNaN(n) ? null : n;
+}
+
+function nullableString_(value) {
+  const str = stringOr_(value, "");
+  return str || null;
 }
 
 function parseBody_(e) {

@@ -1,5 +1,5 @@
 /**
- * Shared vendor marketplace types. Shapes mirror `bangalore-vendors.json` rows
+ * Shared vendor marketplace types. Shapes mirror `all-vendors.json` rows
  * and are suitable for future API/Supabase mapping.
  */
 
@@ -18,6 +18,8 @@ export type VendorRecord = {
   address: string;
   areaKey: string;
   areaLabel: string;
+  /** Slug for city filter chips (derived from City column). */
+  cityKey: string;
   city: string;
   state: string;
   phone: string | null;

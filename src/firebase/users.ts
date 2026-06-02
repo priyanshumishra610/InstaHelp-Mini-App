@@ -1,6 +1,6 @@
 import { getFirestoreDb, USER_COLLECTION } from "@/firebase/firestore";
 import { useProfileStore } from "@/store/profileStore";
-import type { FirestoreUser, FirestoreUserCreate, UserGender } from "@/types/firestoreUser";
+import type { FirestoreUser, FirestoreUserCreate, UserGender, AuthProviderKind } from "@/types/firestoreUser";
 import {
   doc,
   getDoc,
@@ -32,6 +32,19 @@ function formatCreatedAt(value: unknown): string {
   return new Date().toISOString();
 }
 
+function readAuthProvider(raw: unknown): AuthProviderKind | "" {
+  return raw === "truecaller" || raw === "otp" ? raw : "";
+}
+
+function coerceFirestoreEmail(raw: unknown): string | null | undefined {
+  if (typeof raw === "undefined") {
+    return undefined;
+  }
+  if (raw === null) return null;
+  if (typeof raw === "string") return raw;
+  return null;
+}
+
 function mapUserDoc(id: string, data: DocumentData): FirestoreUser {
   return {
     uid: id,
@@ -46,6 +59,13 @@ function mapUserDoc(id: string, data: DocumentData): FirestoreUser {
     referralCode: String(data.referralCode ?? ""),
     profileImage: data.profileImage ?? null,
     birthday: data.birthday ?? null,
+    anniversary: data.anniversary ?? null,
+    email: coerceFirestoreEmail(data.email),
+    authProvider: readAuthProvider(data.authProvider),
+    updatedAt:
+      typeof data.updatedAt === "undefined" || data.updatedAt === null || data.updatedAt === ""
+        ? null
+        : formatCreatedAt(data.updatedAt),
     wishlist: Array.isArray(data.wishlist) ? data.wishlist : [],
     addresses: Array.isArray(data.addresses) ? data.addresses : [],
     savedServices: Array.isArray(data.savedServices) ? data.savedServices : [],
@@ -82,6 +102,9 @@ export async function createUserDocument(
     referralCode: generateReferralCode(),
     profileImage: partial?.profileImage ?? null,
     birthday: partial?.birthday ?? null,
+    anniversary: (partial as Partial<FirestoreUserCreate> | undefined)?.anniversary ?? null,
+    email: partial?.email ?? null,
+    authProvider: partial?.authProvider ?? "",
     wishlist: [] as string[],
     addresses: [] as FirestoreUser["addresses"],
     savedServices: [] as string[],
@@ -90,6 +113,7 @@ export async function createUserDocument(
   await setDoc(ref, {
     ...payload,
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
 
   const created = await getDoc(ref);
@@ -108,6 +132,8 @@ export async function updateUserProfile(
       | "area"
       | "coordinates"
       | "birthday"
+      | "anniversary"
+      | "email"
     >
   >,
 ): Promise<FirestoreUser> {

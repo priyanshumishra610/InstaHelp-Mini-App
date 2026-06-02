@@ -3,12 +3,13 @@ import {
   compareVendorRank,
   vendorAvailableNow,
   vendorMatchesArea,
+  vendorMatchesCity,
   vendorMatchesSearch,
 } from "./vendorQueryHelpers";
 import { haversineKm } from "./vendorGeo";
 import type { VendorCatalogPort, VendorCatalogQuery } from "./vendorCatalogTypes";
 
-import RAW from "@/data/bangalore-vendors.json";
+import RAW from "@/data/all-vendors.json";
 
 const ROWS = RAW as VendorRecord[];
 
@@ -34,9 +35,9 @@ export class LocalJsonVendorCatalog implements VendorCatalogPort {
   query(input: VendorCatalogQuery): VendorRecord[] {
     const q = input.search.trim().toLowerCase();
 
-    let list = ROWS.filter((v) => vendorMatchesArea(v, input.areaKey)).filter(
-      (v) => vendorMatchesSearch(v, q),
-    );
+    let list = ROWS.filter((v) => vendorMatchesArea(v, input.areaKey))
+      .filter((v) => vendorMatchesCity(v, input.cityKey ?? null))
+      .filter((v) => vendorMatchesSearch(v, q));
 
     if (input.category?.trim()) {
       const cat = input.category.trim().toLowerCase();

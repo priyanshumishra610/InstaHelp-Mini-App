@@ -1,17 +1,12 @@
 import {
-  HUBBLE_ANALYTICS_ENABLED,
-  HUBBLE_APP_SECRET,
-  HUBBLE_CLIENT_ID,
-  HUBBLE_ENV,
+  HUBBLE_CONFIG,
   HUBBLE_IS_CONFIGURED,
   HUBBLE_WRAP_PLATFORM,
-} from "@/constants/hubble";
-import {
   buildHubbleSdkUrl,
   isHubbleSdkNavigationAllowed,
   parseHubbleHostMessage,
-} from "@/services/hubble";
-import type { HubbleHostEvent } from "@/services/hubble/types";
+} from "@/integrations/hubble";
+import type { HubbleHostEvent } from "@/integrations/hubble";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import type { ComponentRef, RefObject } from "react";
@@ -25,7 +20,7 @@ type ShouldStartLoadEvent = Parameters<
 
 export type HubbleWebViewController = {
   sourceUri: string;
-  environment: typeof HUBBLE_ENV;
+  environment: typeof HUBBLE_CONFIG.environment;
   isConfigured: boolean;
   sdkReady: boolean;
   loadError: boolean;
@@ -67,9 +62,9 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
   const sourceUri = useMemo(() => {
     if (!HUBBLE_IS_CONFIGURED) return "";
     return buildHubbleSdkUrl({
-      environment: HUBBLE_ENV,
-      clientId: HUBBLE_CLIENT_ID,
-      appSecret: HUBBLE_APP_SECRET,
+      environment: HUBBLE_CONFIG.environment,
+      clientId: HUBBLE_CONFIG.clientId,
+      appSecret: HUBBLE_CONFIG.appSecret,
       wrapPlt: HUBBLE_WRAP_PLATFORM,
       appVersion,
       deviceId,
@@ -105,7 +100,7 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
         } else if (event.action === "close") {
           input.onCloseRequest?.();
         }
-      } else if (event.type === "analytics" && HUBBLE_ANALYTICS_ENABLED) {
+      } else if (event.type === "analytics" && HUBBLE_CONFIG.analyticsEnabled) {
         if (__DEV__) {
           console.log("[Gift cards analytics]", event.event, event.properties);
         }
@@ -117,7 +112,7 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
   const onShouldStartLoadWithRequest = useCallback((e: ShouldStartLoadEvent) => {
     const url = e.url;
     if (!url) return false;
-    if (isHubbleSdkNavigationAllowed(url, HUBBLE_ENV)) return true;
+    if (isHubbleSdkNavigationAllowed(url, HUBBLE_CONFIG.environment)) return true;
     void Linking.openURL(url);
     return false;
   }, []);
@@ -140,7 +135,7 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
 
   return {
     sourceUri,
-    environment: HUBBLE_ENV,
+    environment: HUBBLE_CONFIG.environment,
     isConfigured: HUBBLE_IS_CONFIGURED,
     sdkReady,
     loadError,

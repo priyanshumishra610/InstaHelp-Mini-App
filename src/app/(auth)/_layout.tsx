@@ -12,19 +12,23 @@ export default function AuthLayout() {
 
   useEffect(() => {
     if (!isReady || !destination) return;
-    const leaf = segments[segments.length - 1];
-    if (!leaf) return;
 
     if (destination === "/(tabs)") {
       router.replace("/(tabs)");
       return;
     }
 
+    if (!destination.startsWith("/(auth)/")) return;
+    if (segments[0] !== "(auth)") return;
+    // Group-only segments (e.g. ["(auth)"]) — stack mounts default `phone`; don't replace in a loop.
+    if (segments.length < 2) return;
+
+    const leaf = segments[segments.length - 1];
     const targetLeaf = destination.replace("/(auth)/", "");
-    if (leaf !== targetLeaf && destination.startsWith("/(auth)/")) {
+    if (leaf && leaf !== targetLeaf) {
       router.replace(destination);
     }
-  }, [destination, isReady, router, segments]);
+  }, [destination, isReady, router, segments.join("/")]);
 
   if (!isReady) {
     return <AuthLoadingSkeleton />;

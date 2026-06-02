@@ -35,6 +35,8 @@ export const VENDOR_PAGE_SIZE = 24;
 export type VendorQueryFilters = {
   search: string;
   areaKey: string | null;
+  /** Slug from local catalog meta; mapped to `city` label for Firestore. */
+  cityKey?: string | null;
   category: string | null;
   city: string | null;
   verifiedOnly: boolean;

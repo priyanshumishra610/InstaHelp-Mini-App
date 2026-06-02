@@ -14,14 +14,14 @@ type ProfileState = {
 
 const seedProfile = (phone: string): UserProfile => ({
   phone,
-  addresses: [
-    {
-      id: "home",
-      label: "Home",
-      line: "Add your home address in Profile",
-    },
-  ],
-  favorites: ["cleaner", "driver"],
+  age: null,
+  gender: null,
+  city: null,
+  email: null,
+  birthday: null,
+  anniversary: null,
+  addresses: [],
+  favorites: [],
 });
 
 export const useProfileStore = create<ProfileState>()(

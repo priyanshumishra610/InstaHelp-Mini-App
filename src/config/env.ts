@@ -61,28 +61,6 @@ export function appWebHostLabel(): string {
   }
 }
 
-export const HUBBLE_CLIENT_ID = getPublicEnv("EXPO_PUBLIC_HUBBLE_CLIENT_ID");
-export const HUBBLE_APP_SECRET = getPublicEnv("EXPO_PUBLIC_HUBBLE_APP_SECRET");
-
-export const HUBBLE_ENV =
-  getPublicEnv("EXPO_PUBLIC_HUBBLE_ENV") === "development"
-    ? ("development" as const)
-    : ("production" as const);
-
-export const HUBBLE_ANALYTICS_ENABLED =
-  getPublicEnv("EXPO_PUBLIC_HUBBLE_ANALYTICS_LOG") === "1";
-
-export const HUBBLE_DEMO_BRAND_IDS = getPublicEnv(
-  "EXPO_PUBLIC_HUBBLE_DEMO_BRAND_IDS",
-)
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-export const HUBBLE_IS_CONFIGURED = Boolean(
-  HUBBLE_CLIENT_ID && HUBBLE_APP_SECRET,
-);
-
 export const FIREBASE_API_KEY = getPublicEnv("EXPO_PUBLIC_FIREBASE_API_KEY");
 export const FIREBASE_PROJECT_ID = getPublicEnv(
   "EXPO_PUBLIC_FIREBASE_PROJECT_ID",

@@ -27,6 +27,9 @@ export async function refreshProfile(): Promise<UserProfile | null> {
         res.data.name?.trim() ||
         (samePhone ? prev?.name?.trim() : undefined) ||
         resolveProfileDisplayName(prev, res.data.phone),
+      age: res.data.age ?? (samePhone ? prev?.age : undefined),
+      gender: res.data.gender ?? (samePhone ? prev?.gender : undefined),
+      city: res.data.city?.trim() || (samePhone ? prev?.city?.trim() : undefined) || null,
       avatarUri: samePhone ? prev?.avatarUri : undefined,
       role: res.data.role ?? (samePhone ? prev?.role : undefined),
       preferredContact:
@@ -50,6 +53,12 @@ export async function persistProfile(next: UserProfile): Promise<UserProfile> {
   const res = await apiUpdateProfile({
     phone,
     name: next.name,
+    age: next.age ?? null,
+    gender: next.gender ?? null,
+    city: next.city?.trim() || null,
+    email: next.email ?? null,
+    birthday: next.birthday ?? null,
+    anniversary: next.anniversary ?? null,
     addresses: next.addresses,
     favorites: next.favorites,
   });
@@ -57,6 +66,9 @@ export async function persistProfile(next: UserProfile): Promise<UserProfile> {
   if (res.ok) {
     useProfileStore.getState().setProfile({
       ...res.data,
+      age: res.data.age ?? next.age,
+      gender: res.data.gender ?? next.gender,
+      city: res.data.city ?? next.city,
       avatarUri: next.avatarUri,
       role: next.role,
       preferredContact: next.preferredContact,

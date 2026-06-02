@@ -63,8 +63,19 @@ export async function apiGetUserProfile(phone: string) {
   return postJson<UserProfile>({ action: "getUserProfile", phone });
 }
 
+/** Upsert phone row in Profiles/Users sheet (sign-in / registration). */
+export async function apiRegisterPhone(phone: string) {
+  return postJson<UserProfile>({ action: "register", phone });
+}
+
 export type UpdateProfilePayload = Pick<UserProfile, "name" | "addresses" | "favorites"> & {
   phone: string;
+  age?: number | null;
+  gender?: UserProfile["gender"];
+  city?: string | null;
+  email?: string | null;
+  birthday?: string | null;
+  anniversary?: string | null;
 };
 
 export async function apiUpdateProfile(payload: UpdateProfilePayload) {

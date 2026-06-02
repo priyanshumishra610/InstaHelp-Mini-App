@@ -14,8 +14,18 @@ export function vendorMatchesArea(
   return v.areaKey === areaKey;
 }
 
+export function vendorMatchesCity(
+  v: VendorRecord,
+  cityKey: string | null,
+): boolean {
+  if (!cityKey) return true;
+  return v.cityKey === cityKey;
+}
+
 export function vendorMatchesSearch(v: VendorRecord, q: string): boolean {
-  if (!q) return true;
+  const trimmed = q.trim().toLowerCase();
+  if (!trimmed) return true;
+
   const hay = [
     v.vendorName,
     v.businessName,
@@ -23,10 +33,17 @@ export function vendorMatchesSearch(v: VendorRecord, q: string): boolean {
     v.subCategory,
     v.servicesText,
     v.areaLabel,
+    v.city,
+    v.state,
   ]
     .join(" ")
     .toLowerCase();
-  return hay.includes(q);
+
+  if (hay.includes(trimmed)) return true;
+
+  const tokens = trimmed.split(/\s+/).filter((t) => t.length >= 2);
+  if (tokens.length <= 1) return false;
+  return tokens.some((t) => hay.includes(t));
 }
 
 /** Heuristic: Bing-style “Closed · …” lines mean not available right now. */

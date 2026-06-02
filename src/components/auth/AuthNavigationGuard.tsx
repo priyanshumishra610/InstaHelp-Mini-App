@@ -46,7 +46,7 @@ export function AuthNavigationGuard() {
       lastReplace.current = target;
       router.replace(target);
     }
-  }, [destination, isReady, router, segments]);
+  }, [destination, isReady, router, segments.join("/")]);
 
   return null;
 }

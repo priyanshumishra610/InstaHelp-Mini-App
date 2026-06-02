@@ -1,11 +1,10 @@
 import { LoginHeroVisual } from "@/components/auth/LoginHeroVisual";
 import { LEGAL_PRIVACY_URL, LEGAL_TERMS_URL } from "@/config/env";
-import { AUTH_FONT } from "@/constants/authPremium";
-import { FIREBASE_CONFIG } from "@/firebase/auth";
-import { isFirebaseConfigured } from "@/firebase/config";
+import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
 import { useAuth } from "@/providers/AuthProvider";
 import { useOnboardingStore } from "@/store/onboardingStore";
-import { mapFirebaseAuthError } from "@/utils/auth/firebaseErrors";
+import { useProfileStore } from "@/store/profileStore";
+import { isSheetProfileComplete } from "@/utils/auth/profileComplete";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -13,12 +12,11 @@ import {
   Poppins_700Bold,
   useFonts,
 } from "@expo-google-fonts/poppins";
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -31,14 +29,26 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const AUTH_ENTER_MS = 520;
 
 export function PhoneAuthScreen() {
   const router = useRouter();
+  const { fromSplash } = useLocalSearchParams<{ fromSplash?: string }>();
   const insets = useSafeAreaInsets();
+  const fromSplashTransition = fromSplash === "1";
+  const contentOpacity = useSharedValue(fromSplashTransition ? 0 : 1);
+  const contentTranslateY = useSharedValue(fromSplashTransition ? 14 : 0);
   const enterGuestMode = useOnboardingStore((s) => s.enterGuestMode);
-  const { sendOtp } = useAuth();
-  const recaptchaRef = useRef<FirebaseRecaptchaVerifierModal>(null);
+  const { signInWithPhone } = useAuth();
 
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
@@ -53,29 +63,24 @@ export function PhoneAuthScreen() {
 
   const phoneReady = phone.replace(/\D/g, "").length === 10;
 
-  const onSendOtp = useCallback(async () => {
+  const onContinue = useCallback(async () => {
     if (!phoneReady || loading) return;
-    if (!isFirebaseConfigured()) {
-      setError("Firebase is not configured. Add EXPO_PUBLIC_FIREBASE_* to .env");
-      return;
-    }
     setError(null);
     setLoading(true);
     try {
-      const verifier = recaptchaRef.current;
-      if (!verifier) {
-        throw new Error("Verification is not ready. Try again.");
-      }
-      await sendOtp(phone, verifier);
+      await signInWithPhone(phone);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push("/(auth)/otp");
+      const profile = useProfileStore.getState().profile;
+      router.replace(
+        isSheetProfileComplete(profile) ? "/(tabs)" : "/(auth)/profile",
+      );
     } catch (e) {
-      setError(mapFirebaseAuthError(e));
+      setError(e instanceof Error ? e.message : "Could not sign in. Try again.");
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
-  }, [loading, phone, phoneReady, router, sendOtp]);
+  }, [loading, phone, phoneReady, router, signInWithPhone]);
 
   const openUrl = (url: string) => {
     Linking.openURL(url).catch(() => {});
@@ -87,6 +92,23 @@ export function PhoneAuthScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.replace("/(tabs)");
   }, [enterGuestMode, router]);
+
+  useEffect(() => {
+    if (!fromSplashTransition || !fontsLoaded) return;
+    contentOpacity.value = withDelay(
+      80,
+      withTiming(1, { duration: AUTH_ENTER_MS, easing: Easing.out(Easing.cubic) }),
+    );
+    contentTranslateY.value = withDelay(
+      80,
+      withTiming(0, { duration: AUTH_ENTER_MS, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [contentOpacity, contentTranslateY, fontsLoaded, fromSplashTransition]);
+
+  const contentEnterStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+    transform: [{ translateY: contentTranslateY.value }],
+  }));
 
   if (!fontsLoaded) {
     return (
@@ -104,14 +126,35 @@ export function PhoneAuthScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      {isFirebaseConfigured() ? (
-        <FirebaseRecaptchaVerifierModal
-          ref={recaptchaRef}
-          firebaseConfig={FIREBASE_CONFIG}
-          attemptInvisibleVerification
-        />
-      ) : null}
+      <View
+        style={[
+          styles.topBar,
+          {
+            paddingTop: insets.top + 8,
+            paddingLeft: Math.max(insets.left, 16),
+            paddingRight: Math.max(insets.right, 16),
+          },
+        ]}
+        pointerEvents="box-none"
+      >
+        <Pressable
+          onPress={onSkipBrowse}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Skip sign in"
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.skipButton,
+            pressed && styles.skipButtonPressed,
+          ]}
+        >
+          <Text style={[styles.skipLabel, { fontFamily: AUTH_FONT.semibold }]}>
+            Skip
+          </Text>
+        </Pressable>
+      </View>
 
+      <Animated.View style={[styles.flex, contentEnterStyle]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -127,7 +170,7 @@ export function PhoneAuthScreen() {
           bounces={false}
         >
           <View style={styles.screenCenterWrap}>
-          <View style={[styles.heroSection, { paddingTop: insets.top + 16 }]}>
+          <View style={[styles.heroSection, { paddingTop: 8 }]}>
             <Text style={[styles.logo, { fontFamily: AUTH_FONT.bold }]}>InstaHelp</Text>
             <Text style={[styles.logoSub, { fontFamily: AUTH_FONT.medium }]}>
               We&apos;ll get it done
@@ -175,7 +218,7 @@ export function PhoneAuthScreen() {
           ) : null}
 
           <Pressable
-            onPress={() => void onSendOtp()}
+            onPress={() => void onContinue()}
             disabled={!phoneReady || loading}
             style={({ pressed }) => [
               styles.continueBtn,
@@ -184,7 +227,7 @@ export function PhoneAuthScreen() {
             ]}
           >
             {loading ? (
-              <ActivityIndicator color={phoneReady ? "#0f172a" : "#9CA3AF"} />
+              <ActivityIndicator color={phoneReady ? "#FFFFFF" : "#9CA3AF"} />
             ) : (
               <Text
                 style={[
@@ -193,22 +236,9 @@ export function PhoneAuthScreen() {
                   phoneReady && styles.continueLabelActive,
                 ]}
               >
-                Send OTP
+                Continue
               </Text>
             )}
-          </Pressable>
-
-          <Pressable
-            onPress={onSkipBrowse}
-            disabled={loading}
-            accessibilityRole="button"
-            accessibilityLabel="Skip sign in"
-            hitSlop={8}
-            style={({ pressed }) => [styles.skipWrap, pressed && { opacity: 0.82 }]}
-          >
-            <Text style={[styles.skipLabel, { fontFamily: AUTH_FONT.medium }]}>
-              Skip for now
-            </Text>
           </Pressable>
 
           <Text style={[styles.legal, { fontFamily: AUTH_FONT.regular }]}>
@@ -224,6 +254,7 @@ export function PhoneAuthScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      </Animated.View>
     </View>
   );
 }
@@ -316,15 +347,16 @@ const styles = StyleSheet.create({
   countryCode: { fontSize: 16, color: "#fff" },
   phoneInput: {
     flex: 1,
-    paddingHorizontal: 16,
+    minWidth: 0,
+    paddingHorizontal: 12,
     paddingVertical: 14,
     borderRadius: 14,
     backgroundColor: INPUT_BG,
     borderWidth: 1,
     borderColor: BORDER,
-    fontSize: 16,
+    fontSize: 14,
     color: "#fff",
-    textAlign: "center",
+    textAlign: "left",
   },
   error: {
     fontSize: 12,
@@ -348,26 +380,48 @@ const styles = StyleSheet.create({
     minHeight: 54,
   },
   continueBtnActive: {
-    backgroundColor: "#E5E7EB",
-    borderColor: "transparent",
+    backgroundColor: AUTH_PRIMARY,
+    borderColor: AUTH_PRIMARY,
+    shadowColor: AUTH_PRIMARY,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    elevation: 8,
   },
   continueLabel: {
     fontSize: 16,
-    color: "#D1D5DB",
+    color: "#9CA3AF",
     textAlign: "center",
   },
-  continueLabelActive: { color: "#0f172a", textAlign: "center" },
-  skipWrap: {
-    alignSelf: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    marginBottom: 8,
+  continueLabelActive: {
+    color: "#FFFFFF",
+    textAlign: "center",
+  },
+  topBar: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  skipButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+  },
+  skipButtonPressed: {
+    opacity: 0.88,
+    backgroundColor: "rgba(255,255,255,0.22)",
   },
   skipLabel: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.88)",
-    textDecorationLine: "underline",
-    textDecorationColor: "rgba(255,255,255,0.45)",
+    fontSize: 16,
+    color: "#FFFFFF",
+    letterSpacing: 0.2,
   },
   legal: {
     textAlign: "center",

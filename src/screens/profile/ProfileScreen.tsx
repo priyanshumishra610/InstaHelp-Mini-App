@@ -6,10 +6,11 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
-import { useMergedBookings } from "@/hooks/useMergedBookings";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
+import { useMergedBookings } from "@/hooks/useMergedBookings";
 import { persistProfile } from "@/services/profileService";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { useAuth } from "@/providers/AuthProvider";
 import { useSignOut } from "@/hooks/auth/useSignOut";
 import { useProfileStore } from "@/store/profileStore";
 import type { Booking } from "@/types/booking";
@@ -18,12 +19,16 @@ import type {
   SavedAddress,
   UserProfile,
 } from "@/types/user";
+import {
+  // booking activity helpers intentionally unused in Profile now
+} from "@/utils/bookingActivity";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { pickOptionalImage } from "@/utils/pickOptionalImage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -54,14 +59,6 @@ const FAVORITES: { id: string; label: string; icon: IoniconName }[] = [
   { id: "pest_control", label: "Pest control", icon: "bug-outline" },
 ];
 
-function hasRealSavedAddress(profile: UserProfile | null | undefined) {
-  return (profile?.addresses ?? []).some(
-    (a) =>
-      Boolean(a.line?.trim()) &&
-      !a.line.includes(PLACEHOLDER_ADDRESS),
-  );
-}
-
 function memberSince(bookings: Booking[]): string {
   if (!bookings.length) return "New member";
   const earliest = bookings.reduce<Date | null>((acc, b) => {
@@ -77,16 +74,23 @@ function memberSince(bookings: Booking[]): string {
   })}`;
 }
 
+function displayValue(value: string | null | undefined, empty = "Not added") {
+  const trimmed = value?.trim();
+  return trimmed?.length ? trimmed : empty;
+}
+
 export function ProfileScreen() {
   const router = useRouter();
   const signOut = useSignOut();
   const phone = useAuthPhone();
   const { data: profile } = useProfileQuery();
+  const bookings = useMergedBookings();
+  const { refreshSession } = useAuth();
   const toggleFavorite = useProfileStore((s) => s.toggleFavorite);
   const upsertAddress = useProfileStore((s) => s.upsertAddress);
   const removeAddress = useProfileStore((s) => s.removeAddress);
   const setProfileLocal = useProfileStore((s) => s.setProfile);
-  const bookings = useMergedBookings();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const initial = (
     profile?.name?.trim()?.[0] ||
@@ -96,27 +100,16 @@ export function ProfileScreen() {
     .toString()
     .toUpperCase();
 
-  const stats = useMemo(() => {
+  const memberLine = memberSince(bookings);
+
+  const bookingStats = useMemo(() => {
     const total = bookings.length;
     const completed = bookings.filter((b) => b.status === "completed").length;
-    const active = total - completed;
-    return { total, active, completed };
+    const active = bookings.filter(
+      (b) => b.status !== "completed" && b.status !== "pending",
+    ).length;
+    return { total, completed, active };
   }, [bookings]);
-
-  const memberLine = useMemo(() => memberSince(bookings), [bookings]);
-
-  const completion = useMemo(() => {
-    const hasName = !!profile?.name?.trim();
-    const hasAddress = hasRealSavedAddress(profile);
-    const hasFav = (profile?.favorites ?? []).length > 0;
-    const filled = [hasName, hasAddress, hasFav].filter(Boolean).length;
-    return Math.round((filled / 3) * 100);
-  }, [profile]);
-
-  const ratedCount = useMemo(
-    () => bookings.filter((b) => b.rating).length,
-    [bookings],
-  );
 
   const preferredContact: ProfilePreferredContact =
     profile?.preferredContact ?? "whatsapp";
@@ -153,9 +146,7 @@ export function ProfileScreen() {
   } = useDeviceAddress({ autoFetch: false });
   const [savingLocation, setSavingLocation] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const favoritesLayoutY = useRef(0);
 
   const persistIfWeCan = async (next: UserProfile) => {
     setProfileLocal(next);
@@ -228,12 +219,6 @@ export function ProfileScreen() {
         },
       ],
     );
-  };
-
-  const saveName = async (nextName: string) => {
-    if (!profile || !phone) return;
-    const updated: UserProfile = { ...profile, name: nextName.trim() };
-    await persistIfWeCan(updated);
   };
 
   const savePickedAvatar = async () => {
@@ -313,7 +298,19 @@ export function ProfileScreen() {
     }
   };
 
-  const displayName = profile?.name?.trim() || "Add your name";
+  const displayName = profile?.name?.trim() || "InstaHelp member";
+  const addressCount = (profile?.addresses ?? []).filter(
+    (a) => a.line?.trim() && !a.line.includes(PLACEHOLDER_ADDRESS),
+  ).length;
+  const favoriteCount = profile?.favorites?.length ?? 0;
+  const roleLabel =
+    (profile?.role ?? "consumer") === "business" ? "Business" : "Personal";
+  const contactLabel =
+    preferredContact === "whatsapp"
+      ? "WhatsApp"
+      : preferredContact === "call"
+        ? "Phone call"
+        : "WhatsApp or call";
 
   return (
     <Screen>
@@ -324,30 +321,37 @@ export function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInUp.duration(380)} className="pt-2">
-          <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-deep">
+          <Text className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-deep">
+            Account
+          </Text>
+          <Text className="mt-1 text-[32px] font-extrabold tracking-tight text-neutral-900">
             Profile
           </Text>
-          <Text className="mt-1 text-3xl font-extrabold text-neutral-900">
-            Your account
-          </Text>
-          <Text className="mt-1 text-sm text-neutral-500">
-            Addresses, history, and concierge support.
+          <Text className="mt-1.5 text-sm leading-5 text-neutral-500">
+            Manage your account, booking activity, and how InstaHelp reaches you.
           </Text>
         </Animated.View>
 
         {/* HERO */}
         <Animated.View
           entering={FadeInUp.duration(420).delay(60)}
-          className="mt-6 overflow-hidden rounded-[28px] bg-accent p-6 shadow-sm"
+          className="mt-6 overflow-hidden rounded-[28px] border border-white/10 shadow-lg"
         >
+          <LinearGradient
+            colors={["#003d8f", "#004aad", "#1a5fc4"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ padding: 24 }}
+          >
           <View
             pointerEvents="none"
-            className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-brand-blue"
+            className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10"
           />
           <View
             pointerEvents="none"
-            className="absolute -bottom-16 -left-8 h-32 w-32 rounded-full bg-accent-deep/40"
+            className="absolute bottom-0 left-0 h-24 w-24 rounded-full bg-brand-gold/20"
           />
+          <View className="absolute left-6 top-0 h-1 w-12 rounded-full bg-brand-gold" />
 
           <View className="flex-row items-start justify-between gap-3">
             <View className="flex-row items-center gap-4">
@@ -413,9 +417,9 @@ export function ProfileScreen() {
               </View>
             </View>
             <Pressable
-              onPress={() => setEditOpen(true)}
+              onPress={() => setDetailsOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel="Edit profile"
+              accessibilityLabel="Edit profile details"
               className="rounded-full bg-white/15 px-3 py-1.5 active:opacity-80"
               hitSlop={6}
             >
@@ -426,131 +430,127 @@ export function ProfileScreen() {
             </Pressable>
           </View>
 
-          <View className="mt-4 flex-row items-center justify-between">
-            <View className="flex-row items-center gap-2">
-              <Ionicons name="ribbon" size={12} color="#ffd500" />
-              <Text className="text-[11px] font-semibold text-white/90">
-                {memberLine}
+          {profile?.email?.trim() ? (
+            <View className="mt-3 flex-row items-center gap-2">
+              <Ionicons name="mail-outline" size={13} color="rgba(255,255,255,0.75)" />
+              <Text className="text-xs text-white/85" numberOfLines={1}>
+                {profile.email.trim()}
               </Text>
             </View>
-            {completion < 100 ? (
-              <View className="flex-row items-center gap-2">
-                <View className="h-1 w-16 overflow-hidden rounded-full bg-white/20">
-                  <View
-                    style={{ width: `${completion}%` }}
-                    className="h-full rounded-full bg-brand-gold"
-                  />
-                </View>
-                <Text className="text-[10px] font-bold text-white/90">
-                  {completion}%
-                </Text>
-              </View>
-            ) : (
-              <View className="flex-row items-center gap-1">
-                <Ionicons name="shield-checkmark" size={12} color="#ffd500" />
-                <Text className="text-[10px] font-bold text-white">
-                  Complete
-                </Text>
-              </View>
-            )}
+          ) : null}
+
+          <View className="mt-4 flex-row items-center gap-2">
+            <Ionicons name="ribbon" size={12} color="#ffd500" />
+            <Text className="text-[11px] font-semibold text-white/90">
+              {memberLine}
+            </Text>
+            <Text className="text-white/40">·</Text>
+            <Text className="text-[11px] font-semibold text-white/75">
+              {roleLabel} account
+            </Text>
           </View>
+          </LinearGradient>
         </Animated.View>
 
-        {/* STATS — single strip, no triple card chrome */}
         <Animated.View
-          entering={FadeInUp.duration(420).delay(120)}
-          className="mt-5 overflow-hidden rounded-2xl bg-neutral-50 py-4"
+          entering={FadeInUp.duration(400).delay(100)}
+          className="mt-6 flex-row gap-2.5"
         >
-          <View className="flex-row items-stretch">
-            <StatStripCell label="Requests" value={stats.total} icon="receipt" />
-            <StatDivider />
-            <StatStripCell label="Active" value={stats.active} icon="pulse" />
-            <StatDivider />
-            <StatStripCell
-              label="Done"
-              value={stats.completed}
-              icon="checkmark-done"
-            />
-          </View>
+          <PremiumStatCard
+            label="Bookings"
+            value={bookingStats.total}
+            icon="calendar"
+            accent="blue"
+          />
+          <PremiumStatCard
+            label="Completed"
+            value={bookingStats.completed}
+            icon="checkmark-done"
+            accent="green"
+          />
+          <PremiumStatCard
+            label="Addresses"
+            value={addressCount}
+            icon="location"
+            accent="gold"
+          />
         </Animated.View>
 
-        {stats.total > 0 ? (
-          <Animated.View
-            entering={FadeInUp.duration(400).delay(140)}
-            className="mt-4 flex-row items-start gap-3 rounded-2xl border border-accent-tint/90 bg-accent-soft/50 px-4 py-3.5"
-          >
-            <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
-              <Ionicons name="analytics-outline" size={18} color="#004aad" />
-            </View>
-            <View className="min-w-0 flex-1">
-              <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-accent-deep">
-                Your activity
-              </Text>
-              <Text className="mt-1 text-[13px] leading-[19px] text-neutral-800">
-                {stats.completed === stats.total ? (
-                  <>
-                    You&apos;ve completed all {stats.total} request
-                    {stats.total === 1 ? "" : "s"} so far.
-                  </>
-                ) : (
-                  <>
-                    {stats.active} active, {stats.completed} completed,{" "}
-                    {stats.total} total.
-                  </>
-                )}{" "}
-                {ratedCount > 0 ? (
-                  <Text className="font-semibold text-neutral-900">
-                    {ratedCount} rated — thanks for the feedback.
-                  </Text>
-                ) : stats.completed > 0 ? (
-                  <Text className="text-neutral-600">
-                    Rate finished jobs from Activity to help us improve.
-                  </Text>
-                ) : null}
-              </Text>
-            </View>
-          </Animated.View>
-        ) : null}
-
         <Animated.View
-          entering={FadeInUp.duration(400).delay(160)}
-          className="mt-6"
+          entering={FadeInUp.duration(400).delay(140)}
+          className="mt-8"
         >
-          <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
-            Finish your profile
-          </Text>
-          <View className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white">
-            <ProfileChecklistRow
-              icon="person"
-              title="Add your name"
-              subtitle="Used on bookings and WhatsApp"
-              done={!!profile?.name?.trim()}
-              onPress={() => setEditOpen(true)}
+          <View className="mb-2.5 flex-row items-center justify-between">
+            <Text className="text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500">
+              Your information
+            </Text>
+            <Pressable
+              onPress={() => setDetailsOpen(true)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Edit your information"
+            >
+              <Text className="text-xs font-bold text-accent">Edit all</Text>
+            </Pressable>
+          </View>
+          <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm">
+            <InfoRow
+              icon="person-outline"
+              label="Full name"
+              value={displayValue(profile?.name, "Add your name")}
+              muted={!profile?.name?.trim()}
+              onPress={() => setDetailsOpen(true)}
             />
-            <View className="ml-14 mr-4 h-px bg-neutral-100" />
-            <ProfileChecklistRow
-              icon="home"
-              title="Save a real address"
-              subtitle="Skip typing it on every request"
-              done={hasRealSavedAddress(profile)}
-              onPress={() => void addCurrentLocation()}
+            <InfoHairline />
+            <InfoRow
+              icon="call-outline"
+              label="Mobile"
+              value={phone ?? "—"}
+              hint="Long-press to copy"
+              onPress={copyPhone}
+              onLongPress={copyPhone}
             />
-            <View className="ml-14 mr-4 h-px bg-neutral-100" />
-            <ProfileChecklistRow
-              icon="heart"
-              title="Pick favorite services"
-              subtitle="Better alerts & recommendations"
-              done={(profile?.favorites?.length ?? 0) > 0}
-              onPress={() => {
-                scrollRef.current?.scrollTo({
-                  y: Math.max(0, favoritesLayoutY.current - 24),
-                  animated: true,
-                });
-              }}
+            <InfoHairline />
+            <InfoRow
+              icon="mail-outline"
+              label="Email"
+              value={displayValue(profile?.email)}
+              muted={!profile?.email?.trim()}
+              onPress={() => setDetailsOpen(true)}
+            />
+            <InfoHairline />
+            <InfoRow
+              icon="gift-outline"
+              label="Birthday"
+              value={displayValue(profile?.birthday)}
+              muted={!profile?.birthday?.trim()}
+              onPress={() => setDetailsOpen(true)}
+            />
+            <InfoHairline />
+            <InfoRow
+              icon="heart-outline"
+              label="Anniversary"
+              value={displayValue(profile?.anniversary)}
+              muted={!profile?.anniversary?.trim()}
+              onPress={() => setDetailsOpen(true)}
+            />
+            <InfoHairline />
+            <InfoRow
+              icon="chatbubble-ellipses-outline"
+              label="Preferred contact"
+              value={contactLabel}
+              last
             />
           </View>
-          <Text className="mt-2 px-1 text-[11px] text-neutral-400">
-            Favorite chips are below — tap any to start.
+          <Text className="mt-2 px-1 text-[11px] leading-4 text-neutral-400">
+            {bookingStats.active > 0
+              ? `${bookingStats.active} active booking${bookingStats.active === 1 ? "" : "s"} right now.`
+              : bookingStats.total > 0
+                ? "All bookings are complete or awaiting assignment."
+                : "Book a service from Home to see activity here."}
+            {favoriteCount > 0
+              ? ` ${favoriteCount} favorite service${favoriteCount === 1 ? "" : "s"} selected.`
+              : ""}
           </Text>
         </Animated.View>
 
@@ -668,7 +668,7 @@ export function ProfileScreen() {
             <ActionRow
               icon="time"
               title="Booking history"
-              subtitle="Every request you have made"
+              subtitle={`${bookingStats.total} request${bookingStats.total === 1 ? "" : "s"} on this device`}
               onPress={() => router.push("/(tabs)/bookings")}
             />
             <RowHairline />
@@ -793,18 +793,18 @@ export function ProfileScreen() {
         <Animated.View
           entering={FadeInUp.duration(420).delay(300)}
           className="mt-8"
-          onLayout={(e) => {
-            favoritesLayoutY.current = e.nativeEvent.layout.y;
-          }}
         >
           <View className="mb-2.5 flex-row items-center justify-between">
             <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
-              Favorites
+              Favorite services
             </Text>
             <Text className="text-[11px] font-semibold text-neutral-400">
-              Tap to toggle
+              {favoriteCount} selected
             </Text>
           </View>
+          <Text className="mb-3 text-xs leading-5 text-neutral-500">
+            We use these for smarter local alerts and quicker re-booking.
+          </Text>
           <View className="flex-row flex-wrap gap-2">
             {FAVORITES.map((f) => {
               const on = profile?.favorites.includes(f.id);
@@ -907,97 +907,128 @@ export function ProfileScreen() {
         </Animated.View>
       </ScrollView>
 
-      <EditNameModal
-        open={editOpen}
-        initialName={profile?.name ?? ""}
-        onClose={() => setEditOpen(false)}
-        onSave={async (n) => {
-          await saveName(n);
-          setEditOpen(false);
+      <EditProfileDetailsModal
+        open={detailsOpen}
+        profile={profile}
+        onClose={() => setDetailsOpen(false)}
+        onSave={async (patch) => {
+          if (!profile || !phone) return;
+          await persistIfWeCan({ ...profile, ...patch });
+          await refreshSession();
+          setDetailsOpen(false);
         }}
       />
     </Screen>
   );
 }
 
-function ProfileChecklistRow({
+function InfoHairline() {
+  return <View className="ml-14 mr-4 h-px bg-neutral-100" />;
+}
+
+function InfoRow({
   icon,
-  title,
-  subtitle,
-  done,
+  label,
+  value,
+  hint,
+  muted,
   onPress,
+  onLongPress,
+  last,
 }: {
   icon: IoniconName;
-  title: string;
-  subtitle: string;
-  done: boolean;
-  onPress: () => void;
+  label: string;
+  value: string;
+  hint?: string;
+  muted?: boolean;
+  onPress?: () => void;
+  onLongPress?: () => void;
+  last?: boolean;
 }) {
+  const interactive = Boolean(onPress || onLongPress);
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      className="flex-row items-center gap-3 px-4 py-3.5 active:bg-neutral-50"
+      onLongPress={onLongPress}
+      disabled={!interactive}
+      accessibilityRole={interactive ? "button" : "text"}
+      accessibilityLabel={`${label}, ${value}`}
+      className={`flex-row items-center gap-3 px-4 py-3.5 ${
+        interactive ? "active:bg-neutral-50" : ""
+      } ${last ? "" : ""}`}
     >
-      <View
-        className={`h-10 w-10 items-center justify-center rounded-full ${
-          done ? "bg-emerald-100" : "bg-accent-soft"
-        }`}
-      >
-        <Ionicons
-          name={icon}
-          size={18}
-          color={done ? "#059669" : "#004aad"}
-        />
+      <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
+        <Ionicons name={icon} size={17} color="#525252" />
       </View>
       <View className="min-w-0 flex-1">
+        <Text className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">
+          {label}
+        </Text>
         <Text
-          className={`text-[15px] font-bold ${
-            done ? "text-neutral-600" : "text-neutral-900"
+          className={`mt-0.5 text-[15px] font-semibold ${
+            muted ? "text-neutral-400" : "text-neutral-900"
           }`}
+          numberOfLines={2}
         >
-          {title}
+          {value}
         </Text>
-        <Text
-          className={`mt-0.5 text-xs ${done ? "text-neutral-400" : "text-neutral-500"}`}
-        >
-          {subtitle}
-        </Text>
+        {hint ? (
+          <Text className="mt-0.5 text-[10px] text-neutral-400">{hint}</Text>
+        ) : null}
       </View>
-      {done ? (
-        <Ionicons name="checkmark-circle" size={22} color="#10b981" />
-      ) : (
+      {interactive ? (
         <Ionicons name="chevron-forward" size={18} color="#c4c4c4" />
-      )}
+      ) : null}
     </Pressable>
   );
 }
 
-function StatStripCell({
+function PremiumStatCard({
   label,
   value,
   icon,
+  accent,
 }: {
   label: string;
   value: number;
   icon: IoniconName;
+  accent: "blue" | "gold" | "green";
 }) {
+  const tones = {
+    blue: {
+      bg: "bg-accent-soft",
+      icon: "#004aad",
+      ring: "border-accent-tint/60",
+    },
+    gold: {
+      bg: "bg-brand-gold/15",
+      icon: "#b8860b",
+      ring: "border-brand-gold/30",
+    },
+    green: {
+      bg: "bg-emerald-50",
+      icon: "#059669",
+      ring: "border-emerald-200/80",
+    },
+  }[accent];
+
   return (
-    <View className="min-w-0 flex-1 items-center px-1 py-0.5">
-      <Ionicons name={icon} size={13} color="#737373" />
-      <Text className="mt-1.5 text-2xl font-extrabold tabular-nums text-neutral-900">
+    <View
+      className={`min-w-0 flex-1 rounded-2xl border bg-white px-3 py-3.5 shadow-sm ${tones.ring}`}
+    >
+      <View
+        className={`h-8 w-8 items-center justify-center rounded-xl ${tones.bg}`}
+      >
+        <Ionicons name={icon} size={16} color={tones.icon} />
+      </View>
+      <Text className="mt-2.5 text-2xl font-extrabold tabular-nums text-neutral-900">
         {value}
       </Text>
-      <Text className="mt-0.5 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+      <Text className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-500">
         {label}
       </Text>
     </View>
   );
-}
-
-function StatDivider() {
-  return <View className="my-2 w-px self-stretch bg-neutral-200/90" />;
 }
 
 function RowHairline() {
@@ -1096,33 +1127,63 @@ function SettingsHairline() {
   return <View className="ml-12 mr-4 h-px bg-neutral-200/90" />;
 }
 
-function EditNameModal({
+type ProfileDetailsPatch = Pick<
+  UserProfile,
+  "name" | "email" | "birthday" | "anniversary"
+>;
+
+function EditProfileDetailsModal({
   open,
-  initialName,
+  profile,
   onClose,
   onSave,
 }: {
   open: boolean;
-  initialName: string;
+  profile: UserProfile | null | undefined;
   onClose: () => void;
-  onSave: (name: string) => Promise<void> | void;
+  onSave: (patch: ProfileDetailsPatch) => Promise<void> | void;
 }) {
-  const [name, setName] = useState(initialName);
+  const [name, setName] = useState(profile?.name ?? "");
+  const [email, setEmail] = useState(profile?.email ?? "");
+  const [birthday, setBirthday] = useState(profile?.birthday ?? "");
+  const [anniversary, setAnniversary] = useState(profile?.anniversary ?? "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (open) setName(initialName);
-  }, [open, initialName]);
+    if (!open) return;
+    setName(profile?.name ?? "");
+    setEmail(profile?.email ?? "");
+    setBirthday(profile?.birthday ?? "");
+    setAnniversary(profile?.anniversary ?? "");
+    setError(null);
+  }, [open, profile?.anniversary, profile?.birthday, profile?.email, profile?.name]);
 
   const save = async () => {
-    const trimmed = name.trim();
-    if (trimmed.length < 2) {
-      Alert.alert("Name too short", "Use at least two characters.");
+    const nameTrimmed = name.trim();
+    const emailTrimmed = email.trim();
+    const emailOk =
+      emailTrimmed.length === 0 ||
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed);
+    if (nameTrimmed.length < 2) {
+      setError("Please enter your name (at least 2 characters).");
+      return;
+    }
+    if (!emailOk) {
+      setError("Enter a valid email or leave it blank.");
       return;
     }
     setSaving(true);
+    setError(null);
     try {
-      await onSave(trimmed);
+      await onSave({
+        name: nameTrimmed,
+        email: emailTrimmed.length ? emailTrimmed : null,
+        birthday: birthday.trim().length ? birthday.trim() : null,
+        anniversary: anniversary.trim().length ? anniversary.trim() : null,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save changes.");
     } finally {
       setSaving(false);
     }
@@ -1145,30 +1206,77 @@ function EditNameModal({
         >
           <Pressable
             onPress={() => {}}
-            className="w-full rounded-t-3xl bg-white px-5 pb-6 pt-5"
+            className="w-full rounded-t-3xl bg-white px-5 pb-8 pt-5"
           >
             <View className="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-200" />
-            <Text className="text-base font-extrabold text-neutral-900">
-              Edit your name
+            <Text className="text-lg font-extrabold text-neutral-900">
+              Profile details
             </Text>
-            <Text className="mt-1 text-xs text-neutral-500">
-              We use it on every booking so vendors greet you correctly.
+            <Text className="mt-1 text-xs leading-5 text-neutral-500">
+              Used on bookings, receipts, and optional birthday reminders.
+              Your mobile number is managed through sign-in.
             </Text>
-            <View className="mt-4">
-              <Input
-                autoFocus
-                autoCapitalize="words"
-                autoComplete="name"
-                placeholder="Your full name"
-                value={name}
-                onChangeText={setName}
-                returnKeyType="done"
-                onSubmitEditing={save}
-              />
+
+            <View className="mt-5 gap-3">
+              <FieldBlock label="Full name">
+                <Input
+                  autoFocus
+                  autoCapitalize="words"
+                  autoComplete="name"
+                  placeholder="Your full name"
+                  value={name}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setName(t);
+                  }}
+                  returnKeyType="next"
+                />
+              </FieldBlock>
+              <FieldBlock label="Email">
+                <Input
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  placeholder="hello@email.com"
+                  value={email}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setEmail(t);
+                  }}
+                />
+              </FieldBlock>
+              <FieldBlock label="Birthday" hint="Optional — DD / MM / YYYY">
+                <Input
+                  placeholder="DD / MM / YYYY"
+                  value={birthday}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setBirthday(t);
+                  }}
+                />
+              </FieldBlock>
+              <FieldBlock label="Anniversary" hint="Optional — DD / MM / YYYY">
+                <Input
+                  placeholder="DD / MM / YYYY"
+                  value={anniversary}
+                  onChangeText={(t) => {
+                    setError(null);
+                    setAnniversary(t);
+                  }}
+                />
+              </FieldBlock>
             </View>
-            <View className="mt-4 flex-row gap-3">
+
+            {error ? (
+              <Text className="mt-3 text-xs font-semibold text-red-600">
+                {error}
+              </Text>
+            ) : null}
+
+            <View className="mt-5 flex-row gap-3">
               <Pressable
                 onPress={onClose}
+                disabled={saving}
                 accessibilityRole="button"
                 accessibilityLabel="Cancel"
                 className="flex-1 rounded-2xl border border-brand-line bg-white py-3.5 active:bg-neutral-50"
@@ -1181,16 +1289,16 @@ function EditNameModal({
                 onPress={save}
                 disabled={saving}
                 accessibilityRole="button"
-                accessibilityLabel="Save name"
-                className={`flex-1 rounded-2xl bg-neutral-900 py-3.5 active:opacity-90 ${
+                accessibilityLabel="Save profile details"
+                className={`flex-1 rounded-2xl bg-accent py-3.5 active:opacity-90 ${
                   saving ? "opacity-70" : ""
                 }`}
               >
                 {saving ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text className="text-center text-sm font-bold text-white">
-                    Save
+                  <Text className="text-center text-sm font-bold text-accent-foreground">
+                    Save changes
                   </Text>
                 )}
               </Pressable>
@@ -1199,5 +1307,25 @@ function EditNameModal({
         </KeyboardAvoidingView>
       </Pressable>
     </Modal>
+  );
+}
+
+function FieldBlock({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <View>
+      <Text className="mb-1.5 text-xs font-bold text-neutral-600">{label}</Text>
+      {children}
+      {hint ? (
+        <Text className="mt-1 text-[10px] text-neutral-400">{hint}</Text>
+      ) : null}
+    </View>
   );
 }

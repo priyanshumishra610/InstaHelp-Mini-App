@@ -1,42 +1,43 @@
-import { AnimatedSplash } from "@/components/ui/AnimatedSplash";
-import { SPLASH_MIN_DURATION_MS } from "@/constants/splash";
+import { SPLASH_BACKGROUND, SPLASH_MIN_DURATION_MS } from "@/constants/splash";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useAuthHydration } from "@/hooks/usePersistHydration";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useSplashTransitionStore } from "@/store/splashTransitionStore";
+import { useEffect, useRef } from "react";
+import { StyleSheet, View } from "react-native";
 
 /**
- * Cold start: animated splash → login (or tabs if already signed in).
+ * Cold start: root splash overlay → login (or tabs if already signed in).
  */
 export default function Index() {
-  const router = useRouter();
   const hydrated = useAuthHydration();
   const destination = useAuthDestination();
-
-  const [splashDone, setSplashDone] = useState(false);
-  const navigated = useRef(false);
-
-  const handleSplashFinish = useCallback(() => {
-    setSplashDone(true);
-  }, []);
+  const activate = useSplashTransitionStore((s) => s.activate);
+  const setDestination = useSplashTransitionStore((s) => s.setDestination);
+  const markMinElapsed = useSplashTransitionStore((s) => s.markMinElapsed);
+  const activated = useRef(false);
 
   useEffect(() => {
-    if (navigated.current) return;
-    if (!hydrated) return;
-    if (!splashDone) return;
-    if (!destination) return;
+    if (activated.current) return;
+    activated.current = true;
+    activate();
+  }, [activate]);
 
-    navigated.current = true;
-    router.replace(destination);
-  }, [destination, hydrated, router, splashDone]);
+  useEffect(() => {
+    const t = setTimeout(markMinElapsed, SPLASH_MIN_DURATION_MS);
+    return () => clearTimeout(t);
+  }, [markMinElapsed]);
 
-  const readyToExit = hydrated && destination != null;
+  useEffect(() => {
+    if (!hydrated || !destination) return;
+    setDestination(destination);
+  }, [destination, hydrated, setDestination]);
 
-  return (
-    <AnimatedSplash
-      onFinish={handleSplashFinish}
-      minDurationMs={SPLASH_MIN_DURATION_MS}
-      readyToExit={readyToExit}
-    />
-  );
+  return <View style={styles.placeholder} />;
 }
+
+const styles = StyleSheet.create({
+  placeholder: {
+    flex: 1,
+    backgroundColor: SPLASH_BACKGROUND,
+  },
+});

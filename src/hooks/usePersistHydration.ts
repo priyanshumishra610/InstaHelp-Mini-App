@@ -1,12 +1,16 @@
 import { useAuth } from "@/providers/AuthProvider";
 import { useOnboardingStore } from "@/store/onboardingStore";
+import { useSheetAuthStore } from "@/store/sheetAuthStore";
 import { useEffect, useState } from "react";
 
-/** App routing waits for Firebase auth restore + persisted guest flag hydration. */
+/** App routing waits for auth + persisted onboarding/sheet phone hydration. */
 export function useAuthHydration(): boolean {
   const { isReady } = useAuth();
   const [onboardingHydrated, setOnboardingHydrated] = useState(() =>
     useOnboardingStore.persist.hasHydrated(),
+  );
+  const [sheetAuthHydrated, setSheetAuthHydrated] = useState(() =>
+    useSheetAuthStore.persist.hasHydrated(),
   );
 
   useEffect(() => {
@@ -18,5 +22,14 @@ export function useAuthHydration(): boolean {
     });
   }, []);
 
-  return isReady && onboardingHydrated;
+  useEffect(() => {
+    if (useSheetAuthStore.persist.hasHydrated()) {
+      setSheetAuthHydrated(true);
+    }
+    return useSheetAuthStore.persist.onFinishHydration(() => {
+      setSheetAuthHydrated(true);
+    });
+  }, []);
+
+  return isReady && onboardingHydrated && sheetAuthHydrated;
 }

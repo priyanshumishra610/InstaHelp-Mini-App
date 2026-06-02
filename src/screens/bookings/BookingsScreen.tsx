@@ -4,6 +4,11 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useBookingsQuery } from "@/hooks/queries/useBookings";
 import { useMergedBookings } from "@/hooks/useMergedBookings";
 import type { Booking } from "@/types/booking";
+import {
+  computeBookingStats,
+  formatRelativeTime,
+  isActiveBooking,
+} from "@/utils/bookingActivity";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -27,51 +32,16 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "completed", label: "Completed" },
 ];
 
-function isActive(b: Booking) {
-  return b.status !== "completed";
-}
-
-function formatRelative(iso: string) {
-  try {
-    const d = new Date(iso);
-    const now = Date.now();
-    const diff = Math.max(0, now - d.getTime());
-    const mins = Math.round(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.round(mins / 60);
-    if (hrs < 24) return `${hrs}h ago`;
-    const days = Math.round(hrs / 24);
-    if (days < 7) return `${days}d ago`;
-    return d.toLocaleDateString(undefined, {
-      day: "2-digit",
-      month: "short",
-    });
-  } catch {
-    return "";
-  }
-}
-
 export function BookingsScreen() {
   const router = useRouter();
   const { isPending, isError, isRefetching, refetch } = useBookingsQuery();
   const rows = useMergedBookings();
   const [filter, setFilter] = useState<Filter>("all");
 
-  const stats = useMemo(() => {
-    let active = 0;
-    let completed = 0;
-    let rated = 0;
-    for (const b of rows) {
-      if (isActive(b)) active++;
-      else completed++;
-      if (b.rating) rated++;
-    }
-    return { active, completed, rated, total: rows.length };
-  }, [rows]);
+  const stats = useMemo(() => computeBookingStats(rows), [rows]);
 
   const filtered = useMemo(() => {
-    if (filter === "active") return rows.filter(isActive);
+    if (filter === "active") return rows.filter(isActiveBooking);
     if (filter === "completed")
       return rows.filter((b) => b.status === "completed");
     return rows;
@@ -326,7 +296,7 @@ export function BookingsScreen() {
                         <View className="flex-row items-center gap-1.5">
                           <Ionicons name="ellipse" size={5} color="#a3a3a3" />
                           <Text className="text-xs text-neutral-500 dark:text-neutral-400">
-                            Updated {formatRelative(b.updatedAt)}
+                            Updated {formatRelativeTime(b.updatedAt)}
                           </Text>
                         </View>
                         {b.rating ? (

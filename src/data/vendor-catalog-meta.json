@@ -1,0 +1,266 @@
+{
+  "generatedAt": "2026-06-01T20:59:21.882Z",
+  "totalVendors": 4523,
+  "cities": [
+    {
+      "id": "bengaluru",
+      "label": "Bengaluru",
+      "count": 1020
+    },
+    {
+      "id": "mumbai",
+      "label": "Mumbai",
+      "count": 535
+    },
+    {
+      "id": "delhi",
+      "label": "Delhi",
+      "count": 525
+    },
+    {
+      "id": "bangalore",
+      "label": "Bangalore",
+      "count": 86
+    },
+    {
+      "id": "koramangala",
+      "label": "Koramangala",
+      "count": 47
+    },
+    {
+      "id": "rajajinagar",
+      "label": "Rajajinagar",
+      "count": 34
+    },
+    {
+      "id": "indiranagar",
+      "label": "Indiranagar",
+      "count": 34
+    },
+    {
+      "id": "hsr_layout",
+      "label": "Hsr Layout",
+      "count": 33
+    },
+    {
+      "id": "malleshwaram",
+      "label": "Malleshwaram",
+      "count": 31
+    },
+    {
+      "id": "gandhi_nagar",
+      "label": "Gandhi Nagar",
+      "count": 28
+    },
+    {
+      "id": "jaya_nagar",
+      "label": "Jaya Nagar",
+      "count": 25
+    },
+    {
+      "id": "basavanagudi",
+      "label": "Basavanagudi",
+      "count": 25
+    },
+    {
+      "id": "chickpet",
+      "label": "Chickpet",
+      "count": 20
+    },
+    {
+      "id": "vijayanagar",
+      "label": "Vijayanagar",
+      "count": 20
+    },
+    {
+      "id": "karnataka",
+      "label": "India",
+      "count": 20
+    },
+    {
+      "id": "shivajinagar",
+      "label": "Shivajinagar",
+      "count": 19
+    },
+    {
+      "id": "m_g_road",
+      "label": "M.g.road",
+      "count": 18
+    },
+    {
+      "id": "banashankari",
+      "label": "Banashankari",
+      "count": 17
+    }
+  ],
+  "areas": [
+    {
+      "id": "bengaluru__bengaluru",
+      "label": "Bengaluru",
+      "cityLabel": "Bengaluru",
+      "count": 1000
+    },
+    {
+      "id": "mumbai__mumbai",
+      "label": "Mumbai",
+      "cityLabel": "Mumbai",
+      "count": 535
+    },
+    {
+      "id": "delhi__delhi",
+      "label": "Delhi",
+      "cityLabel": "Delhi",
+      "count": 525
+    },
+    {
+      "id": "karnataka__general",
+      "label": "India",
+      "cityLabel": "India",
+      "count": 20
+    },
+    {
+      "id": "ka__general",
+      "label": "India",
+      "cityLabel": "India",
+      "count": 14
+    },
+    {
+      "id": "indiranagar__hal_2nd_stage",
+      "label": "Hal 2nd Stage",
+      "cityLabel": "Indiranagar",
+      "count": 14
+    },
+    {
+      "id": "bengaluru__general",
+      "label": "India",
+      "cityLabel": "India",
+      "count": 10
+    },
+    {
+      "id": "hsr_layout__sector_6",
+      "label": "Sector 6",
+      "cityLabel": "Hsr Layout",
+      "count": 8
+    },
+    {
+      "id": "1st_main_road__1st_main_road",
+      "label": "1st Main Road",
+      "cityLabel": "1st Main Road",
+      "count": 8
+    },
+    {
+      "id": "koramangala__6th_block",
+      "label": "6th Block",
+      "cityLabel": "Koramangala",
+      "count": 7
+    },
+    {
+      "id": "koramangala__5th_block",
+      "label": "5th Block",
+      "cityLabel": "Koramangala",
+      "count": 5
+    },
+    {
+      "id": "sudhama_nagar__h_siddaiah_road",
+      "label": "H Siddaiah Road",
+      "cityLabel": "Sudhama Nagar",
+      "count": 4
+    },
+    {
+      "id": "kalyan_nagar__hrbr_layout",
+      "label": "Hrbr Layout",
+      "cityLabel": "Kalyan Nagar",
+      "count": 4
+    },
+    {
+      "id": "hsr_layout__1st_sector",
+      "label": "1st Sector",
+      "cityLabel": "Hsr Layout",
+      "count": 4
+    },
+    {
+      "id": "ashok_nagar__shanthala_nagar",
+      "label": "Shanthala Nagar",
+      "cityLabel": "Ashok Nagar",
+      "count": 4
+    },
+    {
+      "id": "hsr_layout__7th_sector",
+      "label": "7th Sector",
+      "cityLabel": "Hsr Layout",
+      "count": 4
+    },
+    {
+      "id": "malleshwaram__sampige_road",
+      "label": "Sampige Road",
+      "cityLabel": "Malleshwaram",
+      "count": 4
+    },
+    {
+      "id": "jaya_nagar__4th_block",
+      "label": "4th Block",
+      "cityLabel": "Jaya Nagar",
+      "count": 4
+    },
+    {
+      "id": "2nd_main_road__2nd_main_road",
+      "label": "2nd Main Road",
+      "cityLabel": "2nd Main Road",
+      "count": 4
+    },
+    {
+      "id": "m_g_road__st_mark_s_road",
+      "label": "St Mark's Road",
+      "cityLabel": "M.g.road",
+      "count": 3
+    },
+    {
+      "id": "rajajinagar__5th_block",
+      "label": "5th Block",
+      "cityLabel": "Rajajinagar",
+      "count": 3
+    },
+    {
+      "id": "cottonpet__cottonpet_main_road",
+      "label": "Cottonpet Main Road",
+      "cityLabel": "Cottonpet",
+      "count": 3
+    },
+    {
+      "id": "18th_cross_road__18th_cross_road",
+      "label": "18th Cross Road",
+      "cityLabel": "18th Cross Road",
+      "count": 3
+    },
+    {
+      "id": "2nd_cross_road__2nd_cross_road",
+      "label": "2nd Cross Road",
+      "cityLabel": "2nd Cross Road",
+      "count": 3
+    },
+    {
+      "id": "11th_main_road__11th_main_road",
+      "label": "11th Main Road",
+      "cityLabel": "11th Main Road",
+      "count": 3
+    },
+    {
+      "id": "27th_main_road__27th_main_road",
+      "label": "27th Main Road",
+      "cityLabel": "27th Main Road",
+      "count": 3
+    },
+    {
+      "id": "malleshwaram__margosa_road",
+      "label": "Margosa Road",
+      "cityLabel": "Malleshwaram",
+      "count": 3
+    },
+    {
+      "id": "karnataka_560043__bengaluru",
+      "label": "Bengaluru",
+      "cityLabel": "Karnataka 560043",
+      "count": 3
+    }
+  ]
+}

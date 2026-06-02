@@ -1,3 +1,25 @@
+import { apiRegisterPhone } from "@/api/appsScriptClient";
+import { APPS_SCRIPT_URL } from "@/api/env";
+import { USE_FIREBASE_AUTH } from "@/constants/authBackend";
+import { refreshProfile } from "@/services/profileService";
+import { useOnboardingStore } from "@/store/onboardingStore";
+import { useProfileStore } from "@/store/profileStore";
+import { useSheetAuthStore } from "@/store/sheetAuthStore";
+import type { FirestoreUser } from "@/types/firestoreUser";
+import { isSheetProfileComplete } from "@/utils/auth/profileComplete";
+import { toE164IndianPhone } from "@/utils/auth/phoneFormat";
+import type { User } from "firebase/auth";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from "react";
+
+/* Firebase Auth (disabled — kept for reference)
 import { isFirebaseConfigured } from "@/firebase/config";
 import { sendPhoneOtp, signOutFirebase, verifyPhoneOtp } from "@/firebase/auth";
 import {
@@ -6,26 +28,13 @@ import {
   syncFirestoreUserToLocalProfile,
 } from "@/firebase/users";
 import { useAuthUiStore } from "@/stores/authUiStore";
-import type { FirestoreUser } from "@/types/firestoreUser";
 import { isProfileComplete } from "@/types/firestoreUser";
 import { mapFirebaseAuthError } from "@/utils/auth/firebaseErrors";
-import type { ApplicationVerifier } from "firebase/auth";
-import type { ConfirmationResult, User } from "firebase/auth";
-import { onAuthStateChanged } from "firebase/auth";
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PropsWithChildren,
-} from "react";
-
+import type { ApplicationVerifier, ConfirmationResult } from "firebase/auth";
+import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
 import { getFirebaseAuth } from "@/firebase/auth";
-import { useOnboardingStore } from "@/store/onboardingStore";
-import { useProfileStore } from "@/store/profileStore";
+import { finalizeTruecallerWithServer } from "@/firebase/truecallerFinalizeClient";
+*/
 
 export type AuthStatus =
   | "loading"
@@ -36,150 +45,152 @@ export type AuthStatus =
 type AuthContextValue = {
   status: AuthStatus;
   isReady: boolean;
+  /** Always null when Firebase auth is disabled. */
   firebaseUser: User | null;
+  /** Always null when Firebase auth is disabled. */
   firestoreUser: FirestoreUser | null;
-  sendOtp: (
-    digits10: string,
-    verifier: ApplicationVerifier,
-  ) => Promise<void>;
-  verifyOtp: (code: string) => Promise<void>;
+  /** Sign in with 10-digit mobile; stores phone + row in Google Sheet. */
+  signInWithPhone: (digits10: string) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Re-read profile from sheet and update auth status. */
+  refreshSession: () => Promise<void>;
+  /** Legacy stubs (Firebase OTP / Truecaller disabled). */
+  sendOtp: (_digits10: string, _verifier: unknown) => Promise<void>;
+  verifyOtp: (_code: string) => Promise<void>;
+  signInWithTruecallerOAuth: (_authorizationCode: string, _codeVerifier: string) => Promise<void>;
   refreshFirestoreUser: () => Promise<FirestoreUser | null>;
-  getConfirmation: () => ConfirmationResult | null;
+  getConfirmation: () => null;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function applyStatusFromProfile() {
+  const deferProfile = useOnboardingStore.getState().deferProfile;
+  const profile = useProfileStore.getState().profile;
+  const phone = useSheetAuthStore.getState().phone;
+  if (!phone) {
+    return "unauthenticated" as const;
+  }
+  const complete = isSheetProfileComplete(profile);
+  if (complete) useOnboardingStore.getState().setDeferProfile(false);
+  if (!complete && !deferProfile) return "needs-profile" as const;
+  if (!complete && deferProfile) return "authenticated" as const;
+  return "authenticated" as const;
+}
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<AuthStatus>("loading");
-  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
-  const [firestoreUser, setFirestoreUser] = useState<FirestoreUser | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const sheetPhone = useSheetAuthStore((s) => s.phone);
 
-  const applyUserState = useCallback(async (user: User | null) => {
-    if (!user) {
-      setFirebaseUser(null);
-      setFirestoreUser(null);
-      useProfileStore.getState().setProfile(null);
+  const refreshSession = useCallback(async () => {
+    const phone = useSheetAuthStore.getState().phone;
+    if (!phone) {
       setStatus("unauthenticated");
       return;
     }
-
-    useOnboardingStore.getState().clearGuest();
-
-    setFirebaseUser(user);
-    let doc = await fetchUserDocument(user.uid);
-    if (!doc) {
-      const phone = user.phoneNumber ?? "";
-      doc = await createUserDocument(user.uid, phone);
+    if (APPS_SCRIPT_URL) {
+      await refreshProfile();
+    } else {
+      useProfileStore.getState().setProfile({
+        phone,
+        addresses: [],
+        favorites: [],
+      });
     }
-    setFirestoreUser(doc);
-    syncFirestoreUserToLocalProfile(doc);
-    setStatus(isProfileComplete(doc) ? "authenticated" : "needs-profile");
+    setStatus(applyStatusFromProfile());
   }, []);
 
   useEffect(() => {
-    if (!isFirebaseConfigured()) {
+    let cancelled = false;
+
+    if (USE_FIREBASE_AUTH) {
       setStatus("unauthenticated");
       setIsReady(true);
       return;
     }
 
-    const auth = getFirebaseAuth();
-    const unsub = onAuthStateChanged(
-      auth,
-      async (user) => {
-        try {
-          await applyUserState(user);
-        } finally {
-          setIsReady(true);
-        }
-      },
-      () => {
-        setStatus("unauthenticated");
-        setIsReady(true);
-      },
-    );
+    const phone = useSheetAuthStore.getState().phone;
+    if (!phone) {
+      setStatus("unauthenticated");
+      setIsReady(true);
+      return;
+    }
 
-    return unsub;
-  }, [applyUserState]);
+    // Never block app entry on network — use cached profile, refresh in background.
+    setStatus(applyStatusFromProfile());
+    setIsReady(true);
 
-  const sendOtp = useCallback(
-    async (digits10: string, verifier: ApplicationVerifier) => {
-      const confirmation = await sendPhoneOtp(digits10, verifier);
-      confirmationRef.current = confirmation;
-      useAuthUiStore.getState().setPendingPhoneDigits(digits10.replace(/\D/g, "").slice(0, 10));
-    },
-    [],
-  );
-
-  const verifyOtp = useCallback(
-    async (code: string) => {
-      const confirmation = confirmationRef.current;
-      if (!confirmation) {
-        throw new Error("Request OTP first");
-      }
+    void (async () => {
       try {
-        const user = await verifyPhoneOtp(confirmation, code);
-        confirmationRef.current = null;
-        const phone = user.phoneNumber ?? "";
-        const doc = await createUserDocument(user.uid, phone);
-        setFirestoreUser(doc);
-        syncFirestoreUserToLocalProfile(doc);
-        setFirebaseUser(user);
-        setStatus(isProfileComplete(doc) ? "authenticated" : "needs-profile");
-      } catch (error) {
-        throw new Error(mapFirebaseAuthError(error));
+        await refreshSession();
+      } catch {
+        // Offline / slow Apps Script — keep cached session.
+      } finally {
+        if (!cancelled) setStatus(applyStatusFromProfile());
       }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshSession, sheetPhone]);
+
+  const signInWithPhone = useCallback(
+    async (digits10: string) => {
+      const phone = toE164IndianPhone(digits10);
+      useOnboardingStore.getState().clearGuest();
+
+      if (!APPS_SCRIPT_URL) {
+        throw new Error("Missing EXPO_PUBLIC_APPS_SCRIPT_URL in .env");
+      }
+
+      const res = await apiRegisterPhone(phone);
+      if (!res.ok) {
+        throw new Error(res.error);
+      }
+
+      useSheetAuthStore.getState().setPhone(phone);
+      useProfileStore.getState().setProfile({
+        ...res.data,
+        phone,
+      });
+
+      const complete = isSheetProfileComplete(res.data);
+      if (complete) useOnboardingStore.getState().setDeferProfile(false);
+      setStatus(complete ? "authenticated" : "needs-profile");
     },
     [],
   );
 
   const signOut = useCallback(async () => {
-    confirmationRef.current = null;
-    useAuthUiStore.getState().resetOtpUi();
-    await signOutFirebase();
+    useSheetAuthStore.getState().clearPhone();
     useOnboardingStore.getState().clearGuest();
+    useOnboardingStore.getState().setDeferProfile(false);
     useProfileStore.getState().setProfile(null);
-    setFirebaseUser(null);
-    setFirestoreUser(null);
     setStatus("unauthenticated");
   }, []);
 
-  const refreshFirestoreUser = useCallback(async () => {
-    if (!firebaseUser) return null;
-    const doc = await fetchUserDocument(firebaseUser.uid);
-    if (doc) {
-      setFirestoreUser(doc);
-      syncFirestoreUserToLocalProfile(doc);
-      setStatus(isProfileComplete(doc) ? "authenticated" : "needs-profile");
-    }
-    return doc;
-  }, [firebaseUser]);
+  const disabledFirebase = useCallback(async () => {
+    throw new Error("Firebase auth is disabled. Use phone sign-in with Google Sheet backend.");
+  }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       isReady,
-      firebaseUser,
-      firestoreUser,
-      sendOtp,
-      verifyOtp,
+      firebaseUser: null,
+      firestoreUser: null,
+      signInWithPhone,
       signOut,
-      refreshFirestoreUser,
-      getConfirmation: () => confirmationRef.current,
+      refreshSession,
+      sendOtp: disabledFirebase,
+      verifyOtp: disabledFirebase,
+      signInWithTruecallerOAuth: disabledFirebase,
+      refreshFirestoreUser: async () => null,
+      getConfirmation: () => null,
     }),
-    [
-      firestoreUser,
-      firebaseUser,
-      isReady,
-      refreshFirestoreUser,
-      sendOtp,
-      signOut,
-      status,
-      verifyOtp,
-    ],
+    [disabledFirebase, isReady, refreshSession, signInWithPhone, signOut, status],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

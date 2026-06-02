@@ -6,6 +6,7 @@ import type { VendorRecord } from "@/types/vendorMarketplace";
 export type VendorCatalogQuery = {
   search: string;
   areaKey: string | null;
+  cityKey?: string | null;
   category?: string | null;
   verifiedOnly: boolean;
   availableNowOnly: boolean;

@@ -1,0 +1,346 @@
+{
+  "total": 400,
+  "states": [
+    {
+      "state": "Uttarakhand",
+      "count": 75
+    },
+    {
+      "state": "Himachal Pradesh",
+      "count": 65
+    },
+    {
+      "state": "Rajasthan",
+      "count": 42
+    },
+    {
+      "state": "Goa",
+      "count": 35
+    },
+    {
+      "state": "Kerala",
+      "count": 35
+    },
+    {
+      "state": "Tamil Nadu",
+      "count": 35
+    },
+    {
+      "state": "Maharashtra",
+      "count": 25
+    },
+    {
+      "state": "Madhya Pradesh",
+      "count": 22
+    },
+    {
+      "state": "Karnataka",
+      "count": 19
+    },
+    {
+      "state": "Kashmir",
+      "count": 16
+    },
+    {
+      "state": "Sikkim",
+      "count": 15
+    },
+    {
+      "state": "Ladakh",
+      "count": 5
+    },
+    {
+      "state": "Haryana",
+      "count": 2
+    },
+    {
+      "state": "Punjab",
+      "count": 2
+    },
+    {
+      "state": "Gujarat",
+      "count": 2
+    },
+    {
+      "state": "Jammu & Kashmir",
+      "count": 1
+    },
+    {
+      "state": "Assam",
+      "count": 1
+    },
+    {
+      "state": "Uttar Pradesh",
+      "count": 1
+    },
+    {
+      "state": "Jammu and Kashmir",
+      "count": 1
+    },
+    {
+      "state": "Odisha",
+      "count": 1
+    }
+  ],
+  "regions": [
+    {
+      "region": "North India",
+      "count": 28
+    },
+    {
+      "region": "North Goa",
+      "count": 20
+    },
+    {
+      "region": "Manali",
+      "count": 15
+    },
+    {
+      "region": "Jim Corbett",
+      "count": 15
+    },
+    {
+      "region": "South Goa",
+      "count": 14
+    },
+    {
+      "region": "Jaipur",
+      "count": 12
+    },
+    {
+      "region": "Shimla",
+      "count": 12
+    },
+    {
+      "region": "Mussoorie",
+      "count": 12
+    },
+    {
+      "region": "Ooty",
+      "count": 10
+    },
+    {
+      "region": "Mumbai",
+      "count": 10
+    },
+    {
+      "region": "Udaipur",
+      "count": 9
+    },
+    {
+      "region": "Gangtok",
+      "count": 9
+    },
+    {
+      "region": "Rishikesh",
+      "count": 8
+    },
+    {
+      "region": "Srinagar",
+      "count": 8
+    },
+    {
+      "region": "Rajasthan",
+      "count": 6
+    },
+    {
+      "region": "South India",
+      "count": 6
+    },
+    {
+      "region": "Coorg",
+      "count": 6
+    },
+    {
+      "region": "Dharamshala",
+      "count": 6
+    },
+    {
+      "region": "Dehradun",
+      "count": 6
+    },
+    {
+      "region": "Uttarakhand",
+      "count": 6
+    },
+    {
+      "region": "Pench",
+      "count": 6
+    },
+    {
+      "region": "West India",
+      "count": 5
+    },
+    {
+      "region": "Jodhpur",
+      "count": 5
+    },
+    {
+      "region": "Kochi",
+      "count": 5
+    },
+    {
+      "region": "Kasauli",
+      "count": 5
+    },
+    {
+      "region": "Kodaikanal",
+      "count": 5
+    },
+    {
+      "region": "Bandhavgarh",
+      "count": 5
+    },
+    {
+      "region": "Lonavala",
+      "count": 5
+    },
+    {
+      "region": "Kovalam",
+      "count": 4
+    },
+    {
+      "region": "Chikmagalur",
+      "count": 4
+    },
+    {
+      "region": "Bangalore",
+      "count": 4
+    },
+    {
+      "region": "Gulmarg",
+      "count": 4
+    },
+    {
+      "region": "Chennai",
+      "count": 4
+    },
+    {
+      "region": "Bhopal",
+      "count": 4
+    },
+    {
+      "region": "Jaisalmer",
+      "count": 3
+    },
+    {
+      "region": "Kumarakom",
+      "count": 3
+    },
+    {
+      "region": "Thekkady",
+      "count": 3
+    },
+    {
+      "region": "Munnar",
+      "count": 3
+    },
+    {
+      "region": "Dalhousie",
+      "count": 3
+    },
+    {
+      "region": "Nainital",
+      "count": 3
+    }
+  ],
+  "categories": [
+    {
+      "category": "Premium Hotel",
+      "count": 42
+    },
+    {
+      "category": "Beach Resort",
+      "count": 28
+    },
+    {
+      "category": "Luxury Hotel",
+      "count": 21
+    },
+    {
+      "category": "Mountain Resort",
+      "count": 15
+    },
+    {
+      "category": "Premium Resort",
+      "count": 13
+    },
+    {
+      "category": "Heritage Palace",
+      "count": 12
+    },
+    {
+      "category": "Heritage Hotel",
+      "count": 11
+    },
+    {
+      "category": "Boutique Resort",
+      "count": 10
+    },
+    {
+      "category": "Wildlife Resort",
+      "count": 9
+    },
+    {
+      "category": "Boutique Hotel",
+      "count": 9
+    },
+    {
+      "category": "Mid-Range Resort",
+      "count": 8
+    },
+    {
+      "category": "Heritage Boutique",
+      "count": 6
+    },
+    {
+      "category": "Wildlife Lodge",
+      "count": 6
+    },
+    {
+      "category": "Wellness Resort",
+      "count": 5
+    },
+    {
+      "category": "Backwater Resort",
+      "count": 5
+    },
+    {
+      "category": "Hill Resort",
+      "count": 5
+    },
+    {
+      "category": "Boutique Stay",
+      "count": 5
+    },
+    {
+      "category": "City Resort",
+      "count": 4
+    },
+    {
+      "category": "City Luxury",
+      "count": 4
+    },
+    {
+      "category": "Luxury Resort",
+      "count": 4
+    },
+    {
+      "category": "Mid-Range Hotel",
+      "count": 4
+    },
+    {
+      "category": "Boutique Beach",
+      "count": 3
+    },
+    {
+      "category": "Luxury Camp",
+      "count": 3
+    },
+    {
+      "category": "Luxury Retreat",
+      "count": 3
+    }
+  ],
+  "updatedAt": "2026-06-01T21:07:38.084Z"
+}

@@ -1,4 +1,5 @@
 import { AuthNavigationGuard } from "@/components/auth/AuthNavigationGuard";
+import { SplashExitOverlay } from "@/components/ui/SplashExitOverlay";
 import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
@@ -6,13 +7,25 @@ import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
 import { View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
 import "react-native-reanimated";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "../../global.css";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/** Ensures native splash never sticks after fast refresh on a nested route. */
+function NativeSplashFallback() {
+  useEffect(() => {
+    const t = setTimeout(() => {
+      void SplashScreen.hideAsync().catch(() => {});
+    }, 3500);
+    return () => clearTimeout(t);
+  }, []);
+  return null;
+}
 
 export { ErrorBoundary } from "expo-router";
 
@@ -40,7 +53,9 @@ export default function RootLayout() {
           <ThemeProvider value={DefaultTheme}>
             <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
               <StatusBar style="dark" />
+              <NativeSplashFallback />
               <AuthNavigationGuard />
+              <SplashExitOverlay />
               <HubbleLinkingBridge />
               <Stack
                 screenOptions={{

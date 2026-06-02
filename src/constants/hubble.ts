@@ -1,23 +1,15 @@
 import {
-  HUBBLE_DEMO_BRAND_IDS,
-} from "@/config/env";
-import type { HubbleEnvironment } from "@/services/hubble/types";
-
-export {
-  HUBBLE_ANALYTICS_ENABLED,
-  HUBBLE_APP_SECRET,
-  HUBBLE_CLIENT_ID,
-  HUBBLE_DEMO_BRAND_IDS,
-  HUBBLE_ENV,
+  HUBBLE_CONFIG,
   HUBBLE_IS_CONFIGURED,
-} from "@/config/env";
+  HUBBLE_WRAP_PLATFORM,
+} from "@/integrations/hubble";
 
-export const HUBBLE_WRAP_PLATFORM = "rn" as const;
-
-export const HUBBLE_SDK_BASE: Record<HubbleEnvironment, string> = {
-  development: "https://sdk.dev.myhubble.money/",
-  production: "https://sdk.myhubble.money/",
-};
+export { HUBBLE_IS_CONFIGURED, HUBBLE_WRAP_PLATFORM };
+export const HUBBLE_CLIENT_ID = HUBBLE_CONFIG.clientId;
+export const HUBBLE_APP_SECRET = HUBBLE_CONFIG.appSecret;
+export const HUBBLE_ENV = HUBBLE_CONFIG.environment;
+export const HUBBLE_ANALYTICS_ENABLED = HUBBLE_CONFIG.analyticsEnabled;
+export const HUBBLE_DEMO_BRAND_IDS = HUBBLE_CONFIG.demoBrandIds;
 
 export type GiftCardCategory = {
   id: string;

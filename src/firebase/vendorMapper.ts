@@ -129,6 +129,13 @@ export function mapFirestoreVendorToRecord(doc: FirestoreVendorDoc): VendorRecor
       ? doc.pricing.startingPrice
       : null;
 
+  const cityKey = doc.areaKey.includes("__")
+    ? doc.areaKey.split("__")[0]!
+    : doc.city
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "other";
+
   return {
     id: doc.id,
     vendorName: doc.name,
@@ -136,6 +143,7 @@ export function mapFirestoreVendorToRecord(doc: FirestoreVendorDoc): VendorRecor
     address: doc.address,
     areaKey: doc.areaKey,
     areaLabel: doc.area,
+    cityKey,
     city: doc.city,
     state: doc.state ?? "",
     phone: doc.phone,

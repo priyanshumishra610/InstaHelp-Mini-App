@@ -13,7 +13,12 @@ import { CreditHistoryModal } from "@/components/vendors/CreditHistoryModal";
 import { VendorExploreListSkeleton } from "@/components/vendors/VendorExploreListSkeleton";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useVendorUserLocation } from "@/hooks/useVendorUserLocation";
-import { BANGALORE_MARKETPLACE_AREAS } from "@/constants/bangaloreAreas";
+import {
+  MARKETPLACE_AREAS,
+  MARKETPLACE_CITIES,
+  MARKETPLACE_TOTAL_VENDORS,
+} from "@/constants/marketplaceCatalog";
+import { resolveExploreCatalogFilters } from "@/services/vendors/resolveExploreFilters";
 import { useVendors } from "@/hooks/useVendors";
 import type { VendorCatalogSort } from "@/services/vendors/vendorCatalogTypes";
 import { haversineKm } from "@/services/vendors/vendorGeo";
@@ -76,6 +81,9 @@ type ExploreHeaderOuterProps = {
   onOpenHistory: () => void;
   search: string;
   setSearch: Dispatch<SetStateAction<string>>;
+  cityOptions: ReadonlyArray<readonly [string, string]>;
+  cityKey: string | null;
+  setCityKey: Dispatch<SetStateAction<string | null>>;
   areaOptions: ReadonlyArray<readonly [string, string]>;
   areaKey: string | null;
   setAreaKey: Dispatch<SetStateAction<string | null>>;
@@ -109,6 +117,9 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
     onOpenHistory,
     search,
     setSearch,
+    cityOptions,
+    cityKey,
+    setCityKey,
     areaOptions,
     areaKey,
     setAreaKey,
@@ -182,16 +193,16 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
                   InstaHelp explore
                 </Text>
                 <Text className="mt-2 text-[22px] font-extrabold leading-[28px] text-neutral-950">
-                  Find trusted Bengaluru vendors
+                  Explore vendors across India
                 </Text>
                 <Text className="mt-2 text-[13px] font-medium leading-[19px] text-neutral-600">
                   {coords
                     ? "Sorted using your GPS + premium credit unlocks."
-                    : "Fine-tuned for Koramangala, HSR, Whitefield & hotspots."}{" "}
+                    : "Search by city, area, or category — unlock contacts with credits."}{" "}
                   <Text className="font-extrabold text-accent-deep">
                     {totalCatalogCount.toLocaleString("en-IN")}
                   </Text>{" "}
-                  listings in curated areas.
+                  listings nationwide.
                 </Text>
 
                 <View className="mt-3 flex-row flex-wrap gap-2">
@@ -318,7 +329,35 @@ function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
               ) : null}
             </View>
 
-            <ChipRail title="Areas" hint="Bangalore hotspots">
+            <ChipRail title="Cities" hint="Top metros & hubs">
+              <MarketplaceChip
+                label="All India"
+                active={cityKey === null}
+                icon="earth-outline"
+                compact
+                onPress={() => {
+                  void Haptics.selectionAsync().catch(() => {});
+                  setCityKey(null);
+                  setAreaKey(null);
+                }}
+              />
+              {cityOptions.map(([key, label]) => (
+                <MarketplaceChip
+                  key={key}
+                  label={label}
+                  active={cityKey === key}
+                  icon="business-outline"
+                  compact
+                  onPress={() => {
+                    void Haptics.selectionAsync().catch(() => {});
+                    setCityKey((cur) => (cur === key ? null : key));
+                    setAreaKey(null);
+                  }}
+                />
+              ))}
+            </ChipRail>
+
+            <ChipRail title="Areas" hint="Popular neighbourhoods">
               <MarketplaceChip
                 label="All areas"
                 active={areaKey === null}
@@ -417,6 +456,7 @@ export function VendorsExploreScreen() {
   const [search, setSearch] = useState(() => String(params.search ?? ""));
   const debouncedSearch = useDebouncedValue(search, 280);
 
+  const [cityKey, setCityKey] = useState<string | null>(null);
   const [areaKey, setAreaKey] = useState<string | null>(null);
   const [categoryFilter] = useState<string | null>(() =>
     params.category ? String(params.category) : null,
@@ -432,6 +472,35 @@ export function VendorsExploreScreen() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const cityLabel = useMemo(
+    () => MARKETPLACE_CITIES.find((c) => c.id === cityKey)?.label ?? null,
+    [cityKey],
+  );
+
+  const cityOptions = useMemo(
+    () => MARKETPLACE_CITIES.map((c) => [c.id, c.label] as const),
+    [],
+  );
+
+  const areaOptions = useMemo(() => {
+    const pool = cityKey
+      ? MARKETPLACE_AREAS.filter((a) => a.id.startsWith(`${cityKey}__`))
+      : MARKETPLACE_AREAS;
+    return pool.map((a) => {
+      const label = cityKey ? a.label : `${a.label} · ${a.cityLabel}`;
+      return [a.id, label] as const;
+    });
+  }, [cityKey]);
+
+  const catalogFilters = useMemo(
+    () =>
+      resolveExploreCatalogFilters({
+        search: debouncedSearch,
+        categoryParam: categoryFilter,
+      }),
+    [debouncedSearch, categoryFilter],
+  );
+
   const {
     vendors: filtered,
     loading,
@@ -443,10 +512,11 @@ export function VendorsExploreScreen() {
     retry,
     source,
   } = useVendors({
-    search: debouncedSearch,
+    search: catalogFilters.search,
     areaKey,
-    category: categoryFilter,
-    city: null,
+    cityKey,
+    category: catalogFilters.category,
+    city: cityLabel,
     verifiedOnly,
     availableNowOnly,
     sort: sortModeToCatalogSort(sortMode),
@@ -459,15 +529,11 @@ export function VendorsExploreScreen() {
     };
   }, []);
 
-  const areaOptions = useMemo(
-    () => BANGALORE_MARKETPLACE_AREAS.map((a) => [a.id, a.label] as const),
-    [],
-  );
-
-  const totalCatalogCount = filtered.length;
+  const totalCatalogCount = MARKETPLACE_TOTAL_VENDORS;
 
   const activeFilterCount = useMemo(() => {
     let n = 0;
+    if (cityKey) n += 1;
     if (areaKey) n += 1;
     if (sortMode !== "recommended") n += 1;
     if (verifiedOnly) n += 1;
@@ -475,6 +541,7 @@ export function VendorsExploreScreen() {
     if (debouncedSearch.trim()) n += 1;
     return n;
   }, [
+    cityKey,
     areaKey,
     sortMode,
     verifiedOnly,
@@ -527,6 +594,7 @@ export function VendorsExploreScreen() {
   );
 
   const clearFilters = useCallback(() => {
+    setCityKey(null);
     setAreaKey(null);
     setSearch("");
     setVerifiedOnly(false);
@@ -549,6 +617,9 @@ export function VendorsExploreScreen() {
         onOpenHistory={() => setHistoryOpen(true)}
         search={search}
         setSearch={setSearch}
+        cityOptions={cityOptions}
+        cityKey={cityKey}
+        setCityKey={setCityKey}
         areaOptions={areaOptions}
         areaKey={areaKey}
         setAreaKey={setAreaKey}
@@ -569,6 +640,8 @@ export function VendorsExploreScreen() {
       activeFilterCount,
       credits,
       search,
+      cityOptions,
+      cityKey,
       areaOptions,
       areaKey,
       sortMode,
@@ -703,7 +776,7 @@ export function VendorsExploreScreen() {
               <View className="min-h-[320px] justify-center px-5 py-10">
                 <EmptyState
                   title="Nothing matches quite yet"
-                  subtitle="Relax a filter or try a simpler search — this catalog spans many categories across Bengaluru hotspots."
+                  subtitle="Relax a filter or try a simpler search — the catalog spans 4,500+ vendors across India."
                   icon="search-outline"
                 >
                   <Pressable onPress={clearFilters} className="rounded-full bg-accent px-8 py-3.5 shadow-md">
