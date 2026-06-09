@@ -1,7 +1,7 @@
 import { GameThumb } from "@/components/gaming/hub/GameThumb";
 import { HubSectionHeader } from "@/components/gaming/hub/HubSectionHeader";
 import { HUB_COLORS, type MyGameEntry } from "@/constants/gamingHub";
-import type { GamezopGame } from "@/constants/gamezopGames";
+import type { InstaGame } from "@/constants/instaGames";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
@@ -10,7 +10,7 @@ const CARD_W = 140;
 
 type Props = {
   games: MyGameEntry[];
-  onPlay: (game: GamezopGame) => void;
+  onPlay: (game: InstaGame) => void;
 };
 
 export function MyGamesSection({ games, onPlay }: Props) {

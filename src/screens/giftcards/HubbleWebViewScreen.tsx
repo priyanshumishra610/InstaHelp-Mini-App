@@ -19,7 +19,12 @@ function normalizeSdkPath(parts: { sdkPath?: string; brandId?: string }) {
   return raw.replace(/^\/+/, "");
 }
 
-export function HubbleWebViewScreen() {
+type HubbleWebViewScreenProps = {
+  /** When embedded as the GiftCards tab, exit navigates home instead of popping the stack. */
+  isTabRoot?: boolean;
+};
+
+export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{
     sdkPath?: string;
@@ -59,7 +64,13 @@ export function HubbleWebViewScreen() {
 
   const [reloadNonce, setReloadNonce] = useState(0);
 
-  const exitStore = useCallback(() => router.back(), [router]);
+  const exitStore = useCallback(() => {
+    if (isTabRoot) {
+      router.navigate("/(tabs)");
+      return;
+    }
+    router.back();
+  }, [isTabRoot, router]);
 
   const {
     sourceUri,
@@ -71,6 +82,8 @@ export function HubbleWebViewScreen() {
     sdkReady,
     loadError,
     isConfigured,
+    ssoState,
+    ssoError,
   } = useHubble({
     sdkPath,
     extraQuery,
@@ -84,7 +97,7 @@ export function HubbleWebViewScreen() {
     setReloadNonce((n) => n + 1);
   }, [resetSessionFlags]);
 
-  if (!isConfigured || !sourceUri) {
+  if (!isConfigured) {
     return (
       <SafeAreaView className="flex-1 bg-white px-5" edges={["top", "left", "right"]}>
         <View className="mt-10 gap-3">
@@ -101,6 +114,43 @@ export function HubbleWebViewScreen() {
           className="mt-8 self-center rounded-full bg-accent px-6 py-3 active:opacity-90"
         >
           <Text className="text-sm font-extrabold text-white">Close</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (ssoState === "loading") {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+        <View className="flex-1 items-center justify-center px-6">
+          <ActivityIndicator size="large" color={ACCENT} />
+          <Text className="mt-3 text-sm font-semibold text-gray-600">Opening gift store…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (ssoState === "error") {
+    return (
+      <SafeAreaView className="flex-1 bg-white px-5" edges={["top", "left", "right"]}>
+        <View className="mt-10 items-center gap-3">
+          <Ionicons name="alert-circle" size={34} color="#b45309" />
+          <Text className="text-center text-xl font-extrabold text-brand-ink">
+            Couldn&apos;t sign in to gift cards
+          </Text>
+          <Text className="text-center text-sm leading-6 text-gray-600">
+            {ssoError ??
+              "Check Apps Script: HUBBLE_JWT_PRIVATE_KEY in Script properties, latest code.gs deployed, and EXPO_PUBLIC_APPS_SCRIPT_URL in .env."}
+          </Text>
+        </View>
+        <Pressable
+          onPress={onRetry}
+          className="mt-8 self-center rounded-full bg-accent px-6 py-3 active:opacity-90"
+        >
+          <Text className="text-sm font-extrabold text-white">Retry</Text>
+        </Pressable>
+        <Pressable onPress={exitStore} className="mt-4 self-center active:opacity-80">
+          <Text className="text-sm font-semibold text-accent">Close</Text>
         </Pressable>
       </SafeAreaView>
     );

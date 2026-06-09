@@ -9,6 +9,8 @@ import { Pressable, Text, View } from "react-native";
 type Props = {
   vendor: VendorRecord;
   unlocked: boolean;
+  revealCostLabel?: string;
+  usesPlanReveal?: boolean;
   onReveal: () => void;
 };
 
@@ -27,9 +29,17 @@ function InfoRow({
   );
 }
 
-export function VendorContactRevealPanel({ vendor, unlocked, onReveal }: Props) {
+export function VendorContactRevealPanel({
+  vendor,
+  unlocked,
+  revealCostLabel,
+  usesPlanReveal,
+  onReveal,
+}: Props) {
   const name = vendorDisplayName(vendor);
   const digits = normalizePhoneDigits(vendor.phone);
+  const revealLabel =
+    revealCostLabel ?? `${VENDOR_REVEAL_CREDIT_COST} credits`;
 
   if (unlocked) {
     return (
@@ -91,8 +101,9 @@ export function VendorContactRevealPanel({ vendor, unlocked, onReveal }: Props) 
           Contact locked
         </Text>
         <Text className="mt-1 text-center text-[13px] leading-5 text-neutral-600">
-          Use {VENDOR_REVEAL_CREDIT_COST} credits to unlock call and WhatsApp for
-          this vendor.
+          {usesPlanReveal
+            ? `Use your Explore plan to unlock call and WhatsApp (${revealLabel}).`
+            : `Use ${revealLabel} to unlock call and WhatsApp for this vendor.`}
         </Text>
       </View>
 
@@ -110,7 +121,7 @@ export function VendorContactRevealPanel({ vendor, unlocked, onReveal }: Props) 
       >
         <Ionicons name="lock-open-outline" size={18} color="#ffffff" />
         <Text className="text-[14px] font-semibold text-white">
-          Reveal contact · {VENDOR_REVEAL_CREDIT_COST} credits
+          Reveal contact · {revealLabel}
         </Text>
       </Pressable>
     </View>

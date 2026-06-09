@@ -142,6 +142,21 @@ export default function TabsLayout() {
               />
             ),
           }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              const giftcardsRoute = navigation
+                .getState()
+                .routes.find((r) => r.name === "giftcards");
+              const params = giftcardsRoute?.params as Record<string, unknown> | undefined;
+              const hasDeepLinkParams = Boolean(
+                params?.sdkPath || params?.brandId || params?.category,
+              );
+              if (hasDeepLinkParams) {
+                e.preventDefault();
+                router.navigate("/(tabs)/giftcards");
+              }
+            },
+          })}
         />
         <Tabs.Screen
           name="profile"

@@ -1,0 +1,7 @@
+# Native dirs are gitignored; let EAS run prebuild on the server.
+/android
+/ios
+
+node_modules.corrupt-*/
+release_updates.txt
+assets/affiliate_shop_v2.csv

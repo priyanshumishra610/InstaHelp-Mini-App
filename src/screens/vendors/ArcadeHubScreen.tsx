@@ -1,4 +1,3 @@
-import { GameWebViewPlayer } from "@/components/gaming/GameWebViewPlayer";
 import { GamingAdBanner } from "@/components/gaming/hub/GamingAdBanner";
 import { GamingHubBackground } from "@/components/gaming/hub/GamingHubBackground";
 import { InstantPlaysSection } from "@/components/gaming/hub/InstantPlaysSection";
@@ -10,13 +9,13 @@ import {
   RECOMMENDED_GAMES,
   TOP_INSTANT_PLAYS,
 } from "@/constants/gamingHub";
-import type { GamezopGame } from "@/constants/gamezopGames";
+import type { InstaGame } from "@/constants/instaGames";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -24,18 +23,13 @@ export function ArcadeHubScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const credits = useVendorLeadStore((s) => s.credits);
-  const [activeGame, setActiveGame] = useState<GamezopGame | null>(null);
-  const [playerVisible, setPlayerVisible] = useState(false);
 
-  const openGame = useCallback((game: GamezopGame) => {
-    setActiveGame(game);
-    setPlayerVisible(true);
-  }, []);
-
-  const closePlayer = useCallback(() => {
-    setPlayerVisible(false);
-    setTimeout(() => setActiveGame(null), 220);
-  }, []);
+  const openGame = useCallback(
+    (game: InstaGame) => {
+      router.push(game.route);
+    },
+    [router],
+  );
 
   return (
     <View style={styles.root}>
@@ -95,12 +89,6 @@ export function ArcadeHubScreen() {
         <GamingAdBanner game={FEATURED_AD_GAME} onPlay={openGame} />
         <InstantPlaysSection games={TOP_INSTANT_PLAYS} onPlay={openGame} />
       </ScrollView>
-
-      <GameWebViewPlayer
-        game={activeGame}
-        visible={playerVisible}
-        onClose={closePlayer}
-      />
     </View>
   );
 }

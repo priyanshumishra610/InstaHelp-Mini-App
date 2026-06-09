@@ -1,7 +1,7 @@
 {
   "name": "instahelp-functions",
   "private": true,
-  "description": "Firebase callable used to finalize Truecaller OAuth (token + userinfo + Auth custom token).",
+  "description": "Firebase functions for InstaHelp.",
   "engines": {
     "node": ">=20"
   },

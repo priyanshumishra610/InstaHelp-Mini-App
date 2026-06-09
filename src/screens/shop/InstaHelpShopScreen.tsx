@@ -1,921 +1,800 @@
+import { ShopProductCard } from "@/components/shop/ShopProductCard";
+import { ShopProductDetail } from "@/components/shop/ShopProductDetail";
 import { Screen } from "@/components/ui/Screen";
+import { MarketplaceToast } from "@/components/vendors/MarketplaceToast";
 import {
   SHOP_CATEGORIES,
   type ShopCategoryId,
 } from "@/constants/shop";
 import {
-  SHOP_MOCK_PRODUCTS,
-  type ShopProduct,
-} from "@/constants/shopMockProducts";
+  SHOP_GREEN,
+  SHOP_GREEN_LIGHT,
+  SHOP_TEXT,
+  SHOP_TEXT_LIGHT,
+  SHOP_TEXT_MUTED,
+} from "@/constants/shopTheme";
+import { useShopCatalogMeta, useShopProducts } from "@/hooks/useShopCatalog";
+import { useShopSyncStatus } from "@/providers/ShopSyncProvider";
+import { openAffiliateLink } from "@/services/shop/shopAffiliateLinks";
+import {
+  SHOP_FILTER_OPTIONS,
+  SHOP_SORT_OPTIONS,
+  filterShopProducts,
+  getUniqueBrands,
+  type ShopFilterId,
+  type ShopSortId,
+} from "@/services/shop/shopProductFilters";
+import { sortPlatformsByPrice } from "@/services/shop/shopPriceLogic";
+import type { ShopCatalogProduct } from "@/types/shopCatalog";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
-  Image,
-  Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useWindowDimensions } from "react-native";
 
-function formatINR(n: number) {
-  try {
-    return n.toLocaleString("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 0,
-    });
-  } catch {
-    return `₹${Math.round(n).toLocaleString("en-IN")}`;
-  }
-}
+type FilterMenuId = "filter" | "sort" | "brand";
+
+const FILTER_CHIPS: {
+  id: FilterMenuId;
+  label: string;
+  icon: "options-outline" | "swap-vertical" | "pricetag-outline";
+}[] = [
+  { id: "filter", label: "Filter", icon: "options-outline" },
+  { id: "sort", label: "Sort", icon: "swap-vertical" },
+  { id: "brand", label: "Brand", icon: "pricetag-outline" },
+];
+const SIDEBAR_W = 52;
+const GRID_H_PAD = 8;
+const GRID_GUTTER = 8;
 
 function categoryLabel(category: ShopCategoryId) {
   return SHOP_CATEGORIES.find((c) => c.id === category)?.label ?? "All";
 }
 
-function initialsFromTitle(title: string) {
-  return title
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase())
-    .join("");
-}
-
-function getSearchPlaceholder(category: ShopCategoryId) {
-  if (category === "all") return "Search products (mock catalog)";
-  return `Search ${categoryLabel(category)} (mock catalog)`;
-}
-
-function ProductTile({
-  product,
-  qtyInCart,
-  onAdd,
-  onOpen,
-}: {
-  product: ShopProduct;
-  qtyInCart: number;
-  onAdd: () => void;
-  onOpen: () => void;
-}) {
-  const initials = initialsFromTitle(product.title);
-  const [thumbFailed, setThumbFailed] = useState(false);
-
-  return (
-    <View style={styles.productCard}>
-      <Pressable
-        onPress={onOpen}
-        style={({ pressed }) => [styles.tilePress, pressed && { opacity: 0.97 }]}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${product.title}`}
-      >
-        <View style={styles.thumbWrap}>
-          {thumbFailed ? (
-            <View style={styles.thumbFallback}>
-              <Text style={styles.thumbFallbackText}>{initials || "IH"}</Text>
-            </View>
-          ) : (
-            <Image
-              source={{ uri: product.imageUrl }}
-              style={styles.thumb}
-              resizeMode="cover"
-              onError={() => setThumbFailed(true)}
-            />
-          )}
-          {product.badge ? (
-            <View style={styles.productBadgeOverlay}>
-              <Text style={styles.productBadgeOverlayText}>{product.badge}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <Text style={styles.productTitleText} numberOfLines={2}>
-          {product.title}
-        </Text>
-
-        <Text style={styles.productMeta} numberOfLines={1}>
-          {product.rating.toFixed(1)} ★ · {product.reviewCount.toLocaleString("en-IN")} reviews
-        </Text>
-
-        <Text style={styles.productHighlights} numberOfLines={1}>
-          {product.highlights.slice(0, 2).join(" · ")}
-        </Text>
-      </Pressable>
-
-      <View style={styles.tileBottomRow}>
-        <Text style={styles.productPrice}>{formatINR(product.price)}</Text>
-        <Pressable
-          onPress={onAdd}
-          accessibilityRole="button"
-          accessibilityLabel={`Add ${product.title} to cart`}
-          style={({ pressed }) => [
-            styles.addBtn,
-            qtyInCart > 0 && styles.addBtnActive,
-            pressed && { opacity: 0.93 },
-          ]}
-        >
-          {qtyInCart > 0 ? (
-            <Text style={[styles.addBtnText, styles.addBtnTextActive]}>
-              Added ×{qtyInCart}
-            </Text>
-          ) : (
-            <View style={styles.addBtnRow}>
-              <Ionicons name="cart-outline" size={16} color="#ffffff" />
-              <Text style={[styles.addBtnText, styles.addBtnTextNew]}>Add</Text>
-            </View>
-          )}
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 export function InstaHelpShopScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const [category, setCategory] = useState<ShopCategoryId>("all");
+  const products = useShopProducts();
+  const { isStale, fetchFailed } = useShopCatalogMeta();
+  const {
+    pricesUpdatedFlash,
+    clearPricesUpdatedFlash,
+    retry,
+  } = useShopSyncStatus();
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  }, []);
+
+  useEffect(() => {
+    if (pricesUpdatedFlash) {
+      showToast("Prices updated");
+      clearPricesUpdatedFlash();
+    }
+  }, [pricesUpdatedFlash, clearPricesUpdatedFlash, showToast]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    };
+  }, []);
+
+  const [category, setCategory] = useState<ShopCategoryId>("electronics");
   const [search, setSearch] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<FilterMenuId | null>(null);
+  const [sortBy, setSortBy] = useState<ShopSortId>("featured");
+  const [activeFilters, setActiveFilters] = useState<Set<ShopFilterId>>(
+    () => new Set(),
+  );
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
   const [cart, setCart] = useState<Record<string, number>>({});
-  const cartCount = useMemo(
-    () => Object.values(cart).reduce((sum, n) => sum + n, 0),
-    [cart],
-  );
 
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const selectedProduct = useMemo(
-    () => SHOP_MOCK_PRODUCTS.find((p) => p.id === selectedProductId) ?? null,
-    [selectedProductId],
+    () => products.find((p) => p.id === selectedProductId) ?? null,
+    [products, selectedProductId],
   );
-  const [heroImgFailed, setHeroImgFailed] = useState(false);
+  const sortedPlatforms = useMemo(
+    () =>
+      selectedProduct
+        ? sortPlatformsByPrice(selectedProduct.platforms)
+        : [],
+    [selectedProduct],
+  );
 
-  const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
+  const similarProducts = useMemo(() => {
+    if (!selectedProduct) return [];
+    return products
+      .filter(
+        (p) =>
+          p.id !== selectedProduct.id &&
+          p.categoryId === selectedProduct.categoryId,
+      )
+      .slice(0, 6);
+  }, [products, selectedProduct]);
 
-    const byCategory =
+  const categoryProducts = useMemo(
+    () =>
       category === "all"
-        ? SHOP_MOCK_PRODUCTS
-        : SHOP_MOCK_PRODUCTS.filter((p) => p.categoryId === category);
+        ? products
+        : products.filter((p) => p.categoryId === category),
+    [category, products],
+  );
 
-    if (!q) return byCategory;
+  const brandOptions = useMemo(
+    () => getUniqueBrands(categoryProducts),
+    [categoryProducts],
+  );
 
-    return byCategory.filter((p) => {
-      const hay = `${p.title} ${p.description} ${p.highlights.join(" ")}`.toLowerCase();
-      return hay.includes(q);
+  const filteredProducts = useMemo(
+    () =>
+      filterShopProducts(products, {
+        category,
+        search,
+        sortBy,
+        filters: activeFilters,
+        brand: selectedBrand,
+      }),
+    [products, category, search, sortBy, activeFilters, selectedBrand],
+  );
+
+  const toggleFilter = useCallback((id: ShopFilterId) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
-  }, [category, search]);
+  }, []);
 
-  const addToCart = (productId: string) => {
+  const clearFilters = useCallback(() => {
+    setActiveFilters(new Set());
+    setOpenMenu(null);
+  }, []);
+
+  const selectCategory = useCallback((id: ShopCategoryId) => {
+    setCategory(id);
+    setSearch("");
+    setSelectedBrand(null);
+    setOpenMenu(null);
+  }, []);
+
+  const handleAffiliateOpen = useCallback(
+    async (
+      product: ShopCatalogProduct,
+      platform: ShopCatalogProduct["platforms"][number],
+    ) => {
+      if (!platform.affiliateUrl) return;
+      const result = await openAffiliateLink(
+        platform.affiliateUrl,
+        product.id,
+        platform.platform,
+      );
+      if (!result.ok) {
+        showToast("Could not open. Try again.");
+      }
+    },
+    [showToast],
+  );
+
+  const addToCart = useCallback((productId: string) => {
     setCart((prev) => ({
       ...prev,
       [productId]: (prev[productId] ?? 0) + 1,
     }));
-  };
+  }, []);
 
-  const GRID_GUTTER = 12;
-  const GRID_SIDE = 16;
+  const incrementCart = useCallback((productId: string) => {
+    setCart((prev) => ({
+      ...prev,
+      [productId]: (prev[productId] ?? 0) + 1,
+    }));
+  }, []);
+
+  const decrementCart = useCallback((productId: string) => {
+    setCart((prev) => {
+      const next = { ...prev };
+      const n = (next[productId] ?? 0) - 1;
+      if (n <= 0) delete next[productId];
+      else next[productId] = n;
+      return next;
+    });
+  }, []);
+
   const tileWidth = useMemo(() => {
-    const w = windowWidth - GRID_SIDE * 2 - GRID_GUTTER;
+    const mainW = windowWidth - SIDEBAR_W;
+    const w = mainW - GRID_H_PAD * 2 - GRID_GUTTER;
     return Math.floor(w / 2);
   }, [windowWidth]);
 
+  const openProduct = useCallback((id: string) => {
+    setSelectedProductId(id);
+  }, []);
+
   return (
-    <Screen className="bg-[#f4f7fc]">
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        showsVerticalScrollIndicator={false}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={[
-          styles.gridContainer,
-          { paddingBottom: 120 + insets.bottom },
-        ]}
-        ListHeaderComponent={
-          <>
-            {/* Header */}
-            <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-              <LinearGradient
-                colors={["#5B21B6", "#7C3AED", "#8B5CF6", "#8B5CF6"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              {Platform.OS === "ios" ? (
-                <BlurView
-                  intensity={18}
-                  tint="dark"
-                  style={StyleSheet.absoluteFill}
-                />
-              ) : null}
+    <Screen className="bg-white">
+      {toast ? <MarketplaceToast message={toast} key={toast} /> : null}
 
-              <View style={styles.headerOrb1} pointerEvents="none" />
-              <View style={styles.headerOrb2} pointerEvents="none" />
-
-              <View style={styles.headerTopRow}>
-                <View style={styles.headerTitleBlock}>
-                  <Text style={styles.headerTitle}>InstaHelp Shop</Text>
-                  <Text style={styles.headerSubtitle}>
-                    Mock catalog · add to cart works locally
-                  </Text>
-                </View>
-
-                <View style={styles.cartPill} accessibilityLabel="Cart count">
-                  <Ionicons name="cart-outline" size={16} color="#5B21B6" />
-                  <Text style={styles.cartPillText}>{cartCount}</Text>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.body}>
-              <View style={styles.searchWrap}>
-                <View style={styles.searchCard}>
-                  <Ionicons name="search" size={18} color="#7C3AED" />
-                  <TextInput
-                    value={search}
-                    onChangeText={setSearch}
-                    placeholder={getSearchPlaceholder(category)}
-                    placeholderTextColor="rgba(82, 82, 82, 0.55)"
-                    style={styles.searchInput}
-                    autoCorrect={false}
-                    autoCapitalize="none"
-                  />
-                  {search.trim().length > 0 ? (
-                    <Pressable
-                      hitSlop={6}
-                      onPress={() => setSearch("")}
-                      accessibilityRole="button"
-                      accessibilityLabel="Clear search"
-                      style={styles.clearBtn}
-                    >
-                      <Ionicons name="close-circle" size={18} color="#6b7280" />
-                    </Pressable>
-                  ) : null}
-                </View>
-              </View>
-
-              <ShopCategoryTabs
-                active={category}
-                onChange={(id) => {
-                  setCategory(id);
-                  setSearch("");
-                }}
-              />
-
-              <View style={styles.resultsHeader}>
-                <Text style={styles.resultsTitle}>Products</Text>
-                <Text style={styles.resultsCount}>
-                  {filteredProducts.length} item
-                  {filteredProducts.length === 1 ? "" : "s"}
-                </Text>
-              </View>
-            </View>
-          </>
-        }
-        ListEmptyComponent={
-          <View style={[styles.body, { paddingTop: 6 }]}>
-            <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={26} color="#7C3AED" />
-              <Text style={styles.emptyTitle}>No matches</Text>
-              <Text style={styles.emptySubtitle}>
-                Try a different search or pick another category.
-              </Text>
-            </View>
+      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
+        <View style={styles.headerRow}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerTitle}>{categoryLabel(category)}</Text>
           </View>
-        }
-        renderItem={({ item }) => (
-          <View style={{ width: tileWidth, marginBottom: GRID_GUTTER }}>
-            <ProductTile
-              product={item}
-              qtyInCart={cart[item.id] ?? 0}
-              onAdd={() => addToCart(item.id)}
-              onOpen={() => {
-                setHeroImgFailed(false);
-                setSelectedProductId(item.id);
-              }}
+          <View style={styles.headerActions}>
+            <Pressable
+              onPress={() => setSearchOpen((v) => !v)}
+              style={styles.headerIconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Search"
+            >
+              <Ionicons name="search-outline" size={22} color={SHOP_TEXT} />
+            </Pressable>
+            <Pressable
+              style={styles.headerIconBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Share"
+            >
+              <Ionicons name="share-social-outline" size={22} color={SHOP_TEXT} />
+            </Pressable>
+          </View>
+        </View>
+
+        {searchOpen ? (
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={SHOP_TEXT_MUTED} />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder={`Search ${categoryLabel(category)}`}
+              placeholderTextColor={SHOP_TEXT_LIGHT}
+              style={styles.searchInput}
+              autoCorrect={false}
+              autoCapitalize="none"
+              autoFocus
             />
-          </View>
-        )}
-      />
-
-      {/* Product details modal */}
-        <Modal
-          visible={selectedProduct != null}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setSelectedProductId(null)}
-        >
-          <Pressable
-            style={styles.modalOverlay}
-            onPress={() => setSelectedProductId(null)}
-          />
-
-          <View style={styles.modalCard}>
-            {selectedProduct ? (
-              <>
-                {heroImgFailed ? (
-                  <View style={styles.modalHeroFallback}>
-                    <Text style={styles.modalHeroFallbackText}>
-                      {initialsFromTitle(selectedProduct.title) || "IH"}
-                    </Text>
-                  </View>
-                ) : (
-                  <Image
-                    source={{ uri: selectedProduct.imageUrl }}
-                    style={styles.modalHero}
-                    resizeMode="cover"
-                    onError={() => setHeroImgFailed(true)}
-                  />
-                )}
-
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle} numberOfLines={2}>
-                    {selectedProduct.title}
-                  </Text>
-                  <Pressable
-                    onPress={() => setSelectedProductId(null)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Close"
-                    style={styles.modalCloseBtn}
-                  >
-                    <Ionicons name="close" size={20} color="#6b7280" />
-                  </Pressable>
-                </View>
-
-                <View style={styles.modalInfoRow}>
-                  <Text style={styles.modalPrice}>
-                    {formatINR(selectedProduct.price)}
-                  </Text>
-                  <Text style={styles.modalMeta}>
-                    {selectedProduct.rating.toFixed(1)} ★ ·{" "}
-                    {selectedProduct.reviewCount.toLocaleString("en-IN")}{" "}
-                    reviews
-                  </Text>
-                </View>
-
-                <ScrollView
-                  style={styles.modalBody}
-                  showsVerticalScrollIndicator={false}
-                >
-                  <Text style={styles.modalSectionTitle}>About</Text>
-                  <Text style={styles.modalDescription}>
-                    {selectedProduct.description}
-                  </Text>
-
-                  <Text style={styles.modalSectionTitle}>Highlights</Text>
-                  <View style={styles.highlightsList}>
-                    {selectedProduct.highlights.map((h, i) => (
-                      <View key={`${selectedProduct.id}-${i}`} style={styles.highlightItem}>
-                        <Ionicons name="checkmark-circle" size={16} color="#7C3AED" />
-                        <Text style={styles.highlightText}>{h}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
-
-                <View style={styles.modalFooter}>
-                  <Pressable
-                    onPress={() => addToCart(selectedProduct.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Add to cart"
-                    style={({ pressed }) => [
-                      styles.modalPrimaryBtn,
-                      pressed && { opacity: 0.94 },
-                    ]}
-                  >
-                    <View style={styles.modalPrimaryRow}>
-                      <Ionicons name="cart-outline" size={18} color="#ffffff" />
-                      <Text style={styles.modalPrimaryText}>
-                        Add to cart
-                      </Text>
-                    </View>
-                  </Pressable>
-
-                  <Pressable
-                    onPress={() => setSelectedProductId(null)}
-                    accessibilityRole="button"
-                    style={styles.modalSecondaryBtn}
-                  >
-                    <Text style={styles.modalSecondaryText}>Close</Text>
-                  </Pressable>
-                </View>
-              </>
+            {search.length > 0 ? (
+              <Pressable onPress={() => setSearch("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={SHOP_TEXT_LIGHT} />
+              </Pressable>
             ) : null}
           </View>
-        </Modal>
+        ) : null}
+
+        {(fetchFailed && isStale) || (fetchFailed && products.length === 0) ? (
+          <Pressable
+            onPress={() => void retry()}
+            style={styles.staleBanner}
+            accessibilityRole="button"
+          >
+            <Ionicons name="refresh-outline" size={14} color="#92400e" />
+            <Text style={styles.staleBannerText}>
+              Prices may be outdated. Tap to retry.
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      <View style={styles.mainRow}>
+        <ScrollView
+          style={styles.sidebar}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
+        >
+          {SHOP_CATEGORIES.map((cat) => {
+            const active = category === cat.id;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => selectCategory(cat.id)}
+                style={[styles.sideItem, active && styles.sideItemActive]}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={cat.label}
+              >
+                {active ? <View style={styles.sideActiveBar} /> : null}
+                <View
+                  style={[
+                    styles.sideIconWrap,
+                    active && styles.sideIconWrapActive,
+                  ]}
+                >
+                  <Ionicons
+                    name={cat.icon}
+                    size={18}
+                    color={active ? SHOP_GREEN : SHOP_TEXT_MUTED}
+                  />
+                </View>
+                <Text
+                  style={[styles.sideLabel, active && styles.sideLabelActive]}
+                  numberOfLines={2}
+                >
+                  {cat.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.productsPane}>
+          <View style={styles.filterBar}>
+            {FILTER_CHIPS.map((chip) => {
+              const isOpen = openMenu === chip.id;
+              const isActive =
+                chip.id === "filter"
+                  ? activeFilters.size > 0
+                  : chip.id === "sort"
+                    ? sortBy !== "featured"
+                    : selectedBrand != null;
+
+              return (
+                <Pressable
+                  key={chip.id}
+                  onPress={() =>
+                    setOpenMenu((prev) => (prev === chip.id ? null : chip.id))
+                  }
+                  style={[
+                    styles.filterChip,
+                    (isOpen || isActive) && styles.filterChipActive,
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={chip.label}
+                  accessibilityState={{ expanded: isOpen }}
+                >
+                  <Ionicons
+                    name={chip.icon}
+                    size={9}
+                    color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_MUTED}
+                  />
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      (isOpen || isActive) && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {chip.label}
+                  </Text>
+                  <Ionicons
+                    name={isOpen ? "chevron-up" : "chevron-down"}
+                    size={8}
+                    color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                  />
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {openMenu === "filter" ? (
+            <View style={styles.menuPanel}>
+              {SHOP_FILTER_OPTIONS.map((opt) => {
+                const on = activeFilters.has(opt.id);
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => toggleFilter(opt.id)}
+                    style={styles.menuRow}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                  >
+                    <Ionicons
+                      name={on ? "checkbox" : "square-outline"}
+                      size={16}
+                      color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                    />
+                    <Text style={styles.menuRowText}>{opt.label}</Text>
+                  </Pressable>
+                );
+              })}
+              {activeFilters.size > 0 ? (
+                <Pressable onPress={clearFilters} style={styles.menuClearBtn}>
+                  <Text style={styles.menuClearText}>Clear filters</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+
+          {openMenu === "sort" ? (
+            <View style={styles.menuPanel}>
+              {SHOP_SORT_OPTIONS.map((opt) => {
+                const on = sortBy === opt.id;
+                return (
+                  <Pressable
+                    key={opt.id}
+                    onPress={() => {
+                      setSortBy(opt.id);
+                      setOpenMenu(null);
+                    }}
+                    style={styles.menuRow}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                  >
+                    <Ionicons
+                      name={on ? "radio-button-on" : "radio-button-off"}
+                      size={16}
+                      color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                    />
+                    <Text
+                      style={[styles.menuRowText, on && styles.menuRowTextActive]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : null}
+
+          {openMenu === "brand" ? (
+            <View style={styles.menuPanel}>
+              <Pressable
+                onPress={() => {
+                  setSelectedBrand(null);
+                  setOpenMenu(null);
+                }}
+                style={styles.menuRow}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: selectedBrand == null }}
+              >
+                <Ionicons
+                  name={selectedBrand == null ? "radio-button-on" : "radio-button-off"}
+                  size={16}
+                  color={selectedBrand == null ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                />
+                <Text
+                  style={[
+                    styles.menuRowText,
+                    selectedBrand == null && styles.menuRowTextActive,
+                  ]}
+                >
+                  All brands
+                </Text>
+              </Pressable>
+              {brandOptions.length > 0 ? (
+                brandOptions.map((brand) => {
+                  const on = selectedBrand === brand;
+                  return (
+                    <Pressable
+                      key={brand}
+                      onPress={() => {
+                        setSelectedBrand(brand);
+                        setOpenMenu(null);
+                      }}
+                      style={styles.menuRow}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: on }}
+                    >
+                      <Ionicons
+                        name={on ? "radio-button-on" : "radio-button-off"}
+                        size={16}
+                        color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                      />
+                      <Text
+                        style={[styles.menuRowText, on && styles.menuRowTextActive]}
+                      >
+                        {brand}
+                      </Text>
+                    </Pressable>
+                  );
+                })
+              ) : (
+                <Text style={styles.menuEmptyText}>
+                  No brands in this category yet.
+                </Text>
+              )}
+            </View>
+          ) : null}
+
+          <FlatList
+            data={filteredProducts}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            showsVerticalScrollIndicator={false}
+            style={styles.productList}
+            columnWrapperStyle={styles.gridRow}
+            contentContainerStyle={[
+              styles.gridContent,
+              { paddingBottom: 100 + insets.bottom },
+            ]}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="search-outline" size={28} color={SHOP_TEXT_LIGHT} />
+                <Text style={styles.emptyTitle}>
+                  {products.length === 0 ? "No products yet" : "No matches"}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {products.length === 0
+                    ? "Publish the Google Sheet with active rows."
+                    : activeFilters.size > 0 || selectedBrand || sortBy !== "featured"
+                      ? "Try clearing filters or changing sort."
+                      : "Try another category or search."}
+                </Text>
+              </View>
+            }
+            renderItem={({ item }) => (
+              <ShopProductCard
+                product={item}
+                width={tileWidth}
+                qtyInCart={cart[item.id] ?? 0}
+                onOpen={() => openProduct(item.id)}
+                onAdd={() => addToCart(item.id)}
+                onIncrement={() => incrementCart(item.id)}
+                onDecrement={() => decrementCart(item.id)}
+              />
+            )}
+          />
+        </View>
+      </View>
+
+      {selectedProduct ? (
+        <ShopProductDetail
+          key={selectedProduct.id}
+          product={selectedProduct}
+          similarProducts={similarProducts}
+          sortedPlatforms={sortedPlatforms}
+          qtyInCart={cart[selectedProduct.id] ?? 0}
+          cart={cart}
+          onClose={() => setSelectedProductId(null)}
+          onAddToCart={() => addToCart(selectedProduct.id)}
+          onIncrement={() => incrementCart(selectedProduct.id)}
+          onDecrement={() => decrementCart(selectedProduct.id)}
+          onOpenProduct={openProduct}
+          onAffiliateOpen={(platform) =>
+            void handleAffiliateOpen(selectedProduct, platform)
+          }
+          onGridAdd={addToCart}
+          onGridIncrement={incrementCart}
+          onGridDecrement={decrementCart}
+        />
+      ) : null}
     </Screen>
   );
 }
 
-function ShopCategoryTabs({
-  active,
-  onChange,
-}: {
-  active: ShopCategoryId;
-  onChange: (id: ShopCategoryId) => void;
-}) {
-  return (
-    <View style={styles.tabsWrap}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContent}
-      >
-        {SHOP_CATEGORIES.map((cat) => {
-          const on = active === cat.id;
-          return (
-            <Pressable
-              key={cat.id}
-              onPress={() => onChange(cat.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              style={styles.tabPressable}
-            >
-              {on ? (
-                <LinearGradient
-                  colors={["#5B21B6", "#7C3AED", "#8B5CF6"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.tabPillActive}
-                >
-                  <Text style={styles.tabLabelActive}>{cat.label}</Text>
-                </LinearGradient>
-              ) : (
-                <View style={styles.tabPill}>
-                  <Text style={styles.tabLabel}>{cat.label}</Text>
-                </View>
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  gridContainer: {
-    paddingBottom: 120,
-    paddingHorizontal: 16,
-  },
-  gridRow: {
-    justifyContent: "space-between",
-  },
   header: {
-    paddingHorizontal: 20,
-    paddingBottom: 18,
-    overflow: "hidden",
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+    backgroundColor: "#ffffff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+    paddingHorizontal: 14,
+    paddingBottom: 10,
   },
-  headerOrb1: {
-    position: "absolute",
-    right: -24,
-    top: 8,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "rgba(255,255,255,0.12)",
-  },
-  headerOrb2: {
-    position: "absolute",
-    left: -20,
-    bottom: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(255,213,0,0.15)",
-  },
-  headerTopRow: {
+  headerRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
   },
-  headerTitleBlock: {
+  headerLeft: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 30,
+    fontSize: 18,
     fontWeight: "800",
-    color: "#ffffff",
-    letterSpacing: -0.8,
+    color: SHOP_TEXT,
   },
-  headerSubtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    color: "rgba(255,255,255,0.88)",
-    fontWeight: "500",
-    lineHeight: 20,
+  headerActions: {
+    flexDirection: "row",
+    gap: 4,
   },
-  cartPill: {
+  headerIconBtn: {
+    height: 36,
+    width: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  searchBar: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.85)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginTop: 6,
-  },
-  cartPillText: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#5B21B6",
-  },
-  body: {
     marginTop: 10,
-    paddingHorizontal: 16,
-  },
-  searchWrap: {
-    marginBottom: 12,
-  },
-  searchCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 18,
-    backgroundColor: "#ffffff",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.10)",
-    shadowColor: "#7C3AED",
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 2,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#f9fafb",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    color: "#111827",
+    color: SHOP_TEXT,
     padding: 0,
     margin: 0,
   },
-  clearBtn: {
-    height: 28,
-    width: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(99,102,241,0.10)",
-  },
-  tabsWrap: {
-    marginTop: 2,
-    marginBottom: 14,
-  },
-  tabsContent: {
-    paddingVertical: 4,
-    paddingRight: 6,
-    gap: 8,
-  },
-  tabPressable: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  tabPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.95)",
-    borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.10)",
-  },
-  tabPillActive: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 999,
-    shadowColor: "#7C3AED",
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  tabLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#525252",
-  },
-  tabLabelActive: {
-    fontSize: 13,
-    fontWeight: "800",
-    color: "#ffffff",
-  },
-  resultsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 2,
-    marginBottom: 10,
-  },
-  resultsTitle: {
-    fontSize: 15,
-    fontWeight: "900",
-    color: "#111827",
-  },
-  resultsCount: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#6b7280",
-  },
-  productsList: {
-    gap: 12,
-  },
-  productCard: {
-    borderRadius: 18,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.10)",
-    overflow: "hidden",
-  },
-  tilePress: {
-    padding: 10,
-  },
-  thumbWrap: {
-    borderRadius: 14,
-    overflow: "hidden",
-    marginBottom: 10,
-    backgroundColor: "rgba(17,24,39,0.06)",
-  },
-  thumb: {
-    width: "100%",
-    height: 120,
-    backgroundColor: "rgba(17,24,39,0.06)",
-  },
-  thumbFallback: {
-    width: "100%",
-    height: 120,
-    backgroundColor: "rgba(124,58,237,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  thumbFallbackText: {
-    fontSize: 16,
-    fontWeight: "900",
-    color: "#5B21B6",
-  },
-  productBadgeOverlay: {
-    position: "absolute",
-    left: 8,
-    top: 8,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "rgba(17,24,39,0.78)",
-  },
-  productBadgeOverlayText: {
-    fontSize: 10,
-    fontWeight: "900",
-    color: "#ffffff",
-  },
-  productTitleText: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: "#111827",
-    minHeight: 38,
-  },
-  productMeta: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6b7280",
-  },
-  productHighlights: {
-    marginTop: 5,
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#374151",
-  },
-  tileBottomRow: {
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  productPrice: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: "#111827",
-  },
-  addBtn: {
-    borderRadius: 14,
-    backgroundColor: "rgba(124,58,237,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(124,58,237,0.25)",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addBtnActive: {
-    backgroundColor: "#7C3AED",
-    borderColor: "#7C3AED",
-  },
-  addBtnRow: {
+  staleBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    marginTop: 8,
+    borderRadius: 8,
+    backgroundColor: "#fef3c7",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
-  addBtnText: {
+  staleBannerText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#92400e",
+  },
+  mainRow: {
+    flex: 1,
+    flexDirection: "row",
+  },
+  sidebar: {
+    width: SIDEBAR_W,
+    flexShrink: 0,
+    flexGrow: 0,
+    borderRightWidth: 1,
+    borderRightColor: "#f0f0f0",
+    backgroundColor: "#ffffff",
+  },
+  sideItem: {
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 2,
+    position: "relative",
+  },
+  sideItemActive: {
+    backgroundColor: SHOP_GREEN_LIGHT,
+  },
+  sideActiveBar: {
+    position: "absolute",
+    left: 0,
+    top: 6,
+    bottom: 6,
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: SHOP_GREEN,
+  },
+  sideIconWrap: {
+    height: 32,
+    width: 32,
+    borderRadius: 16,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sideIconWrapActive: {
+    backgroundColor: "#ffffff",
+  },
+  sideLabel: {
+    marginTop: 3,
+    fontSize: 8,
+    fontWeight: "600",
+    color: SHOP_TEXT_MUTED,
+    textAlign: "center",
+    lineHeight: 10,
+    width: SIDEBAR_W - 4,
+  },
+  sideLabelActive: {
+    color: SHOP_GREEN,
+    fontWeight: "800",
+  },
+  productsPane: {
+    flex: 1,
+    minWidth: 0,
+    backgroundColor: "#ffffff",
+  },
+  productList: {
+    flex: 1,
+  },
+  filterBar: {
+    flexDirection: "row",
+    flexGrow: 0,
+    flexShrink: 0,
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  filterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    gap: 2,
+  },
+  filterChipActive: {
+    borderColor: SHOP_GREEN,
+    backgroundColor: SHOP_GREEN_LIGHT,
+  },
+  filterChipText: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: SHOP_TEXT,
+    includeFontPadding: false,
+    lineHeight: 11,
+  },
+  filterChipTextActive: {
+    color: SHOP_GREEN,
+    fontWeight: "700",
+  },
+  menuPanel: {
+    flexGrow: 0,
+    flexShrink: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    backgroundColor: "#fafafa",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 2,
+  },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+  },
+  menuRowText: {
     fontSize: 12,
-    fontWeight: "900",
-    color: "#7C3AED",
+    fontWeight: "600",
+    color: SHOP_TEXT,
   },
-  addBtnTextNew: {
-    color: "#ffffff",
+  menuRowTextActive: {
+    color: SHOP_GREEN,
+    fontWeight: "800",
   },
-  addBtnTextActive: {
-    color: "#ffffff",
+  menuClearBtn: {
+    alignSelf: "flex-start",
+    marginTop: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  menuClearText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: SHOP_GREEN,
+  },
+  menuEmptyText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: SHOP_TEXT_MUTED,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  gridRow: {
+    justifyContent: "space-between",
+    paddingHorizontal: GRID_H_PAD,
+  },
+  gridContent: {
+    paddingTop: 2,
   },
   emptyState: {
-    marginTop: 18,
-    borderRadius: 20,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.08)",
-    padding: 18,
+    padding: 24,
     alignItems: "center",
   },
   emptyTitle: {
     marginTop: 10,
     fontSize: 15,
-    fontWeight: "900",
-    color: "#111827",
+    fontWeight: "800",
+    color: SHOP_TEXT,
   },
   emptySubtitle: {
     marginTop: 6,
     fontSize: 12,
     fontWeight: "600",
-    color: "#6b7280",
+    color: SHOP_TEXT_MUTED,
     textAlign: "center",
-    lineHeight: 18,
-  },
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
-  modalCard: {
-    position: "absolute",
-    left: 14,
-    right: 14,
-    bottom: 14,
-    borderRadius: 22,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.10)",
-    maxHeight: "80%",
-    overflow: "hidden",
-  },
-  modalHero: {
-    width: "100%",
-    height: 170,
-    backgroundColor: "rgba(17,24,39,0.06)",
-  },
-  modalHeroFallback: {
-    width: "100%",
-    height: 170,
-    backgroundColor: "rgba(124,58,237,0.10)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalHeroFallbackText: {
-    fontSize: 24,
-    fontWeight: "900",
-    color: "#5B21B6",
-  },
-  modalHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  modalTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "900",
-    color: "#111827",
-  },
-  modalCloseBtn: {
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(107,114,128,0.10)",
-  },
-  modalInfoRow: {
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 12,
-    marginBottom: 6,
-  },
-  modalPrice: {
-    fontSize: 16,
-    fontWeight: "900",
-    color: "#111827",
-  },
-  modalMeta: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#6b7280",
-    textAlign: "right",
-  },
-  modalBody: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 4,
-  },
-  modalSectionTitle: {
-    marginTop: 12,
-    fontSize: 13,
-    fontWeight: "900",
-    color: "#111827",
-  },
-  modalDescription: {
-    marginTop: 8,
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#4b5563",
-    lineHeight: 20,
-  },
-  highlightsList: {
-    marginTop: 10,
-    gap: 10,
-  },
-  highlightItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.08)",
-    backgroundColor: "rgba(124,58,237,0.06)",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  highlightText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#374151",
-    flex: 1,
-  },
-  modalFooter: {
-    padding: 14,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,74,173,0.10)",
-    flexDirection: "row",
-    gap: 12,
-    alignItems: "center",
-  },
-  modalPrimaryBtn: {
-    flex: 1,
-    borderRadius: 16,
-    backgroundColor: "#7C3AED",
-    paddingVertical: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalPrimaryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  modalPrimaryText: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: "#ffffff",
-  },
-  modalSecondaryBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.18)",
-    backgroundColor: "rgba(255,255,255,0.98)",
-  },
-  modalSecondaryText: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: "#111827",
   },
 });
-

@@ -103,7 +103,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-cabin-luggage-20",
     title: "Cabin Luggage 20 inch (Hard Shell)",
-    categoryId: "travel",
+    categoryId: "sports",
     imageUrl:
       "https://images.unsplash.com/photo-1526481280695-3c687fd643ed?auto=format&fit=crop&w=900&q=70",
     price: 2799,
@@ -117,7 +117,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-travel-backpack-30l",
     title: "Travel Backpack 30L (Water Resistant)",
-    categoryId: "travel",
+    categoryId: "sports",
     imageUrl:
       "https://images.unsplash.com/photo-1526481280695-3c687fd643ed?auto=format&fit=crop&w=900&q=70",
     price: 1899,
@@ -130,7 +130,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-utility-packing-cubes",
     title: "Packing Cubes Set (5 pcs)",
-    categoryId: "travel",
+    categoryId: "sports",
     imageUrl:
       "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=70",
     price: 799,
@@ -145,7 +145,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-wireless-controller",
     title: "Wireless Controller (Low Latency)",
-    categoryId: "gaming",
+    categoryId: "toys-games",
     imageUrl:
       "https://images.unsplash.com/photo-1592841200221-a6898f307baa?auto=format&fit=crop&w=900&q=70",
     price: 2499,
@@ -159,7 +159,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-gaming-headset",
     title: "Gaming Headset (Surround Sound)",
-    categoryId: "gaming",
+    categoryId: "toys-games",
     imageUrl:
       "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=900&q=70",
     price: 1999,
@@ -172,7 +172,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-mechanical-keyboard",
     title: "Mechanical Keyboard (Tactile Switches)",
-    categoryId: "gaming",
+    categoryId: "toys-games",
     imageUrl:
       "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=900&q=70",
     price: 4599,
@@ -228,7 +228,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-led-smart-bulb",
     title: "Smart LED Bulb (Warm to Cool)",
-    categoryId: "decor",
+    categoryId: "home-kitchen",
     imageUrl:
       "https://images.unsplash.com/photo-1543191878-f1a3bb58b7e5?auto=format&fit=crop&w=900&q=70",
     price: 599,
@@ -242,7 +242,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-wall-clock-modern",
     title: "Modern Wall Clock (Silent)",
-    categoryId: "decor",
+    categoryId: "home-kitchen",
     imageUrl:
       "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=900&q=70",
     price: 899,
@@ -255,7 +255,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-desk-lamp",
     title: "Desk Lamp (Adjustable Arm)",
-    categoryId: "decor",
+    categoryId: "home-kitchen",
     imageUrl:
       "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=900&q=70",
     price: 1099,
@@ -269,7 +269,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-personalized-mug",
     title: "Personalized Coffee Mug",
-    categoryId: "gifts",
+    categoryId: "toys-games",
     imageUrl:
       "https://images.unsplash.com/photo-1517705008128-361805f42e86?auto=format&fit=crop&w=900&q=70",
     price: 499,
@@ -283,7 +283,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-birthday-hamper",
     title: "Birthday Hamper (Assorted)",
-    categoryId: "gifts",
+    categoryId: "toys-games",
     imageUrl:
       "https://images.unsplash.com/photo-1549465220-1a8a12c4f5f2?auto=format&fit=crop&w=900&q=70",
     price: 1399,
@@ -296,7 +296,7 @@ export const SHOP_MOCK_PRODUCTS: ShopProduct[] = [
   {
     id: "p-chocolate-bouquet",
     title: "Chocolate Bouquet (Sweet Surprise)",
-    categoryId: "gifts",
+    categoryId: "toys-games",
     imageUrl:
       "https://images.unsplash.com/photo-1549007994-cb92caebd54b?auto=format&fit=crop&w=900&q=70",
     price: 999,

@@ -3,6 +3,7 @@ import { SplashExitOverlay } from "@/components/ui/SplashExitOverlay";
 import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { ShopSyncProvider } from "@/providers/ShopSyncProvider";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -50,6 +51,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryProvider>
         <AuthProvider>
+          <ShopSyncProvider>
           <ThemeProvider value={DefaultTheme}>
             <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
               <StatusBar style="dark" />
@@ -109,6 +111,7 @@ export default function RootLayout() {
               </Stack>
             </View>
           </ThemeProvider>
+          </ShopSyncProvider>
         </AuthProvider>
       </QueryProvider>
     </SafeAreaProvider>

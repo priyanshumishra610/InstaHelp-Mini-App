@@ -28,6 +28,8 @@ export type BuildHubbleUrlInput = {
   clientId: string;
   appSecret: string;
   wrapPlt: "rn";
+  /** RS256 JWT from your backend — required when lazy login is off on the Hubble tenant. */
+  token?: string;
   appVersion?: string;
   deviceId?: string;
   /**

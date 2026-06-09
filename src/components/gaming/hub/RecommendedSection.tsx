@@ -1,7 +1,7 @@
 import { GameThumb } from "@/components/gaming/hub/GameThumb";
 import { HubSectionHeader } from "@/components/gaming/hub/HubSectionHeader";
 import { HUB_COLORS } from "@/constants/gamingHub";
-import type { GamezopGame } from "@/constants/gamezopGames";
+import type { InstaGame } from "@/constants/instaGames";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
@@ -9,8 +9,8 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 const ICON_SIZE = 76;
 
 type Props = {
-  games: GamezopGame[];
-  onPlay: (game: GamezopGame) => void;
+  games: InstaGame[];
+  onPlay: (game: InstaGame) => void;
 };
 
 export function RecommendedSection({ games, onPlay }: Props) {

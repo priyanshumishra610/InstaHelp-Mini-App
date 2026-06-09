@@ -1,5 +1,5 @@
-import { GiftCardsScreen } from "@/screens/giftcards/GiftCardsScreen";
+import { HubbleWebViewScreen } from "@/screens/giftcards/HubbleWebViewScreen";
 
 export default function GiftCardsRoute() {
-  return <GiftCardsScreen />;
+  return <HubbleWebViewScreen isTabRoot />;
 }

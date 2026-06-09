@@ -2,6 +2,10 @@
 
 # dependencies
 node_modules/
+node_modules.corrupt-*/
+
+# local notes / scratch (not part of the app)
+release_updates.txt
 
 # Expo
 .expo/

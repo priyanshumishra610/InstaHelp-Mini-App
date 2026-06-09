@@ -1,6 +1,6 @@
 export type UserGender = "male" | "female" | "other" | "prefer_not_to_say";
 
-export type AuthProviderKind = "otp" | "truecaller";
+export type AuthProviderKind = "otp";
 
 export type FirestoreAddress = {
   id: string;

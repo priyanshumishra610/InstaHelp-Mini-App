@@ -79,11 +79,12 @@ function OfferCardComponent({
         accessibilityLabel={`${offer.title}. ${offer.subtitle}`}
         className="overflow-hidden rounded-[24px] active:opacity-[0.97]"
         style={{
-          shadowColor: isWeekOffer ? ACCENT : "#0f172a",
-          shadowOpacity: isWeekOffer ? 0.16 : 0.08,
-          shadowRadius: isWeekOffer ? 24 : 20,
-          shadowOffset: { width: 0, height: isWeekOffer ? 12 : 8 },
-          elevation: isWeekOffer ? 10 : 6,
+          // Keep all offer cards visually consistent (including "Offer of the Week").
+          shadowColor: "#0f172a",
+          shadowOpacity: 0.08,
+          shadowRadius: 20,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 6,
         }}
       >
         {offer.image ? (
@@ -117,8 +118,6 @@ function OfferCardComponent({
           colors={
             offer.image
               ? ["rgba(255,255,255,0)", "rgba(255,255,255,0)"]
-              : isWeekOffer
-                ? ["#eef5ff", "#dfeeff", "#f6f9ff"]
                 : [offer.gradient[0], offer.gradient[1]]
           }
           start={{ x: 0, y: 0 }}
@@ -132,24 +131,15 @@ function OfferCardComponent({
           <View
             pointerEvents="none"
             className="absolute -right-8 -top-10 h-36 w-36 rounded-full"
-            style={{ backgroundColor: isWeekOffer ? `${ACCENT}1f` : `${ACCENT}12` }}
+            style={{ backgroundColor: `${ACCENT}12` }}
           />
           <View
             pointerEvents="none"
             className="absolute bottom-0 right-10 h-24 w-24 rounded-full"
             style={{
-              backgroundColor: isWeekOffer
-                ? "rgba(108, 141, 255, 0.14)"
-                : "rgba(15, 23, 42, 0.04)",
+              backgroundColor: "rgba(15, 23, 42, 0.04)",
             }}
           />
-          {isWeekOffer ? (
-            <View
-              pointerEvents="none"
-              className="absolute left-0 top-0 h-[62px] w-full"
-              style={{ backgroundColor: "rgba(255,255,255,0.28)" }}
-            />
-          ) : null}
 
           <View className="flex-row items-start justify-between">
             <View
@@ -164,17 +154,15 @@ function OfferCardComponent({
                   className="rounded-full border px-2.5 py-1"
                   style={{
                     alignSelf: "flex-start",
-                    borderColor: isWeekOffer ? "rgba(67, 103, 224, 0.18)" : "rgba(23,23,23,0.08)",
+                    borderColor: offer.image ? "rgba(255,255,255,0.28)" : "rgba(23,23,23,0.08)",
                     backgroundColor: offer.image
                       ? "rgba(255,255,255,0.26)"
-                      : isWeekOffer
-                        ? "rgba(255,255,255,0.84)"
                         : "rgba(255,255,255,0.7)",
                   }}
                 >
                   <Text
                     className="text-[10px] font-bold uppercase tracking-[0.14em]"
-                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#3b4f91" : "#525252" }}
+                    style={{ color: offer.image ? "#f8fafc" : "#525252" }}
                   >
                     {offer.tag}
                   </Text>

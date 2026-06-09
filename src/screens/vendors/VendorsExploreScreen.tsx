@@ -1,35 +1,35 @@
 import {
   BANGALORE_CITY_CENTER,
-  GAME_OPEN_CREDIT_REWARD,
-  GAME_OPEN_DAILY_MAX_COUNT,
-  GAME_OPEN_DAILY_MAX_CREDITS,
   VENDOR_REVEAL_CREDIT_COST,
 } from "@/constants/vendorMarketplace";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
-import { MarketplaceChip } from "@/components/vendors/MarketplaceChip";
 import { MarketplaceVendorCard } from "@/components/vendors/MarketplaceVendorCard";
 import { MarketplaceToast } from "@/components/vendors/MarketplaceToast";
 import { CreditHistoryModal } from "@/components/vendors/CreditHistoryModal";
+import { EarlyAccessStrip } from "@/components/vendors/EarlyAccessStrip";
+import { ExploreListHeader } from "@/components/vendors/ExploreListHeader";
+import { SavedVendorsStrip } from "@/components/vendors/SavedVendorsStrip";
 import { VendorExploreListSkeleton } from "@/components/vendors/VendorExploreListSkeleton";
+import { PRO_PLUS_MULTI_CITY_LIMIT, isEarlyAccessCategory } from "@/constants/exploreEntitlements";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useVendorUserLocation } from "@/hooks/useVendorUserLocation";
 import {
   MARKETPLACE_AREAS,
   MARKETPLACE_CITIES,
-  MARKETPLACE_TOTAL_VENDORS,
 } from "@/constants/marketplaceCatalog";
 import { resolveExploreCatalogFilters } from "@/services/vendors/resolveExploreFilters";
+import { tryExploreReveal, exploreRevealCostLabel } from "@/services/explore/exploreRevealService";
+import { canViewVendorCategory } from "@/services/explore/exploreEntitlements";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { useExploreSubscription } from "@/hooks/useExploreSubscription";
 import { useVendors } from "@/hooks/useVendors";
 import type { VendorCatalogSort } from "@/services/vendors/vendorCatalogTypes";
 import { haversineKm } from "@/services/vendors/vendorGeo";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import type { VendorRecord } from "@/types/vendorMarketplace";
-import { calendarDayKey } from "@/utils/calendarDay";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   useCallback,
@@ -37,23 +37,16 @@ import {
   useMemo,
   useRef,
   useState,
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
 } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
   RefreshControl,
-  ScrollView,
   SectionList,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
 function distanceKmFromUser(
   v: VendorRecord,
@@ -72,356 +65,14 @@ function sortModeToCatalogSort(
   return "recommended";
 }
 
-type ExploreHeaderOuterProps = {
-  windowWidth: number;
-  coords: { lat: number; lng: number } | null;
-  totalCatalogCount: number;
-  filteredLen: number;
-  activeFilterCount: number;
-  credits: number;
-  onOpenHistory: () => void;
-  search: string;
-  setSearch: Dispatch<SetStateAction<string>>;
-  cityOptions: ReadonlyArray<readonly [string, string]>;
-  cityKey: string | null;
-  setCityKey: Dispatch<SetStateAction<string | null>>;
-  areaOptions: ReadonlyArray<readonly [string, string]>;
-  areaKey: string | null;
-  setAreaKey: Dispatch<SetStateAction<string | null>>;
-  sortMode: "recommended" | "distance" | "rating";
-  toggleSortMode: (next: "distance" | "rating") => void;
-  verifiedOnly: boolean;
-  setVerifiedOnly: Dispatch<SetStateAction<boolean>>;
-  availableNowOnly: boolean;
-  setAvailableNowOnly: Dispatch<SetStateAction<boolean>>;
-  clearFilters: () => void;
-};
-
-function ExploreListHeaderAnimated(props: ExploreHeaderOuterProps) {
-  const heroCardShadow =
-    Platform.OS === "ios"
-      ? {
-          shadowColor: "#5B21B6",
-          shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: 0.12,
-          shadowRadius: 24,
-        }
-      : { elevation: 4 };
-
-  const {
-    windowWidth,
-    coords,
-    totalCatalogCount,
-    filteredLen,
-    activeFilterCount,
-    credits,
-    onOpenHistory,
-    search,
-    setSearch,
-    cityOptions,
-    cityKey,
-    setCityKey,
-    areaOptions,
-    areaKey,
-    setAreaKey,
-    sortMode,
-    toggleSortMode,
-    verifiedOnly,
-    setVerifiedOnly,
-    availableNowOnly,
-    setAvailableNowOnly,
-    clearFilters,
-  } = props;
-
-  const router = useRouter();
-  const bonusGridDay = useVendorLeadStore((s) => s.bonusTicTacToeAwardDayKey);
-  const bonusHangDay = useVendorLeadStore((s) => s.bonusHangmanAwardDayKey);
-  const bonusWhackE = useVendorLeadStore((s) => s.bonusWhackEasyDayKey);
-  const bonusWhackM = useVendorLeadStore((s) => s.bonusWhackMediumDayKey);
-  const bonusWhackH = useVendorLeadStore((s) => s.bonusWhackHardDayKey);
-
-  const todayKey = calendarDayKey();
-  const canClaimBonusCredits =
-    bonusGridDay !== todayKey ||
-    bonusHangDay !== todayKey ||
-    bonusWhackE !== todayKey ||
-    bonusWhackM !== todayKey ||
-    bonusWhackH !== todayKey;
-  return (
-    <Animated.View entering={FadeInDown.delay(40).springify().damping(18)}>
-      <View className="px-4 pb-1 pt-1">
-        <View
-          className="overflow-hidden rounded-[26px] border border-neutral-200 bg-slate-50"
-          style={
-            Platform.OS === "ios"
-              ? {
-                  shadowColor: "#0f172a",
-                  shadowOffset: { width: 0, height: 10 },
-                  shadowOpacity: 0.06,
-                  shadowRadius: 18,
-                }
-              : { elevation: 2 }
-          }
-        >
-          <View pointerEvents="none" className="absolute inset-0 bg-white/55" />
-
-          <View className="relative px-4 pb-5 pt-4">
-            <View className="flex-row items-start justify-between gap-3">
-              <View className="max-w-[68%]">
-                <Text className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-neutral-500">
-                  InstaHelp explore
-                </Text>
-                <Text className="mt-2 text-[22px] font-extrabold leading-[28px] text-neutral-950">
-                  Explore vendors across India
-                </Text>
-                <Text className="mt-2 text-[13px] font-medium leading-[19px] text-neutral-600">
-                  {coords
-                    ? "Sorted using your GPS + premium credit unlocks."
-                    : "Search by city, area, or category — unlock contacts with credits."}{" "}
-                  <Text className="font-extrabold text-accent-deep">
-                    {totalCatalogCount.toLocaleString("en-IN")}
-                  </Text>{" "}
-                  listings nationwide.
-                </Text>
-
-                <View className="mt-3 flex-row flex-wrap gap-2">
-                  <View
-                    className="flex-row items-center gap-1.5 rounded-full border border-accent/15 bg-accent-soft px-3 py-1.5"
-                    style={heroCardShadow}
-                  >
-                    <Ionicons name="ribbon-outline" size={14} color="#7C3AED" />
-                    <Text className="text-[11px] font-extrabold text-accent-deep">
-                      {filteredLen.toLocaleString("en-IN")} showing now
-                    </Text>
-                  </View>
-                  {activeFilterCount > 0 ? (
-                    <View className="flex-row items-center gap-1 rounded-full border border-neutral-200 bg-white px-3 py-1.5">
-                      <Ionicons name="filter" size={13} color="#525252" />
-                      <Text className="text-[11px] font-bold text-neutral-700">
-                        {activeFilterCount} filter
-                        {activeFilterCount === 1 ? "" : "s"} on
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-
-              <Pressable
-                onPress={onOpenHistory}
-                accessibilityRole="button"
-                accessibilityLabel="View credit history"
-                className="overflow-hidden rounded-2xl border border-neutral-200 bg-white active:opacity-90"
-                style={heroCardShadow}
-              >
-                <View className="items-center px-3.5 py-3">
-                  <View className="h-9 w-9 items-center justify-center rounded-xl bg-accent-soft">
-                    <Ionicons name="diamond-outline" size={18} color="#7C3AED" />
-                  </View>
-                  <Text className="mt-1 text-xl font-black text-neutral-900">{credits}</Text>
-                  <Text className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-                    credits
-                  </Text>
-                  <Ionicons name="chevron-down" size={12} color="#7C3AED" />
-                </View>
-              </Pressable>
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open InstaHelp games arcade"
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-                  () => {},
-                );
-                router.push("/(tabs)/vendors/arcade");
-              }}
-              className="mt-4 flex-row items-center gap-3 overflow-hidden rounded-2xl border border-neutral-200 bg-white px-4 py-3 active:opacity-90"
-              style={
-                Platform.OS === "ios"
-                  ? {
-                      shadowColor: "#0f172a",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 10,
-                    }
-                  : { elevation: 2 }
-              }
-            >
-              <View className="h-11 w-11 items-center justify-center rounded-xl bg-amber-100">
-                <Ionicons name="game-controller" size={20} color="#92400e" />
-              </View>
-              <View className="flex-1">
-                <Text className="text-[14px] font-extrabold text-neutral-900">
-                  Games · +{GAME_OPEN_CREDIT_REWARD} credits per game
-                </Text>
-                <Text className="mt-0.5 text-[11px] font-semibold text-neutral-600">
-                  Up to {GAME_OPEN_DAILY_MAX_COUNT} opens ({GAME_OPEN_DAILY_MAX_CREDITS}{" "}
-                  credits) per day.
-                  {canClaimBonusCredits
-                    ? " Win classics for extra bonus credits."
-                    : " Today's win bonuses claimed — keep playing!"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#334155" />
-            </Pressable>
-
-            <View
-              className="mt-5 flex-row items-center rounded-2xl border border-neutral-100 bg-white px-3"
-              style={
-                Platform.OS === "ios"
-                  ? {
-                      shadowColor: "#0f172a",
-                      shadowOffset: { width: 0, height: 8 },
-                      shadowOpacity: 0.08,
-                      shadowRadius: 16,
-                    }
-                  : { elevation: 3 }
-              }
-            >
-              <Ionicons name="search-outline" size={21} color="#94a3b8" />
-              <Input
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search business, category, or service..."
-                autoCapitalize="none"
-                autoCorrect={false}
-                className="flex-1 border-0 bg-transparent py-4 pl-2 pr-1 text-[15px]"
-                placeholderTextColor="#94a3b8"
-              />
-              {search.length > 0 ? (
-                <Pressable
-                  onPress={() => setSearch("")}
-                  hitSlop={10}
-                  accessibilityLabel="Clear search"
-                  className="rounded-full bg-neutral-100 p-1.5"
-                >
-                  <Ionicons name="close-circle" size={18} color="#64748b" />
-                </Pressable>
-              ) : null}
-            </View>
-
-            <ChipRail title="Cities" hint="Top metros & hubs">
-              <MarketplaceChip
-                label="All India"
-                active={cityKey === null}
-                icon="earth-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  setCityKey(null);
-                  setAreaKey(null);
-                }}
-              />
-              {cityOptions.map(([key, label]) => (
-                <MarketplaceChip
-                  key={key}
-                  label={label}
-                  active={cityKey === key}
-                  icon="business-outline"
-                  compact
-                  onPress={() => {
-                    void Haptics.selectionAsync().catch(() => {});
-                    setCityKey((cur) => (cur === key ? null : key));
-                    setAreaKey(null);
-                  }}
-                />
-              ))}
-            </ChipRail>
-
-            <ChipRail title="Areas" hint="Popular neighbourhoods">
-              <MarketplaceChip
-                label="All areas"
-                active={areaKey === null}
-                icon="globe-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  setAreaKey(null);
-                }}
-              />
-              {areaOptions.map(([key, label]) => (
-                <MarketplaceChip
-                  key={key}
-                  label={label}
-                  active={areaKey === key}
-                  icon="location-outline"
-                  compact
-                  onPress={() => {
-                    void Haptics.selectionAsync().catch(() => {});
-                    setAreaKey((cur) => (cur === key ? null : key));
-                  }}
-                />
-              ))}
-            </ChipRail>
-
-            <ChipRail title="Smart sort & filters">
-              <MarketplaceChip
-                label="Nearby"
-                active={sortMode === "distance"}
-                icon="navigate-circle-outline"
-                compact
-                onPress={() => toggleSortMode("distance")}
-              />
-              <MarketplaceChip
-                label="Top rated"
-                active={sortMode === "rating"}
-                icon="trophy-outline"
-                compact
-                onPress={() => toggleSortMode("rating")}
-              />
-              <MarketplaceChip
-                label="Verified only"
-                active={verifiedOnly}
-                icon="shield-checkmark-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  setVerifiedOnly((v) => !v);
-                }}
-              />
-              <MarketplaceChip
-                label="Open now · est."
-                active={availableNowOnly}
-                icon="partly-sunny-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  setAvailableNowOnly((v) => !v);
-                }}
-              />
-            </ChipRail>
-
-            {activeFilterCount > 0 ? (
-              <Pressable
-                onPress={clearFilters}
-                accessibilityRole="button"
-                accessibilityLabel="Clear all filters"
-                className="mt-2 flex-row items-center justify-center gap-2 self-start rounded-full border border-dashed border-neutral-300 px-4 py-2 active:bg-neutral-50"
-              >
-                <Ionicons name="refresh-outline" size={16} color="#7C3AED" />
-                <Text className="text-[12px] font-extrabold text-accent-deep">
-                  Clear all filters
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        </View>
-
-        {/* Pull categories slightly away from hero so sticky headers never feel “blocked” */}
-        <View className="h-2" />
-      </View>
-    </Animated.View>
-  );
-}
-
 export function VendorsExploreScreen() {
   const router = useRouter();
+  const phone = useAuthPhone();
+  const { subscription, entitlements } = useExploreSubscription();
   const params = useLocalSearchParams<{ category?: string; search?: string }>();
-  const { width: windowWidth } = useWindowDimensions();
   const coords = useVendorUserLocation(true);
 
   const credits = useVendorLeadStore((s) => s.credits);
-  const tryRevealVendor = useVendorLeadStore((s) => s.tryRevealVendor);
   const isVendorUnlocked = useVendorLeadStore((s) => s.isVendorUnlocked);
 
   const [search, setSearch] = useState(() => String(params.search ?? ""));
@@ -438,6 +89,38 @@ export function VendorsExploreScreen() {
 
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [availableNowOnly, setAvailableNowOnly] = useState(false);
+  const [multiCityMode, setMultiCityMode] = useState(false);
+  const [multiCityKeys, setMultiCityKeys] = useState<string[]>([]);
+
+  const promptUpgrade = useCallback(
+    (feature: string) => {
+      Alert.alert(
+        "Upgrade Explore",
+        `${feature} is included with Pro and Pro+ plans.`,
+        [
+          { text: "Not now", style: "cancel" },
+          {
+            text: "View plans",
+            onPress: () => router.push("/(tabs)/vendors/plans"),
+          },
+        ],
+      );
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    if (!entitlements.canUseVerifiedFilter && verifiedOnly) {
+      setVerifiedOnly(false);
+    }
+  }, [entitlements.canUseVerifiedFilter, verifiedOnly]);
+
+  useEffect(() => {
+    if (!entitlements.canUseMultiCity && multiCityMode) {
+      setMultiCityMode(false);
+      setMultiCityKeys([]);
+    }
+  }, [entitlements.canUseMultiCity, multiCityMode]);
 
   const [toast, setToast] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -473,7 +156,7 @@ export function VendorsExploreScreen() {
   );
 
   const {
-    vendors: filtered,
+    vendors: catalogVendors,
     loading,
     refreshing,
     error,
@@ -483,7 +166,7 @@ export function VendorsExploreScreen() {
   } = useVendors({
     search: catalogFilters.search,
     areaKey,
-    cityKey,
+    cityKey: multiCityMode && multiCityKeys.length > 0 ? null : cityKey,
     category: catalogFilters.category,
     city: cityLabel,
     verifiedOnly,
@@ -492,16 +175,35 @@ export function VendorsExploreScreen() {
     userLocation: coords ?? BANGALORE_CITY_CENTER,
   });
 
+  const revealCostLabel = useMemo(
+    () => exploreRevealCostLabel(subscription),
+    [subscription],
+  );
+
+  const filtered = useMemo(() => {
+    let list = catalogVendors;
+
+    if (multiCityMode && multiCityKeys.length > 0) {
+      const allowed = new Set(multiCityKeys);
+      list = list.filter((v) => allowed.has(v.cityKey));
+    }
+
+    if (!entitlements.canAccessEarlyCategories) {
+      list = list.filter((v) => canViewVendorCategory(v.category, entitlements));
+    }
+
+    return list;
+  }, [catalogVendors, entitlements, multiCityKeys, multiCityMode]);
+
   useEffect(() => {
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
-  const totalCatalogCount = MARKETPLACE_TOTAL_VENDORS;
-
   const activeFilterCount = useMemo(() => {
     let n = 0;
+    if (multiCityMode && multiCityKeys.length > 0) n += 1;
     if (cityKey) n += 1;
     if (areaKey) n += 1;
     if (sortMode !== "recommended") n += 1;
@@ -516,11 +218,19 @@ export function VendorsExploreScreen() {
     verifiedOnly,
     availableNowOnly,
     debouncedSearch,
+    multiCityMode,
+    multiCityKeys.length,
   ]);
 
   const sections = useMemo(() => {
     const map = new Map<string, VendorRecord[]>();
     for (const v of filtered) {
+      if (
+        entitlements.canAccessEarlyCategories &&
+        isEarlyAccessCategory(v.category)
+      ) {
+        continue;
+      }
       const cat = v.category.trim() || "General";
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(v);
@@ -528,7 +238,16 @@ export function VendorsExploreScreen() {
     return Array.from(map.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([title, data]) => ({ title, data }));
-  }, [filtered]);
+  }, [filtered, entitlements.canAccessEarlyCategories]);
+
+  const explorePlanLabel =
+    subscription?.status === "active"
+      ? subscription.plan === "pro_plus"
+        ? "Pro+"
+        : subscription.plan === "pro"
+          ? `Pro · ${subscription.revealsRemaining ?? 0}/wk`
+          : null
+      : null;
 
   const showToastMsg = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -537,77 +256,153 @@ export function VendorsExploreScreen() {
   }, []);
 
   const handleReveal = useCallback(
-    (vendorId: string) => {
-      const res = tryRevealVendor(vendorId);
+    async (vendorId: string) => {
+      const res = await tryExploreReveal(phone, vendorId);
       if (!res.ok) {
+        if (res.reason === "weekly_limit") {
+          Alert.alert(
+            "Weekly limit reached",
+            "Your Pro plan includes 10 reveals per week. Upgrade to Pro+ for unlimited reveals, or wait until Monday.",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "View plans",
+                onPress: () => router.push("/(tabs)/vendors/plans"),
+              },
+            ],
+          );
+          return;
+        }
         Alert.alert(
           "Not enough credits",
-          `You need ${VENDOR_REVEAL_CREDIT_COST} credits to reveal a vendor. Paid top-ups are on the way.`,
+          `You need ${VENDOR_REVEAL_CREDIT_COST} credits to reveal a vendor.`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "View plans",
+              onPress: () => router.push("/(tabs)/vendors/plans"),
+            },
+          ],
         );
         return;
       }
       if (!res.alreadyUnlocked) {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showToastMsg("Unlocked! Call or WhatsApp from the profile.");
+        showToastMsg(
+          res.usedCredits
+            ? "Unlocked! Call or WhatsApp from the profile."
+            : "Unlocked with your Explore plan!",
+        );
       }
     },
-    [tryRevealVendor, showToastMsg],
+    [phone, router, showToastMsg],
   );
 
-  const toggleSortMode = useCallback(
-    (next: "distance" | "rating") => {
-      setSortMode((cur) => (cur === next ? "recommended" : next));
-      void Haptics.selectionAsync().catch(() => {});
-    },
-    [],
-  );
+  const toggleSortMode = useCallback((next: "distance" | "rating") => {
+    setSortMode((cur) => (cur === next ? "recommended" : next));
+    void Haptics.selectionAsync().catch(() => {});
+  }, []);
 
   const clearFilters = useCallback(() => {
     setCityKey(null);
     setAreaKey(null);
+    setMultiCityMode(false);
+    setMultiCityKeys([]);
     setSearch("");
     setVerifiedOnly(false);
     setAvailableNowOnly(false);
     setSortMode("recommended");
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-      () => {},
-    );
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   }, []);
 
-  const ListHeaderComponent = useCallback(
+  const onToggleMultiCityMode = useCallback(() => {
+    if (!entitlements.canUseMultiCity) {
+      promptUpgrade("Multi-city marketplace access");
+      return;
+    }
+    setMultiCityMode((on) => {
+      if (on) setMultiCityKeys([]);
+      return !on;
+    });
+    setCityKey(null);
+    setAreaKey(null);
+  }, [entitlements.canUseMultiCity, promptUpgrade]);
+
+  const onToggleMultiCityKey = useCallback((key: string) => {
+    setMultiCityKeys((cur) => {
+      if (cur.includes(key)) {
+        return cur.filter((k) => k !== key);
+      }
+      if (cur.length >= PRO_PLUS_MULTI_CITY_LIMIT) {
+        Alert.alert(
+          "City limit",
+          `Pro+ supports up to ${PRO_PLUS_MULTI_CITY_LIMIT} cities at once.`,
+        );
+        return cur;
+      }
+      return [...cur, key];
+    });
+  }, []);
+
+  const renderListHeader = useCallback(
     () => (
-      <ExploreListHeaderAnimated
-        windowWidth={windowWidth}
-        coords={coords}
-        totalCatalogCount={totalCatalogCount}
-        filteredLen={filtered.length}
-        activeFilterCount={activeFilterCount}
-        credits={credits}
-        onOpenHistory={() => setHistoryOpen(true)}
-        search={search}
-        setSearch={setSearch}
-        cityOptions={cityOptions}
-        cityKey={cityKey}
-        setCityKey={setCityKey}
-        areaOptions={areaOptions}
-        areaKey={areaKey}
-        setAreaKey={setAreaKey}
-        sortMode={sortMode}
-        toggleSortMode={toggleSortMode}
-        verifiedOnly={verifiedOnly}
-        setVerifiedOnly={setVerifiedOnly}
-        availableNowOnly={availableNowOnly}
-        setAvailableNowOnly={setAvailableNowOnly}
-        clearFilters={clearFilters}
-      />
+      <>
+        <ExploreListHeader
+          coords={coords}
+          activeFilterCount={activeFilterCount}
+          credits={credits}
+          explorePlanLabel={explorePlanLabel}
+          entitlements={entitlements}
+          onUpgrade={() => promptUpgrade("This feature")}
+          multiCityMode={multiCityMode}
+          multiCityKeys={multiCityKeys}
+          onToggleMultiCityMode={onToggleMultiCityMode}
+          onToggleMultiCityKey={onToggleMultiCityKey}
+          onOpenHistory={() => setHistoryOpen(true)}
+          search={search}
+          setSearch={setSearch}
+          cityOptions={cityOptions}
+          cityKey={cityKey}
+          setCityKey={setCityKey}
+          areaOptions={areaOptions}
+          areaKey={areaKey}
+          setAreaKey={setAreaKey}
+          sortMode={sortMode}
+          toggleSortMode={toggleSortMode}
+          verifiedOnly={verifiedOnly}
+          setVerifiedOnly={setVerifiedOnly}
+          availableNowOnly={availableNowOnly}
+          setAvailableNowOnly={setAvailableNowOnly}
+          clearFilters={clearFilters}
+        />
+        <EarlyAccessStrip
+          vendors={catalogVendors}
+          canAccess={entitlements.canAccessEarlyCategories}
+          onReveal={(vendorId) => {
+            void handleReveal(vendorId);
+          }}
+          isVendorUnlocked={isVendorUnlocked}
+          distanceKmFromUser={(v) => distanceKmFromUser(v, coords)}
+          revealCostLabel={revealCostLabel}
+        />
+        <SavedVendorsStrip
+          vendors={catalogVendors}
+          isPro={entitlements.isPro}
+          savedLimit={entitlements.savedVendorLimit}
+        />
+      </>
     ),
     [
-      windowWidth,
       coords,
-      totalCatalogCount,
-      filtered.length,
       activeFilterCount,
       credits,
+      explorePlanLabel,
+      entitlements,
+      promptUpgrade,
+      multiCityMode,
+      multiCityKeys,
+      onToggleMultiCityMode,
+      onToggleMultiCityKey,
       search,
       cityOptions,
       cityKey,
@@ -618,6 +413,10 @@ export function VendorsExploreScreen() {
       verifiedOnly,
       availableNowOnly,
       clearFilters,
+      catalogVendors,
+      handleReveal,
+      isVendorUnlocked,
+      revealCostLabel,
     ],
   );
 
@@ -658,7 +457,6 @@ export function VendorsExploreScreen() {
             style={{ flex: 1 }}
             sections={sections}
             keyExtractor={(item) => item.id}
-            /** Sticky headers + separate hero sibling caused touch/scroll clashes on several devices — keep headers in-flow */
             stickySectionHeadersEnabled={false}
             showsVerticalScrollIndicator
             nestedScrollEnabled
@@ -672,7 +470,7 @@ export function VendorsExploreScreen() {
               />
             }
             ListFooterComponent={<View className="h-6" />}
-            ListHeaderComponent={ListHeaderComponent}
+            ListHeaderComponent={renderListHeader}
             renderSectionHeader={({ section }) => (
               <View className="border-b border-neutral-200/70 bg-[#eef2fb] px-4 pb-3 pt-5">
                 <View className="flex-row items-center gap-3">
@@ -705,24 +503,22 @@ export function VendorsExploreScreen() {
                         : { elevation: 2 }
                     }
                   >
-                    <Ionicons
-                      name="chevron-down"
-                      size={16}
-                      color="#7C3AED"
-                    />
+                    <Ionicons name="chevron-down" size={16} color="#7C3AED" />
                   </View>
                 </View>
               </View>
             )}
-            renderItem={({ item, index }) => (
+            renderItem={({ item }) => (
               <View className="px-4 pb-1">
                 <MarketplaceVendorCard
                   vendor={item}
-                  index={index}
                   distanceKm={distanceKmFromUser(item, coords)}
                   unlocked={isVendorUnlocked(item.id)}
+                  revealCostLabel={revealCostLabel}
                   onPressCard={() => router.push(`/(tabs)/vendors/${item.id}`)}
-                  onReveal={() => handleReveal(item.id)}
+                  onReveal={() => {
+                    void handleReveal(item.id);
+                  }}
                 />
               </View>
             )}
@@ -733,7 +529,10 @@ export function VendorsExploreScreen() {
                   subtitle="Relax a filter or try a simpler search — the catalog spans 4,500+ vendors across India."
                   icon="search-outline"
                 >
-                  <Pressable onPress={clearFilters} className="rounded-full bg-accent px-8 py-3.5 shadow-md">
+                  <Pressable
+                    onPress={clearFilters}
+                    className="rounded-full bg-accent px-8 py-3.5 shadow-md"
+                  >
                     <Text className="text-center text-[15px] font-extrabold text-accent-foreground">
                       Reset everything
                     </Text>
@@ -753,39 +552,5 @@ export function VendorsExploreScreen() {
         )}
       </View>
     </Screen>
-  );
-}
-
-function ChipRail({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <View className="mt-5">
-      <View className="mb-2 flex-row items-end justify-between pr-1">
-        <Text className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-neutral-500">
-          {title}
-        </Text>
-        {hint ? (
-          <Text className="text-[10px] font-semibold text-neutral-400">
-            {hint}
-          </Text>
-        ) : null}
-      </View>
-      <ScrollView
-        horizontal
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 10, flexDirection: "row", paddingRight: 8 }}
-      >
-        {children}
-      </ScrollView>
-    </View>
   );
 }

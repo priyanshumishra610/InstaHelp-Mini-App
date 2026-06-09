@@ -1,4 +1,9 @@
 import type { Booking } from "@/types/booking";
+import type {
+  ExploreOrderResult,
+  ExploreRevealResult,
+  ExploreSubscription,
+} from "@/types/exploreSubscription";
 import type { UserProfile } from "@/types/user";
 
 import { APPS_SCRIPT_URL } from "./env";
@@ -17,7 +22,20 @@ async function postJson<T>(body: Record<string, unknown>): Promise<ApiEnvelope<T
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const json = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
+    const rawText = await res.text();
+    let json: ApiEnvelope<T> | null = null;
+    try {
+      json = JSON.parse(rawText) as ApiEnvelope<T>;
+    } catch {
+      if (rawText.includes("Page not found") || rawText.startsWith("<!DOCTYPE")) {
+        return {
+          ok: false,
+          error:
+            "Apps Script web app URL is invalid or not deployed. Update EXPO_PUBLIC_APPS_SCRIPT_URL in .env.",
+        };
+      }
+      return { ok: false, error: "Unexpected response from Apps Script (not JSON)." };
+    }
     if (!res.ok) {
       return {
         ok: false,
@@ -99,4 +117,49 @@ export type VendorRegistrationResult = {
 
 export async function apiRegisterVendor(payload: VendorRegistrationPayload) {
   return postJson<VendorRegistrationResult>({ action: "registerVendor", ...payload });
+}
+
+export async function apiCreateExploreOrder(phone: string, planId: string) {
+  return postJson<ExploreOrderResult>({
+    action: "createExploreOrder",
+    phone,
+    planId,
+  });
+}
+
+export async function apiVerifyExplorePayment(payload: {
+  phone: string;
+  planId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}) {
+  return postJson<ExploreSubscription>({
+    action: "verifyExplorePayment",
+    ...payload,
+  });
+}
+
+export async function apiGetExploreSubscription(phone: string) {
+  return postJson<ExploreSubscription>({
+    action: "getExploreSubscription",
+    phone,
+  });
+}
+
+export async function apiRecordExploreReveal(phone: string, vendorId: string) {
+  return postJson<ExploreRevealResult>({
+    action: "recordExploreReveal",
+    phone,
+    vendorId,
+  });
+}
+
+/** Short-lived RS256 JWT for Hubble SDK SSO (see scripts/code.gs → getHubbleToken). */
+export async function apiGetHubbleToken(payload: {
+  phone: string;
+  name?: string;
+  email?: string;
+}) {
+  return postJson<{ token: string }>({ action: "getHubbleToken", ...payload });
 }

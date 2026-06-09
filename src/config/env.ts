@@ -68,3 +68,32 @@ export const FIREBASE_PROJECT_ID = getPublicEnv(
 export const FIREBASE_IS_CONFIGURED = Boolean(
   FIREBASE_API_KEY && FIREBASE_PROJECT_ID,
 );
+
+export type ShopCatalogSource = "bundled_csv" | "google_sheet";
+
+/** Shop product catalog: bundled_csv (default) | google_sheet (live published CSV). */
+export function getShopCatalogSource(): ShopCatalogSource {
+  const explicit = getPublicEnv("EXPO_PUBLIC_SHOP_CATALOG_SOURCE");
+  if (explicit === "google_sheet") return "google_sheet";
+  return "bundled_csv";
+}
+
+export const SHOP_SHEET_ID = getPublicEnv(
+  "EXPO_PUBLIC_SHOP_SHEET_ID",
+  "1oFNlCO_z2rek3FweEGBKqk_2lLi7fWD0QKUg-_l67TE",
+);
+
+export const SHOP_PRODUCTS_GID = getPublicEnv(
+  "EXPO_PUBLIC_SHOP_PRODUCTS_GID",
+  "730196278",
+);
+
+/** Published-to-web ID (`2PACX-...` from the /d/e/.../pubhtml link). */
+export const SHOP_SHEET_PUBLISH_ID = getPublicEnv(
+  "EXPO_PUBLIC_SHOP_SHEET_PUBLISH_ID",
+  "2PACX-1vT3Ps-Sjksz6Wr91p5mJm5Hyh6Hyjr7klYBy84S28eEU4SYh6ODWjf09EVaK4jc5IlINoO6nVlCmqF4",
+);
+
+/** Razorpay Key ID (public) — secret stays in Apps Script Script properties */
+export const RAZORPAY_KEY_ID = getPublicEnv("EXPO_PUBLIC_RAZORPAY_KEY_ID");
+export const RAZORPAY_IS_CONFIGURED = Boolean(RAZORPAY_KEY_ID);

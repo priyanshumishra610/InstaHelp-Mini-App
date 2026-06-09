@@ -37,8 +37,7 @@ function hostnameOf(url: string): string | null {
 
 /**
  * Initializes Hubble for React Native by constructing the WebView SDK URL with
- * app credentials, device context, and the target catalog route only.
- * No user identity, SSO token, or auth hint is sent so Hubble opens as guest.
+ * app credentials, optional JWT SSO token, device context, and catalog route.
  */
 export function buildHubbleSdkUrl(input: BuildHubbleUrlInput): string {
   const base = HUBBLE_SDK_BASE[input.environment];
@@ -49,6 +48,7 @@ export function buildHubbleSdkUrl(input: BuildHubbleUrlInput): string {
   url.searchParams.set("appSecret", input.appSecret);
   url.searchParams.set("wrap-plt", input.wrapPlt);
 
+  if (input.token) url.searchParams.set("token", input.token);
   if (input.appVersion) url.searchParams.set("appVersion", input.appVersion);
   if (input.deviceId) url.searchParams.set("deviceId", input.deviceId);
 

@@ -33,7 +33,6 @@ import { mapFirebaseAuthError } from "@/utils/auth/firebaseErrors";
 import type { ApplicationVerifier, ConfirmationResult } from "firebase/auth";
 import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
 import { getFirebaseAuth } from "@/firebase/auth";
-import { finalizeTruecallerWithServer } from "@/firebase/truecallerFinalizeClient";
 */
 
 export type AuthStatus =
@@ -54,10 +53,9 @@ type AuthContextValue = {
   signOut: () => Promise<void>;
   /** Re-read profile from sheet and update auth status. */
   refreshSession: () => Promise<void>;
-  /** Legacy stubs (Firebase OTP / Truecaller disabled). */
+  /** Legacy stubs (Firebase auth disabled). */
   sendOtp: (_digits10: string, _verifier: unknown) => Promise<void>;
   verifyOtp: (_code: string) => Promise<void>;
-  signInWithTruecallerOAuth: (_authorizationCode: string, _codeVerifier: string) => Promise<void>;
   refreshFirestoreUser: () => Promise<FirestoreUser | null>;
   getConfirmation: () => null;
 };
@@ -186,7 +184,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       refreshSession,
       sendOtp: disabledFirebase,
       verifyOtp: disabledFirebase,
-      signInWithTruecallerOAuth: disabledFirebase,
       refreshFirestoreUser: async () => null,
       getConfirmation: () => null,
     }),

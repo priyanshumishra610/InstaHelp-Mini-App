@@ -18,6 +18,7 @@ export default function VendorsStackLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false, title: "Explore" }} />
+      <Stack.Screen name="plans" options={{ headerShown: false, title: "Plans" }} />
       <Stack.Screen name="[vendorId]" options={{ title: "Vendor" }} />
       <Stack.Screen name="arcade" options={{ headerShown: false }} />
     </Stack>

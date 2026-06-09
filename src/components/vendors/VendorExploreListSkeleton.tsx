@@ -1,5 +1,4 @@
 import { Platform, View } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
 
 export function VendorExploreListSkeleton() {
   const cardOuter =
@@ -13,11 +12,11 @@ export function VendorExploreListSkeleton() {
       : { elevation: 4 };
 
   return (
-    <Animated.View entering={FadeIn.duration(240)} className="gap-4 px-4 pt-2">
+    <View className="gap-4 px-4 pt-2">
       {[0, 1, 2, 3, 4].map((i) => (
         <View
           key={`sk-${i}`}
-          className="overflow-hidden rounded-[22px] border border-white bg-white p-4"
+          className="overflow-hidden rounded-none border border-neutral-200 bg-white p-4"
           style={cardOuter}
         >
           <View className="flex-row gap-3">
@@ -32,6 +31,6 @@ export function VendorExploreListSkeleton() {
           </View>
         </View>
       ))}
-    </Animated.View>
+    </View>
   );
 }

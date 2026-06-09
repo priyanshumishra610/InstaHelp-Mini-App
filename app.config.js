@@ -61,6 +61,7 @@ function buildPublicEnv() {
     "EXPO_PUBLIC_HUBBLE_ENV",
     "EXPO_PUBLIC_HUBBLE_ANALYTICS_LOG",
     "EXPO_PUBLIC_HUBBLE_DEMO_BRAND_IDS",
+    "EXPO_PUBLIC_HUBBLE_USER_JWT",
     "EXPO_PUBLIC_FIREBASE_API_KEY",
     "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN",
     "EXPO_PUBLIC_FIREBASE_PROJECT_ID",
@@ -68,8 +69,12 @@ function buildPublicEnv() {
     "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID",
     "EXPO_PUBLIC_FIREBASE_APP_ID",
     "EXPO_PUBLIC_VENDOR_CATALOG_SOURCE",
-    "EXPO_PUBLIC_TRUECALLER_CLIENT_ID",
     "EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION",
+    "EXPO_PUBLIC_SHOP_CATALOG_SOURCE",
+    "EXPO_PUBLIC_SHOP_SHEET_ID",
+    "EXPO_PUBLIC_SHOP_PRODUCTS_GID",
+    "EXPO_PUBLIC_SHOP_SHEET_PUBLISH_ID",
+    "EXPO_PUBLIC_RAZORPAY_KEY_ID",
   ];
 
   /** @type {Record<string, string>} */
@@ -97,18 +102,12 @@ module.exports = ({ config }) => {
     : config.android;
 
   const publicEnv = buildPublicEnv();
-  const truecallerAndroidClientId =
-    process.env.EXPO_PUBLIC_TRUECALLER_CLIENT_ID ??
-    publicEnv.EXPO_PUBLIC_TRUECALLER_CLIENT_ID ??
-    "";
-
   return {
     ...config,
     android: patchedAndroid,
     extra: {
       ...config.extra,
       publicEnv,
-      truecallerAndroidClientId,
     },
   };
 };

@@ -1,16 +1,16 @@
 import {
-  findGameById,
-  gamesByIds,
-  getFeaturedGames,
-  type GamezopGame,
-} from "@/constants/gamezopGames";
+  findInstaGameById,
+  getFeaturedInstaGames,
+  instaGamesByIds,
+  type InstaGame,
+} from "@/constants/instaGames";
 
-export type MyGameEntry = GamezopGame & {
+export type MyGameEntry = InstaGame & {
   lastPlayedLabel: string;
 };
 
-function requireGame(id: string): GamezopGame {
-  const game = findGameById(id);
+function requireGame(id: string): InstaGame {
+  const game = findInstaGameById(id);
   if (!game) {
     throw new Error(`Unknown game id: ${id}`);
   }
@@ -19,37 +19,34 @@ function requireGame(id: string): GamezopGame {
 
 export const MY_GAMES: MyGameEntry[] = [
   {
-    ...requireGame("gTD1yQp3R"),
+    ...requireGame("grid"),
     lastPlayedLabel: "Yesterday",
   },
   {
-    ...requireGame("9lpHai56Q"),
+    ...requireGame("hangman"),
     lastPlayedLabel: "14/05/2026",
   },
   {
-    ...requireGame("rkWfy2pXq0r"),
+    ...requireGame("whack"),
     lastPlayedLabel: "2 days ago",
   },
 ];
 
-export const RECOMMENDED_GAMES: GamezopGame[] = gamesByIds([
-  "UCS62KJ8c",
-  "Skz4pzkDqyX",
-  "gTD1yQp3R",
-  "9lpHai56Q",
-  "rkWfy2pXq0r",
+export const RECOMMENDED_GAMES: InstaGame[] = instaGamesByIds([
+  "grid",
+  "hangman",
+  "whack",
 ]);
 
-export const TOP_INSTANT_PLAYS: GamezopGame[] = gamesByIds([
-  "rkWfy2pXq0r",
-  "Skz4pzkDqyX",
-  "UCS62KJ8c",
-  "gTD1yQp3R",
-  "9lpHai56Q",
+export const TOP_INSTANT_PLAYS: InstaGame[] = instaGamesByIds([
+  "whack",
+  "grid",
+  "hangman",
 ]);
 
-export const FEATURED_AD_GAME: GamezopGame =
-  getFeaturedGames().find((g) => g.id === "9lpHai56Q") ?? requireGame("9lpHai56Q");
+export const FEATURED_AD_GAME: InstaGame =
+  getFeaturedInstaGames().find((g) => g.id === "hangman") ??
+  requireGame("hangman");
 
 export const HUB_COLORS = {
   bgTop: "#2a1454",

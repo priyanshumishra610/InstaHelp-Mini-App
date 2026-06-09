@@ -1,27 +1,21 @@
 import { HUB_COLORS } from "@/constants/gamingHub";
-import {
-  getGamezopImageUrl,
-  type GamezopGame,
-} from "@/constants/gamezopGames";
+import type { InstaGame } from "@/constants/instaGames";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
-import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
-  game: GamezopGame;
+  game: InstaGame;
   displayTitle?: string;
-  onPlay: (game: GamezopGame) => void;
+  onPlay: (game: InstaGame) => void;
 };
 
 /** Wide promotional card matching Gaming Hub ad slot */
 export function GamingAdBanner({ game, displayTitle, onPlay }: Props) {
-  const [imageFailed, setImageFailed] = useState(false);
   const colors = game.gradient;
   const label = displayTitle ?? game.title;
-  const brickUri = getGamezopImageUrl(game.id, "brick");
+  const iconName = game.icon as keyof typeof Ionicons.glyphMap;
 
   return (
     <View style={styles.wrap}>
@@ -52,27 +46,13 @@ export function GamingAdBanner({ game, displayTitle, onPlay }: Props) {
           </View>
 
           <View style={styles.artWrap}>
-            {!imageFailed ? (
-              <Image
-                source={{ uri: brickUri }}
-                style={styles.artImage}
-                contentFit="contain"
-                transition={220}
-                cachePolicy="memory-disk"
-                onError={() => setImageFailed(true)}
-              />
-            ) : (
-              <View style={styles.artFallback}>
-                <Ionicons
-                  name={game.icon as keyof typeof Ionicons.glyphMap}
-                  size={48}
-                  color="rgba(255,255,255,0.9)"
-                />
-              </View>
-            )}
+            <View style={styles.artFallback}>
+              <Ionicons name={iconName} size={48} color="rgba(255,255,255,0.9)" />
+            </View>
           </View>
 
           <Text style={styles.gameLabel}>{label}</Text>
+          <Text style={styles.tagline}>{game.tagline}</Text>
 
           <View style={styles.ctaWrap}>
             <View style={styles.cta}>
@@ -129,11 +109,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  artImage: {
-    width: "100%",
-    height: "100%",
-    maxWidth: 320,
-  },
   artFallback: {
     width: 88,
     height: 88,
@@ -146,6 +121,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     color: HUB_COLORS.textPrimary,
+    marginBottom: 4,
+    zIndex: 2,
+  },
+  tagline: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: HUB_COLORS.textSecondary,
     marginBottom: 10,
     zIndex: 2,
   },

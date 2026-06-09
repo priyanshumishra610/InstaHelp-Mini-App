@@ -1,4 +1,5 @@
 import { VENDOR_REVEAL_CREDIT_COST } from "@/constants/vendorMarketplace";
+import { SaveVendorButton } from "@/components/vendors/SaveVendorButton";
 import {
   formatStartingPrice,
   serviceDescriptionPreview,
@@ -11,25 +12,26 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "react-native";
 import { memo } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 
 type Props = {
   vendor: VendorRecord;
-  index: number;
   distanceKm: number | null;
   unlocked: boolean;
+  revealCostLabel?: string;
   onPressCard: () => void;
   onReveal: () => void;
 };
 
 function MarketplaceVendorCardInner({
   vendor,
-  index,
   distanceKm,
   unlocked,
+  revealCostLabel,
   onPressCard,
   onReveal,
 }: Props) {
+  const revealLabel =
+    revealCostLabel ?? `${VENDOR_REVEAL_CREDIT_COST} Credits`;
   const title = vendorDisplayName(vendor);
   const initials = title
     .split(/\s+/)
@@ -47,9 +49,8 @@ function MarketplaceVendorCardInner({
       : "No reviews yet";
 
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index * 22, 220)).duration(380)}>
-      <View
-        className="mb-4 overflow-hidden rounded-[22px] border border-white bg-white"
+    <View
+        className="mb-4 overflow-hidden rounded-none border border-neutral-200 bg-white"
         style={
           Platform.OS === "ios"
             ? {
@@ -71,7 +72,7 @@ function MarketplaceVendorCardInner({
             {vendor.profileImageUrl?.startsWith("http") ? (
               <Image
                 source={{ uri: vendor.profileImageUrl }}
-                className="h-16 w-16 rounded-2xl bg-neutral-100"
+                className="h-16 w-16 rounded-none bg-neutral-100"
                 resizeMode="cover"
               />
             ) : (
@@ -79,7 +80,7 @@ function MarketplaceVendorCardInner({
                 colors={["#7C3AED", "#8B5CF6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="h-16 w-16 items-center justify-center rounded-2xl"
+                className="h-16 w-16 items-center justify-center rounded-none"
               >
                 <Text className="text-lg font-extrabold text-white">
                   {initials || "IH"}
@@ -103,6 +104,7 @@ function MarketplaceVendorCardInner({
                     </Text>
                   </View>
                 ) : null}
+                <SaveVendorButton vendorId={vendor.id} size={18} />
               </View>
 
               <View className="mt-2 flex-row flex-wrap items-center gap-x-2 gap-y-1">
@@ -178,11 +180,10 @@ function MarketplaceVendorCardInner({
                 colors={["#5B21B6", "#7C3AED"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="flex-row items-center justify-center gap-2 py-3"
+                className="flex-row items-center justify-center py-3"
               >
-                <Ionicons name="flash" size={16} color="#ffd500" />
                 <Text className="text-[13px] font-extrabold text-white">
-                  Reveal Contact · {VENDOR_REVEAL_CREDIT_COST} Credits
+                  Reveal Contact · {revealLabel}
                 </Text>
               </LinearGradient>
             </Pressable>
@@ -203,8 +204,7 @@ function MarketplaceVendorCardInner({
             </View>
           </Pressable>
         )}
-      </View>
-    </Animated.View>
+    </View>
   );
 }
 

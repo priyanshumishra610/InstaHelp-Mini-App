@@ -14,6 +14,10 @@ import {
   serviceDescriptionPreview,
 } from "@/services/vendors/vendorPresentation";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
+import { SaveVendorButton } from "@/components/vendors/SaveVendorButton";
+import { exploreRevealCostLabel, tryExploreReveal } from "@/services/explore/exploreRevealService";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { useExploreSubscription } from "@/hooks/useExploreSubscription";
 import { useVendorLeadStore } from "@/store/vendorLeadStore";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -41,6 +45,8 @@ function SectionTitle({ children }: { children: string }) {
 export function VendorDetailScreen() {
   const navigation = useNavigation();
   const router = useRouter();
+  const phone = useAuthPhone();
+  const { subscription, entitlements } = useExploreSubscription();
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
 
   const { vendor, loading: vendorLoading, error: vendorError, retry } =
@@ -48,7 +54,6 @@ export function VendorDetailScreen() {
   const coords = useVendorUserLocation(true);
 
   const credits = useVendorLeadStore((s) => s.credits);
-  const tryRevealVendor = useVendorLeadStore((s) => s.tryRevealVendor);
   const unlockedVendorIds = useVendorLeadStore((s) => s.unlockedVendorIds);
   const unlocked = vendor ? unlockedVendorIds.includes(vendor.id) : false;
 
@@ -91,21 +96,46 @@ export function VendorDetailScreen() {
     toastTimer.current = setTimeout(() => setToast(null), 2700);
   }, []);
 
-  const handleReveal = useCallback(() => {
+  const handleReveal = useCallback(async () => {
     if (!vendor) return;
-    const res = tryRevealVendor(vendor.id);
+    const res = await tryExploreReveal(phone, vendor.id);
     if (!res.ok) {
+      if (res.reason === "weekly_limit") {
+        Alert.alert(
+          "Weekly limit reached",
+          "Your Pro plan includes 10 reveals per week. Upgrade to Pro+ for unlimited reveals.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "View plans",
+              onPress: () => router.push("/(tabs)/vendors/plans"),
+            },
+          ],
+        );
+        return;
+      }
       Alert.alert(
         "Not enough credits",
         `You need ${VENDOR_REVEAL_CREDIT_COST} credits to reveal this vendor.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "View plans",
+            onPress: () => router.push("/(tabs)/vendors/plans"),
+          },
+        ],
       );
       return;
     }
     if (!res.alreadyUnlocked) {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      showToastMsg("Contact unlocked — your credits were updated.");
+      showToastMsg(
+        res.usedCredits
+          ? "Contact unlocked — your credits were updated."
+          : "Contact unlocked with your Explore plan!",
+      );
     }
-  }, [vendor, tryRevealVendor, showToastMsg]);
+  }, [vendor, phone, showToastMsg, router]);
 
   if (vendorLoading) {
     return (
@@ -173,6 +203,9 @@ export function VendorDetailScreen() {
     .filter(Boolean)
     .join(" · ");
 
+  const revealCostLabel = exploreRevealCostLabel(subscription);
+  const usesPlanReveal = entitlements.hasPlanReveals;
+
   return (
     <Screen className="bg-[#eef2fb]">
       <View className="flex-1">
@@ -183,14 +216,18 @@ export function VendorDetailScreen() {
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <Text className="mt-1 text-[22px] font-bold leading-7 text-neutral-900">
-            {title}
-          </Text>
-
-          <Text className="mt-1 text-[14px] text-neutral-600">
-            {vendor.category}
-            {locationLine ? ` · ${locationLine}` : ""}
-          </Text>
+          <View className="mt-1 flex-row items-start justify-between gap-3">
+            <View className="flex-1">
+              <Text className="text-[22px] font-bold leading-7 text-neutral-900">
+                {title}
+              </Text>
+              <Text className="mt-1 text-[14px] text-neutral-600">
+                {vendor.category}
+                {locationLine ? ` · ${locationLine}` : ""}
+              </Text>
+            </View>
+            <SaveVendorButton vendorId={vendor.id} />
+          </View>
 
           <View className="mt-3 flex-row flex-wrap items-center gap-3">
             <View className="flex-row items-center gap-1">
@@ -259,6 +296,8 @@ export function VendorDetailScreen() {
           <VendorContactRevealPanel
             vendor={vendor}
             unlocked={unlocked}
+            revealCostLabel={revealCostLabel}
+            usesPlanReveal={usesPlanReveal}
             onReveal={handleReveal}
           />
         </ScrollView>

@@ -1,15 +1,10 @@
-import {
-  getGamezopImageUrl,
-  type GamezopGame,
-} from "@/constants/gamezopGames";
+import type { InstaGame } from "@/constants/instaGames";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 type Props = {
-  game: GamezopGame;
+  game: InstaGame;
   size: number;
   radius?: number;
   showInstantBadge?: boolean;
@@ -21,11 +16,8 @@ export function GameThumb({
   radius = 16,
   showInstantBadge = false,
 }: Props) {
-  const [failed, setFailed] = useState(false);
   const colors = game.gradient;
   const iconName = game.icon as keyof typeof Ionicons.glyphMap;
-  const thumbUri = getGamezopImageUrl(game.id, "thumb");
-  const showImage = !failed;
 
   return (
     <View style={{ width: size, height: size }}>
@@ -44,24 +36,13 @@ export function GameThumb({
           style={StyleSheet.absoluteFillObject}
         />
 
-        {showImage ? (
-          <Image
-            source={{ uri: thumbUri }}
-            style={StyleSheet.absoluteFillObject}
-            contentFit="cover"
-            transition={200}
-            cachePolicy="memory-disk"
-            onError={() => setFailed(true)}
+        <View style={styles.iconWrap}>
+          <Ionicons
+            name={iconName}
+            size={size * 0.42}
+            color="rgba(255,255,255,0.95)"
           />
-        ) : (
-          <View style={styles.iconFallback}>
-            <Ionicons
-              name={iconName}
-              size={size * 0.42}
-              color="rgba(255,255,255,0.95)"
-            />
-          </View>
-        )}
+        </View>
 
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.35)"]}
@@ -87,7 +68,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
   },
-  iconFallback: {
+  iconWrap: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",

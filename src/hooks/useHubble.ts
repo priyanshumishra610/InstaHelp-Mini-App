@@ -7,6 +7,9 @@ import {
   parseHubbleHostMessage,
 } from "@/integrations/hubble";
 import type { HubbleHostEvent } from "@/integrations/hubble";
+import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
+import { fetchHubbleSsoToken } from "@/services/hubble/hubbleTokenService";
+import { useProfileStore } from "@/store/profileStore";
 import Constants from "expo-constants";
 import * as Linking from "expo-linking";
 import type { ComponentRef, RefObject } from "react";
@@ -18,10 +21,14 @@ type ShouldStartLoadEvent = Parameters<
   NonNullable<WebViewProps["onShouldStartLoadWithRequest"]>
 >[0];
 
+export type HubbleSsoState = "idle" | "loading" | "ready" | "error";
+
 export type HubbleWebViewController = {
   sourceUri: string;
   environment: typeof HUBBLE_CONFIG.environment;
   isConfigured: boolean;
+  ssoState: HubbleSsoState;
+  ssoError: string | null;
   sdkReady: boolean;
   loadError: boolean;
   canGoBack: boolean;
@@ -35,7 +42,7 @@ export type HubbleWebViewController = {
 export type UseHubbleInput = {
   sdkPath?: string;
   extraQuery?: Record<string, string | number | boolean | undefined | null>;
-  /** Increment when retrying load so the ready-timeout runs again. */
+  /** Increment when retrying load so SSO + ready-timeout run again. */
   sessionKey?: number;
   onAction?: (event: HubbleHostEvent) => void;
   onCloseRequest?: () => void;
@@ -46,9 +53,17 @@ export type UseHubbleInput = {
 export function useHubble(input: UseHubbleInput): HubbleWebViewController {
   const webViewRef = useRef<ComponentRef<typeof WebView> | null>(null);
   const sessionKey = input.sessionKey ?? 0;
+  const phone = useAuthPhone();
+  const profileName = useProfileStore((s) => s.profile?.name);
+  const profileEmail = useProfileStore((s) => s.profile?.email);
+
   const [canGoBack, setCanGoBack] = useState(false);
   const [sdkReady, setSdkReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [ssoToken, setSsoToken] = useState<string | null>(null);
+  const [ssoState, setSsoState] = useState<HubbleSsoState>("idle");
+  const [ssoError, setSsoError] = useState<string | null>(null);
+
   const onHardwareBackExitRef = useRef(input.onHardwareBackExit);
   onHardwareBackExitRef.current = input.onHardwareBackExit;
 
@@ -59,19 +74,71 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
     return undefined;
   }, []);
 
+  useEffect(() => {
+    if (!HUBBLE_IS_CONFIGURED) {
+      setSsoToken(null);
+      setSsoState("idle");
+      setSsoError(null);
+      return;
+    }
+
+    if (!phone) {
+      setSsoToken(null);
+      setSsoState("ready");
+      setSsoError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setSsoState("loading");
+    setSsoToken(null);
+    setSsoError(null);
+
+    void fetchHubbleSsoToken({
+      phone,
+      name: profileName,
+      email: profileEmail,
+    }).then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setSsoToken(result.token);
+        setSsoState("ready");
+        setSsoError(null);
+        return;
+      }
+      setSsoToken(null);
+      setSsoState("error");
+      setSsoError(result.error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [phone, profileEmail, profileName, sessionKey]);
+
   const sourceUri = useMemo(() => {
     if (!HUBBLE_IS_CONFIGURED) return "";
+    if (phone && ssoState !== "ready") return "";
     return buildHubbleSdkUrl({
       environment: HUBBLE_CONFIG.environment,
       clientId: HUBBLE_CONFIG.clientId,
       appSecret: HUBBLE_CONFIG.appSecret,
       wrapPlt: HUBBLE_WRAP_PLATFORM,
+      token: ssoToken ?? undefined,
       appVersion,
       deviceId,
       sdkPath: input.sdkPath,
       extraQuery: input.extraQuery,
     });
-  }, [appVersion, deviceId, input.extraQuery, input.sdkPath]);
+  }, [
+    appVersion,
+    deviceId,
+    input.extraQuery,
+    input.sdkPath,
+    phone,
+    ssoState,
+    ssoToken,
+  ]);
 
   const resetSessionFlags = useCallback(() => {
     setSdkReady(false);
@@ -137,6 +204,8 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
     sourceUri,
     environment: HUBBLE_CONFIG.environment,
     isConfigured: HUBBLE_IS_CONFIGURED,
+    ssoState,
+    ssoError,
     sdkReady,
     loadError,
     canGoBack,

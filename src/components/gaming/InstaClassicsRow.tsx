@@ -1,52 +1,22 @@
 import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
 import {
   ARCADE_DAILY_BONUS_CREDITS_TOTAL,
-  BONUS_GAME_HANGMAN_CREDITS,
-  BONUS_GAME_TIC_TAC_TOE_CREDITS,
   BONUS_WHACK_EASY_CREDITS,
   BONUS_WHACK_HARD_CREDITS,
   BONUS_WHACK_MEDIUM_CREDITS,
 } from "@/constants/vendorMarketplace";
+import { INSTA_GAMES } from "@/constants/instaGames";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
-type ClassicGame = {
-  key: string;
-  title: string;
-  credits: string;
-  href: "/(tabs)/vendors/arcade/grid" | "/(tabs)/vendors/arcade/hangman" | "/(tabs)/vendors/arcade/whack";
-  icon: keyof typeof Ionicons.glyphMap;
-  gradient: readonly [string, string];
-};
+const WHACK_CREDITS_LABEL = `+${BONUS_WHACK_EASY_CREDITS}/+${BONUS_WHACK_MEDIUM_CREDITS}/+${BONUS_WHACK_HARD_CREDITS}`;
 
-const CLASSICS: ClassicGame[] = [
-  {
-    key: "grid",
-    title: "Insta Grid",
-    credits: `+${BONUS_GAME_TIC_TAC_TOE_CREDITS}/day`,
-    href: "/(tabs)/vendors/arcade/grid",
-    icon: "grid-outline",
-    gradient: ["#7C3AED", "#7C3AED"],
-  },
-  {
-    key: "hangman",
-    title: "Hangman",
-    credits: `+${BONUS_GAME_HANGMAN_CREDITS}/day`,
-    href: "/(tabs)/vendors/arcade/hangman",
-    icon: "book-outline",
-    gradient: ["#7c3aed", "#9333ea"],
-  },
-  {
-    key: "whack",
-    title: "Whack-a-mole",
-    credits: `+${BONUS_WHACK_EASY_CREDITS}/+${BONUS_WHACK_MEDIUM_CREDITS}/+${BONUS_WHACK_HARD_CREDITS}`,
-    href: "/(tabs)/vendors/arcade/whack",
-    icon: "flash-outline",
-    gradient: ["#059669", "#14b8a6"],
-  },
-];
+function creditsLabel(gameId: string, defaultCredits: number): string {
+  if (gameId === "whack") return WHACK_CREDITS_LABEL;
+  return `+${defaultCredits}/day`;
+}
 
 export function InstaClassicsRow() {
   const router = useRouter();
@@ -61,19 +31,28 @@ export function InstaClassicsRow() {
       </View>
 
       <View style={styles.list}>
-        {CLASSICS.map((g) => (
+        {INSTA_GAMES.map((g) => (
           <PremiumPressable
-            key={g.key}
+            key={g.id}
             accessibilityRole="button"
             accessibilityLabel={`Open ${g.title}`}
-            onPress={() => router.push(g.href)}
+            onPress={() => router.push(g.route)}
             style={styles.card}
           >
-            <LinearGradient colors={[...g.gradient]} style={styles.cardGradient}>
-              <Ionicons name={g.icon} size={22} color="#fff" />
+            <LinearGradient
+              colors={[g.gradient[0], g.gradient[1]]}
+              style={styles.cardGradient}
+            >
+              <Ionicons
+                name={g.icon as keyof typeof Ionicons.glyphMap}
+                size={22}
+                color="#fff"
+              />
               <View style={styles.cardCopy}>
                 <Text style={styles.cardTitle}>{g.title}</Text>
-                <Text style={styles.cardCredits}>{g.credits}</Text>
+                <Text style={styles.cardCredits}>
+                  {creditsLabel(g.id, g.rewardCoins)}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
             </LinearGradient>

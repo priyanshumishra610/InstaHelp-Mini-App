@@ -10,8 +10,11 @@
     "build:web": "expo export --platform web",
     "generate:icons": "node scripts/generate-icon-assets.cjs",
     "build:vendors": "node scripts/build-all-vendors.cjs",
+    "build:shop": "node scripts/build-shop-catalog.cjs",
     "build:resorts": "node scripts/build-resorts.cjs",
-    "migrate:vendors:firestore": "node scripts/migrate-vendors-to-firestore.cjs"
+    "migrate:vendors:firestore": "node scripts/migrate-vendors-to-firestore.cjs",
+    "mint:hubble-jwt": "node scripts/mint-hubble-jwt.cjs",
+    "encode:hubble-private-key": "node scripts/encode-hubble-private-key.cjs"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.4.1",
@@ -44,7 +47,6 @@
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.11",
     "firebase": "^12.13.0",
-    "instahelp-truecaller": "file:./modules/instahelp-truecaller",
     "nativewind": "^4.2.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -73,6 +75,14 @@
     "sharp": "^0.33.5",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.2"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": ["clsx", "firebase"],
+        "listUnknownPackages": false
+      }
+    }
   },
   "private": true
 }

@@ -44,7 +44,19 @@ Example production URL:
 - Hook: `src/hooks/useHubble.ts`
 - Screen: `src/screens/giftcards/HubbleWebViewScreen.tsx`
 
-We send only the official parameters above (no `token`, no custom SSO fields). WebView uses `cacheEnabled={false}` and `incognito`, matching Hubble’s RN sample for a clean session.
+We send `clientId`, `appSecret`, `wrap-plt=rn`, and a fresh **`token`** (RS256 JWT) minted by Apps Script from the signed-in InstaHelp phone. The WebView uses `cacheEnabled={false}` and `incognito`.
+
+### JWT SSO setup (required to skip Hubble login)
+
+1. Generate an RSA key pair (`openssl genrsa -out private_key.pem 2048` then extract public key).
+2. Upload **`public_key.pem`** to the Hubble integration portal for `instahelp-sdk-1z4JmIpo`.
+3. In **Apps Script → Project settings → Script properties**, add:
+   - `HUBBLE_JWT_PRIVATE_KEY` — full PEM private key (never commit)
+   - `HUBBLE_CLIENT_ID` — `instahelp-sdk-1z4JmIpo` (optional)
+4. Redeploy the web app after updating `scripts/code.gs`.
+5. Local JWT test: `npm run mint:hubble-jwt` then set `EXPO_PUBLIC_HUBBLE_USER_JWT` in `.env` (dev only).
+
+The app calls `getHubbleToken` on your Apps Script URL before opening the WebView. Tokens expire in 60 seconds and are never cached.
 
 Navigation allowlist: `sdk.myhubble.money` / `sdk.dev.myhubble.money` plus Razorpay payment hosts.
 

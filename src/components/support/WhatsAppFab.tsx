@@ -1,4 +1,5 @@
 import { openWhatsApp } from "@/utils/whatsapp";
+import { useExploreSubscription } from "@/hooks/useExploreSubscription";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,10 +13,15 @@ type Props = {
 
 export function WhatsAppFab({ offsetTabBar = true }: Props) {
   const insets = useSafeAreaInsets();
+  const { entitlements } = useExploreSubscription();
   const bottomInset = Math.max(insets.bottom, 8);
   const bottom = offsetTabBar
     ? TAB_BAR_BASE_HEIGHT + bottomInset + FAB_GAP
     : bottomInset + FAB_GAP;
+
+  const message = entitlements.whatsAppPriority
+    ? "Hi InstaHelp Pro+ — I need priority assistance with Explore / vendor discovery."
+    : "Hi InstaHelp, I need assistance with my request.";
 
   return (
     <View
@@ -25,9 +31,7 @@ export function WhatsAppFab({ offsetTabBar = true }: Props) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Chat on WhatsApp"
-        onPress={() =>
-          openWhatsApp("Hi InstaHelp, I need assistance with my request.")
-        }
+        onPress={() => openWhatsApp(message)}
         style={{
           shadowColor: "#25D366",
           shadowOpacity: 0.35,
@@ -40,8 +44,8 @@ export function WhatsAppFab({ offsetTabBar = true }: Props) {
         <View className="h-7 w-7 items-center justify-center rounded-full bg-white/20">
           <Ionicons name="logo-whatsapp" size={18} color="#fff" />
         </View>
-        <Text className="text-sm font-semibold text-white max-w-[140px]">
-          Concierge
+        <Text className="max-w-[140px] text-sm font-semibold text-white">
+          {entitlements.whatsAppPriority ? "Pro+ Support" : "Concierge"}
         </Text>
       </Pressable>
     </View>

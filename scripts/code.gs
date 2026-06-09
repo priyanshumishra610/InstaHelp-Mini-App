@@ -2,8 +2,14 @@
  * InstaHelp Google Apps Script backend.
  *
  * Deploy as a Web app:
- * - Execute as: Me
+ * - Execute as: Me  (required — UrlFetchApp / Razorpay will fail otherwise)
  * - Who has access: Anyone, or anyone with the link for testing
+ *
+ * Razorpay / UrlFetchApp one-time setup (after pasting this file):
+ * 1. Project settings → enable "Show appsscript.json manifest file in editor"
+ * 2. Paste scripts/appsscript.json oauthScopes into the manifest (or use clasp push)
+ * 3. Run authorizeExploreServices() once from the editor → approve permissions
+ * 4. Deploy → Manage deployments → Edit → New version → Deploy
  *
  * Optional: paste your spreadsheet ID below if this script is not bound to the
  * Google Sheet. Leave it blank when using SpreadsheetApp.getActiveSpreadsheet().
@@ -70,6 +76,45 @@ const VENDOR_LEADS_HEADERS = [
   "updatedAt",
 ];
 
+const EXPLORE_SUBSCRIPTIONS_SHEET = "ExploreSubscriptions";
+const EXPLORE_PAYMENTS_SHEET = "ExplorePayments";
+
+const EXPLORE_SUBSCRIPTION_HEADERS = [
+  "phone",
+  "plan",
+  "status",
+  "periodStart",
+  "periodEnd",
+  "revealsUsedThisWeek",
+  "weekStartKey",
+  "razorpayOrderId",
+  "razorpayPaymentId",
+  "amountPaise",
+  "createdAt",
+  "updatedAt",
+];
+
+const EXPLORE_PAYMENT_HEADERS = [
+  "id",
+  "phone",
+  "planId",
+  "razorpayOrderId",
+  "razorpayPaymentId",
+  "amountPaise",
+  "status",
+  "createdAt",
+  "updatedAt",
+];
+
+/** planId -> amount in paise (₹99 / ₹299 MVP — 30-day access) */
+const EXPLORE_PLAN_AMOUNTS_PAISE = {
+  pro: 9900,
+  pro_plus: 29900,
+};
+
+const EXPLORE_PLAN_PERIOD_DAYS = 30;
+const PRO_WEEKLY_REVEAL_LIMIT = 10;
+
 function doGet() {
   return jsonResponse_({ ok: true, data: "InstaHelp Apps Script alive" });
 }
@@ -94,6 +139,16 @@ function doPost(e) {
         return jsonResponse_({ ok: true, data: updateProfile_(body) });
       case "registerVendor":
         return jsonResponse_({ ok: true, data: registerVendor_(body) });
+      case "createExploreOrder":
+        return jsonResponse_({ ok: true, data: createExploreOrder_(body) });
+      case "verifyExplorePayment":
+        return jsonResponse_({ ok: true, data: verifyExplorePayment_(body) });
+      case "getExploreSubscription":
+        return jsonResponse_({ ok: true, data: getExploreSubscription_(body.phone) });
+      case "recordExploreReveal":
+        return jsonResponse_({ ok: true, data: recordExploreReveal_(body) });
+      case "getHubbleToken":
+        return jsonResponse_({ ok: true, data: getHubbleToken_(body) });
       default:
         throw new Error("Unknown action: " + action);
     }
@@ -144,44 +199,7 @@ function registerVendor_(body) {
   appendRowByHeaders_(sheet, VENDOR_LEADS_HEADERS, row);
   forceTextColumn_(sheet, getHeaderColumn1Based_(sheet, "phone"));
 
-  sendVendorThanksEmail_(row.email, row.name, row.businessName);
-
   return { id: id, status: "new" };
-}
-
-function sendVendorThanksEmail_(toEmail, name, businessName) {
-  const email = stringOr_(toEmail, "");
-  if (!email) return;
-
-  const safeName = stringOr_(name, "").trim();
-  const greet = safeName ? "Hi " + safeName.split(" ")[0] + "," : "Hi,";
-  const biz = stringOr_(businessName, "").trim();
-
-  const subject = "Thanks for reaching out — InstaHelp Vendor onboarding";
-
-  const html =
-    '<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.55;color:#0f172a">' +
-    "<p style=\"margin:0 0 12px 0\">" +
-    greet +
-    "</p>" +
-    "<p style=\"margin:0 0 12px 0\">" +
-    "Thanks for your interest in joining InstaHelp as a vendor" +
-    (biz ? " for <b>" + biz + "</b>" : "") +
-    ". We've received your details and our team will review them shortly." +
-    "</p>" +
-    "<p style=\"margin:0 0 12px 0\">" +
-    "You'll hear from us soon with the next steps to get you listed and onboarded." +
-    "</p>" +
-    "<p style=\"margin:18px 0 0 0;font-size:12px;color:#475569\">" +
-    "— InstaHelp Team" +
-    "</p>" +
-    "</div>";
-
-  MailApp.sendEmail({
-    to: email,
-    subject: subject,
-    htmlBody: html,
-  });
 }
 
 function createBooking_(body) {
@@ -606,4 +624,566 @@ function jsonResponse_(obj) {
   const output = ContentService.createTextOutput(JSON.stringify(obj));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+// ─── Explore plans + Razorpay (MVP) ─────────────────────────────────────────
+//
+// One-time setup in Apps Script → Project settings → Script properties:
+//   RAZORPAY_KEY_ID     = rzp_live_...
+//   RAZORPAY_KEY_SECRET = (never commit this to git)
+//
+// Or run setupExploreRazorpayKeys_() once from the editor, then delete the secret
+// from that function and redeploy.
+
+function setupExploreRazorpayKeys_() {
+  var props = PropertiesService.getScriptProperties();
+  props.setProperties({
+    RAZORPAY_KEY_ID: "rzp_live_SxW7oDR9YnHxcV",
+    RAZORPAY_KEY_SECRET: "PASTE_SECRET_HERE",
+  });
+}
+
+/**
+ * Run once from the Apps Script editor (▶ Run) to grant UrlFetchApp permission
+ * for Razorpay. Then redeploy the web app (Execute as: Me).
+ */
+function authorizeExploreServices() {
+  UrlFetchApp.fetch("https://httpbin.org/get", { muteHttpExceptions: true });
+  Logger.log("External request permission granted. Redeploy the web app now.");
+}
+
+function getRazorpayKeyId_() {
+  var props = PropertiesService.getScriptProperties();
+  var id = props.getProperty("RAZORPAY_KEY_ID");
+  if (!id) {
+    throw new Error(
+      "Missing RAZORPAY_KEY_ID in Script properties. Run setupExploreRazorpayKeys_() once.",
+    );
+  }
+  return id;
+}
+
+function getRazorpayKeySecret_() {
+  var props = PropertiesService.getScriptProperties();
+  var secret = props.getProperty("RAZORPAY_KEY_SECRET");
+  if (!secret || secret === "PASTE_SECRET_HERE") {
+    throw new Error(
+      "Missing RAZORPAY_KEY_SECRET in Script properties.",
+    );
+  }
+  return secret;
+}
+
+function razorpayAuthHeader_() {
+  var keyId = getRazorpayKeyId_();
+  var secret = getRazorpayKeySecret_();
+  var token = Utilities.base64Encode(keyId + ":" + secret);
+  return "Basic " + token;
+}
+
+function razorpayFetch_(path, method, payload) {
+  var options = {
+    method: method,
+    headers: {
+      Authorization: razorpayAuthHeader_(),
+      "Content-Type": "application/json",
+    },
+    muteHttpExceptions: true,
+  };
+  if (payload) {
+    options.payload = JSON.stringify(payload);
+  }
+  var res;
+  try {
+    res = UrlFetchApp.fetch("https://api.razorpay.com/v1/" + path, options);
+  } catch (fetchErr) {
+    var fetchMsg =
+      fetchErr && fetchErr.message ? fetchErr.message : String(fetchErr);
+    if (fetchMsg.indexOf("UrlFetchApp") !== -1) {
+      throw new Error(
+        "Razorpay is not authorized in Apps Script. Run authorizeExploreServices() once in the editor, then redeploy the web app (Execute as: Me).",
+      );
+    }
+    throw fetchErr;
+  }
+  var code = res.getResponseCode();
+  var text = res.getContentText();
+  var json = null;
+  try {
+    json = JSON.parse(text);
+  } catch (_e) {
+    json = null;
+  }
+  if (code < 200 || code >= 300) {
+    var msg =
+      json && json.error && json.error.description
+        ? json.error.description
+        : "Razorpay HTTP " + code;
+    throw new Error(msg);
+  }
+  return json;
+}
+
+function verifyRazorpaySignature_(orderId, paymentId, signature) {
+  var secret = getRazorpayKeySecret_();
+  var payload = orderId + "|" + paymentId;
+  var bytes = Utilities.computeHmacSha256Signature(payload, secret);
+  var hex = bytes
+    .map(function (b) {
+      var v = (b < 0 ? b + 256 : b).toString(16);
+      return v.length === 1 ? "0" + v : v;
+    })
+    .join("");
+  return hex === String(signature || "").toLowerCase();
+}
+
+function weekStartKeyIst_() {
+  var now = new Date();
+  var tz = "Asia/Kolkata";
+  var dayStr = Utilities.formatDate(now, tz, "u");
+  var day = Number(dayStr);
+  var diff = day === 0 ? -6 : 1 - day;
+  var monday = new Date(now.getTime());
+  monday.setDate(monday.getDate() + diff);
+  return Utilities.formatDate(monday, tz, "yyyy-MM-dd");
+}
+
+function addDaysIso_(days) {
+  var d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+}
+
+function parseIsoDate_(value) {
+  if (!value) return null;
+  var d = new Date(String(value));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function explorePlanAmountPaise_(planId) {
+  var id = String(planId || "").trim();
+  if (!Object.prototype.hasOwnProperty.call(EXPLORE_PLAN_AMOUNTS_PAISE, id)) {
+    throw new Error("Unknown planId: " + id);
+  }
+  return EXPLORE_PLAN_AMOUNTS_PAISE[id];
+}
+
+function getExploreSubscriptionRow_(phone) {
+  var sheet = ensureSheet_(EXPLORE_SUBSCRIPTIONS_SHEET, EXPLORE_SUBSCRIPTION_HEADERS);
+  var target = normalizePhone_(phone);
+  return getObjects_(sheet).find(function (row) {
+    return normalizePhone_(row.phone) === target;
+  });
+}
+
+function subscriptionFromRow_(row) {
+  if (!row) {
+    return emptyExploreSubscription_("");
+  }
+
+  var periodEnd = parseIsoDate_(row.periodEnd);
+  var now = new Date();
+  var active =
+    String(row.status || "") === "active" &&
+    periodEnd &&
+    periodEnd.getTime() > now.getTime();
+
+  var plan = String(row.plan || "free");
+  if (!active) {
+    return {
+      phone: String(row.phone || ""),
+      plan: "free",
+      status: "expired",
+      periodEnd: row.periodEnd ? String(row.periodEnd) : null,
+      revealsUsedThisWeek: 0,
+      revealsRemaining: null,
+      weeklyLimit: null,
+      unlimitedReveals: false,
+    };
+  }
+
+  var weekKey = weekStartKeyIst_();
+  var used = Number(row.revealsUsedThisWeek || 0);
+  if (String(row.weekStartKey || "") !== weekKey) {
+    used = 0;
+  }
+
+  var unlimited = plan === "pro_plus";
+  var remaining = unlimited
+    ? null
+    : Math.max(0, PRO_WEEKLY_REVEAL_LIMIT - used);
+
+  return {
+    phone: String(row.phone || ""),
+    plan: plan,
+    status: "active",
+    periodEnd: String(row.periodEnd || ""),
+    revealsUsedThisWeek: used,
+    revealsRemaining: remaining,
+    weeklyLimit: unlimited ? null : PRO_WEEKLY_REVEAL_LIMIT,
+    unlimitedReveals: unlimited,
+  };
+}
+
+function emptyExploreSubscription_(phone) {
+  return {
+    phone: normalizePhone_(phone),
+    plan: "free",
+    status: "none",
+    periodEnd: null,
+    revealsUsedThisWeek: 0,
+    revealsRemaining: null,
+    weeklyLimit: null,
+    unlimitedReveals: false,
+  };
+}
+
+function getExploreSubscription_(phone) {
+  requireString_(phone, "phone");
+  var row = getExploreSubscriptionRow_(phone);
+  return subscriptionFromRow_(row);
+}
+
+function createExploreOrder_(body) {
+  requireString_(body.phone, "phone");
+  requireString_(body.planId, "planId");
+
+  var phone = normalizePhone_(body.phone);
+  var planId = String(body.planId).trim();
+  var amount = explorePlanAmountPaise_(planId);
+  var receipt = "ex_" + planId + "_" + phone.slice(-6) + "_" + Date.now();
+
+  var order = razorpayFetch_("orders", "post", {
+    amount: amount,
+    currency: "INR",
+    receipt: receipt,
+    notes: {
+      phone: phone,
+      planId: planId,
+      product: "instahelp_explore",
+    },
+  });
+
+  var now = new Date().toISOString();
+  var paymentsSheet = ensureSheet_(EXPLORE_PAYMENTS_SHEET, EXPLORE_PAYMENT_HEADERS);
+  appendRowByHeaders_(paymentsSheet, EXPLORE_PAYMENT_HEADERS, {
+    id: "paylog_" + Utilities.getUuid(),
+    phone: phone,
+    planId: planId,
+    razorpayOrderId: order.id,
+    razorpayPaymentId: "",
+    amountPaise: amount,
+    status: "created",
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return {
+    orderId: order.id,
+    amount: amount,
+    currency: "INR",
+    keyId: getRazorpayKeyId_(),
+    planId: planId,
+  };
+}
+
+function verifyExplorePayment_(body) {
+  requireString_(body.phone, "phone");
+  requireString_(body.planId, "planId");
+  requireString_(body.razorpayOrderId, "razorpayOrderId");
+  requireString_(body.razorpayPaymentId, "razorpayPaymentId");
+  requireString_(body.razorpaySignature, "razorpaySignature");
+
+  var phone = normalizePhone_(body.phone);
+  var planId = String(body.planId).trim();
+  var orderId = String(body.razorpayOrderId).trim();
+  var paymentId = String(body.razorpayPaymentId).trim();
+  var signature = String(body.razorpaySignature).trim();
+
+  if (!verifyRazorpaySignature_(orderId, paymentId, signature)) {
+    throw new Error("Invalid payment signature");
+  }
+
+  var expected = explorePlanAmountPaise_(planId);
+
+  var now = new Date().toISOString();
+  var periodEnd = addDaysIso_(EXPLORE_PLAN_PERIOD_DAYS);
+  var weekKey = weekStartKeyIst_();
+
+  var subSheet = ensureSheet_(EXPLORE_SUBSCRIPTIONS_SHEET, EXPLORE_SUBSCRIPTION_HEADERS);
+  var existing = getExploreSubscriptionRow_(phone);
+  upsertRowByHeaders_(subSheet, "phone", phone, {
+    phone: phone,
+    plan: planId,
+    status: "active",
+    periodStart: now,
+    periodEnd: periodEnd,
+    revealsUsedThisWeek: 0,
+    weekStartKey: weekKey,
+    razorpayOrderId: orderId,
+    razorpayPaymentId: paymentId,
+    amountPaise: expected,
+    createdAt: existing ? existing.createdAt : now,
+    updatedAt: now,
+  });
+  forceTextColumn_(subSheet, getHeaderColumn1Based_(subSheet, "phone"));
+
+  var paymentsSheet = ensureSheet_(EXPLORE_PAYMENTS_SHEET, EXPLORE_PAYMENT_HEADERS);
+  var paymentRows = getObjects_(paymentsSheet);
+  var paymentLogged = false;
+  for (var i = 0; i < paymentRows.length; i++) {
+    if (String(paymentRows[i].razorpayOrderId) === orderId) {
+      var sheetRow = i + 2;
+      var headerRow = paymentsSheet
+        .getRange(1, 1, 1, paymentsSheet.getLastColumn())
+        .getValues()[0];
+      var statusCol = headerRow.indexOf("status") + 1;
+      var payIdCol = headerRow.indexOf("razorpayPaymentId") + 1;
+      var updCol = headerRow.indexOf("updatedAt") + 1;
+      if (statusCol > 0) paymentsSheet.getRange(sheetRow, statusCol).setValue("paid");
+      if (payIdCol > 0) paymentsSheet.getRange(sheetRow, payIdCol).setValue(paymentId);
+      if (updCol > 0) paymentsSheet.getRange(sheetRow, updCol).setValue(now);
+      paymentLogged = true;
+      break;
+    }
+  }
+  if (!paymentLogged) {
+    appendRowByHeaders_(paymentsSheet, EXPLORE_PAYMENT_HEADERS, {
+      id: "paylog_" + Utilities.getUuid(),
+      phone: phone,
+      planId: planId,
+      razorpayOrderId: orderId,
+      razorpayPaymentId: paymentId,
+      amountPaise: expected,
+      status: "paid",
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  return getExploreSubscription_(phone);
+}
+
+function recordExploreReveal_(body) {
+  requireString_(body.phone, "phone");
+  requireString_(body.vendorId, "vendorId");
+
+  var phone = normalizePhone_(body.phone);
+  var vendorId = String(body.vendorId).trim();
+  var sub = getExploreSubscription_(phone);
+
+  if (sub.status !== "active") {
+    return { ok: true, usedCredits: true, subscription: sub };
+  }
+
+  if (sub.unlimitedReveals) {
+    return { ok: true, usedCredits: false, subscription: sub };
+  }
+
+  if (sub.plan === "pro") {
+    if (sub.revealsRemaining !== null && sub.revealsRemaining <= 0) {
+      return {
+        ok: false,
+        reason: "weekly_limit",
+        subscription: sub,
+      };
+    }
+
+    var sheet = ensureSheet_(EXPLORE_SUBSCRIPTIONS_SHEET, EXPLORE_SUBSCRIPTION_HEADERS);
+    var row = getExploreSubscriptionRow_(phone);
+    var weekKey = weekStartKeyIst_();
+    var used = Number(row && row.revealsUsedThisWeek ? row.revealsUsedThisWeek : 0);
+    if (row && String(row.weekStartKey || "") !== weekKey) {
+      used = 0;
+    }
+    used += 1;
+
+    upsertRowByHeaders_(sheet, "phone", phone, {
+      phone: phone,
+      plan: "pro",
+      status: "active",
+      periodStart: row ? row.periodStart : "",
+      periodEnd: row ? row.periodEnd : "",
+      revealsUsedThisWeek: used,
+      weekStartKey: weekKey,
+      razorpayOrderId: row ? row.razorpayOrderId : "",
+      razorpayPaymentId: row ? row.razorpayPaymentId : "",
+      amountPaise: row ? row.amountPaise : "",
+      createdAt: row ? row.createdAt : new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    var updated = getExploreSubscription_(phone);
+    return { ok: true, usedCredits: false, subscription: updated };
+  }
+
+  return { ok: true, usedCredits: true, subscription: sub };
+}
+
+/**
+ * Mint a short-lived RS256 JWT for Hubble SDK SSO.
+ *
+ * Script properties (use ONE of these for the private key):
+ *   HUBBLE_JWT_PRIVATE_KEY_B64 — recommended; run `npm run encode:hubble-private-key`
+ *   HUBBLE_JWT_PRIVATE_KEY     — full PEM (multi-line; often breaks in Script properties UI)
+ *   HUBBLE_CLIENT_ID           — optional iss (default instahelp-sdk-1z4JmIpo)
+ *
+ * @see https://docs.myhubble.money/sdk/authentication/sso-setup
+ */
+function getHubbleToken_(body) {
+  requireString_(body.phone, "phone");
+
+  var props = PropertiesService.getScriptProperties();
+  var privateKey = loadHubblePrivateKeyPem_(props);
+  if (!privateKey) {
+    throw new Error(
+      "Hubble JWT not configured. Add HUBBLE_JWT_PRIVATE_KEY_B64 (recommended) or HUBBLE_JWT_PRIVATE_KEY to Script properties.",
+    );
+  }
+  if (privateKey.indexOf("BEGIN") < 0 || privateKey.indexOf("PRIVATE KEY") < 0) {
+    throw new Error(
+      "Hubble private key must be a PEM RSA private key, not the app secret or public key.",
+    );
+  }
+
+  var clientId =
+    props.getProperty("HUBBLE_CLIENT_ID") || "instahelp-sdk-1z4JmIpo";
+  var phoneDigits = normalizePhone_(body.phone);
+  if (phoneDigits.length < 10) {
+    throw new Error("Invalid phone for Hubble SSO");
+  }
+
+  var now = Math.floor(Date.now() / 1000);
+  var payload = {
+    sub: phoneDigits,
+    iss: clientId,
+    iat: now,
+    exp: now + 60,
+    phoneNumber: hubblePhoneNumber_(phoneDigits),
+  };
+
+  var name = stringOr_(body.name, "");
+  var email = stringOr_(body.email, "");
+  if (name) payload.name = name;
+  if (email) payload.email = email;
+
+  return { token: signHubbleJwtRs256_(payload, privateKey) };
+}
+
+function loadHubblePrivateKeyPem_(props) {
+  var b64 = props.getProperty("HUBBLE_JWT_PRIVATE_KEY_B64");
+  if (b64) {
+    try {
+      var cleaned = String(b64).replace(/\s/g, "");
+      var bytes = Utilities.base64Decode(cleaned);
+      var decoded = Utilities.newBlob(bytes).getDataAsString("utf-8");
+      return normalizePrivateKeyPem_(decoded);
+    } catch (e) {
+      throw new Error(
+        "HUBBLE_JWT_PRIVATE_KEY_B64 is invalid base64. Run npm run encode:hubble-private-key and paste the output.",
+      );
+    }
+  }
+  var raw = props.getProperty("HUBBLE_JWT_PRIVATE_KEY");
+  if (raw && String(raw).indexOf("BEGIN") >= 0) {
+    return normalizePrivateKeyPem_(raw);
+  }
+  return "";
+}
+
+function normalizePrivateKeyPem_(value) {
+  if (value === null || value === undefined) return "";
+  var key = String(value).trim();
+  key = key.replace(/^["']|["']$/g, "");
+  key = key.replace(/\\n/g, "\n");
+  key = key.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+  // Script properties UI often collapses PEM to one line — restore standard wrapping.
+  if (key.indexOf("\n") < 0 && key.indexOf("BEGIN") >= 0) {
+    var beginMatch = key.match(/-----BEGIN [^-]+-----/);
+    var endMatch = key.match(/-----END [^-]+-----/);
+    if (beginMatch && endMatch) {
+      var begin = beginMatch[0];
+      var end = endMatch[0];
+      var body = key
+        .replace(begin, "")
+        .replace(end, "")
+        .replace(/\s+/g, "");
+      var lines = [];
+      for (var i = 0; i < body.length; i += 64) {
+        lines.push(body.slice(i, i + 64));
+      }
+      key = begin + "\n" + lines.join("\n") + "\n" + end + "\n";
+    }
+  }
+
+  return key;
+}
+
+function hubblePhoneNumber_(digits) {
+  var d = normalizePhone_(digits);
+  if (d.length > 10 && d.indexOf("91") === 0) {
+    return d.slice(-10);
+  }
+  return d;
+}
+
+function jwtBase64UrlEncode_(value) {
+  var bytes =
+    typeof value === "string"
+      ? Utilities.newBlob(value).getBytes()
+      : value;
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, "");
+}
+
+function signHubbleJwtRs256_(payload, privateKeyPem) {
+  var header = { alg: "RS256", typ: "JWT" };
+  var encodedHeader = jwtBase64UrlEncode_(JSON.stringify(header));
+  var encodedPayload = jwtBase64UrlEncode_(JSON.stringify(payload));
+  var signingInput = encodedHeader + "." + encodedPayload;
+  var signature;
+  try {
+    signature = Utilities.computeRsaSha256Signature(
+      Utilities.newBlob(signingInput).getBytes(),
+      privateKeyPem,
+    );
+  } catch (e) {
+    var msg = e && e.message ? String(e.message) : String(e);
+    throw new Error(
+      "JWT signing failed (" +
+        msg +
+        "). Use HUBBLE_JWT_PRIVATE_KEY_B64 from npm run encode:hubble-private-key — not the Hubble app secret.",
+    );
+  }
+  var encodedSignature = jwtBase64UrlEncode_(signature);
+  return signingInput + "." + encodedSignature;
+}
+
+/** Run in Apps Script editor → View → Logs. Verifies key load + RSA sign. */
+function testHubbleKeySetup() {
+  var props = PropertiesService.getScriptProperties();
+  var b64 = props.getProperty("HUBBLE_JWT_PRIVATE_KEY_B64");
+  Logger.log("HUBBLE_JWT_PRIVATE_KEY_B64 set: " + Boolean(b64));
+  if (b64) {
+    Logger.log("B64 length: " + String(b64).replace(/\s/g, "").length);
+  }
+  var legacy = props.getProperty("HUBBLE_JWT_PRIVATE_KEY");
+  if (legacy && String(legacy).indexOf("BEGIN") < 0) {
+    Logger.log("WARN: HUBBLE_JWT_PRIVATE_KEY looks like app secret — delete it.");
+  }
+  var pem = loadHubblePrivateKeyPem_(props);
+  Logger.log("PEM header: " + (pem ? pem.split("\n")[0] : "(empty)"));
+  try {
+    Utilities.computeRsaSha256Signature("instahelp-jwt-test", pem);
+    Logger.log("RSA sign test: OK");
+  } catch (e) {
+    Logger.log("RSA sign test: FAIL — " + (e && e.message ? e.message : e));
+    Logger.log("Re-run npm run encode:hubble-private-key and update HUBBLE_JWT_PRIVATE_KEY_B64.");
+  }
+}
+
+/** Run once in the Apps Script editor to verify JWT minting (View → Logs). */
+function testGetHubbleToken() {
+  var result = getHubbleToken_({ phone: "917022702220", name: "InstaHelp Test" });
+  Logger.log(result && result.token ? "OK: token minted" : "FAIL: no token");
 }
