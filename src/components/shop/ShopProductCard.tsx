@@ -12,6 +12,7 @@ import {
   SHOP_YELLOW_TEXT,
 } from "@/constants/shopTheme";
 import type { ShopCatalogProduct } from "@/types/shopCatalog";
+import type { ShopApp } from "@/types/shopApp";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { ShopProductImage } from "./ShopProductImage";
@@ -24,7 +25,8 @@ import {
   toDisplayText,
 } from "./shopFormatters";
 
-type Props = {
+type ProductCardProps = {
+  variant?: "product";
   product: ShopCatalogProduct;
   width: number;
   qtyInCart: number;
@@ -33,6 +35,16 @@ type Props = {
   onIncrement: () => void;
   onDecrement: () => void;
 };
+
+type AppCardProps = {
+  variant: "app";
+  app: ShopApp;
+  width: number;
+  onOpen: () => void;
+  onOpenApp: () => void;
+};
+
+type Props = ProductCardProps | AppCardProps;
 
 function StarRow({ rating }: { rating: number }) {
   const full = Math.floor(rating);
@@ -50,7 +62,14 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
-export function ShopProductCard({
+export function ShopProductCard(props: Props) {
+  if (props.variant === "app") {
+    return <AppCard {...props} />;
+  }
+  return <ProductCard {...props} />;
+}
+
+function ProductCard({
   product,
   width,
   qtyInCart,
@@ -58,7 +77,7 @@ export function ShopProductCard({
   onAdd,
   onIncrement,
   onDecrement,
-}: Props) {
+}: ProductCardProps) {
   const initials = initialsFromTitle(product.title);
   const options = platformOptionCount(product);
   const discount = discountLabel(product);
@@ -193,6 +212,94 @@ export function ShopProductCard({
         ) : null}
 
         {discount ? <Text style={styles.discount}>{discount}</Text> : null}
+      </Pressable>
+    </View>
+  );
+}
+
+function AppCard({ app, width, onOpen, onOpenApp }: AppCardProps) {
+  const initials = initialsFromTitle(app.name);
+  const badge = toDisplayText(app.badge);
+  const title = toDisplayText(app.name);
+  const highlight = toDisplayText(app.features[0]);
+
+  return (
+    <View style={[styles.card, { width }]}>
+      <Pressable
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${app.name}`}
+      >
+        <View style={styles.imageBox}>
+          <ShopProductImage
+            uri={app.logoUrl}
+            fallbackLabel={initials || "IH"}
+            style={styles.image}
+            contentFit="contain"
+          />
+
+          {badge ? (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{badge}</Text>
+            </View>
+          ) : null}
+
+          <Pressable
+            hitSlop={8}
+            style={styles.heartBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Add to wishlist"
+          >
+            <Ionicons name="heart-outline" size={16} color="#9ca3af" />
+          </Pressable>
+
+          <View style={styles.dotsRow}>
+            <View style={[styles.dot, styles.dotActive]} />
+            <View style={styles.dot} />
+            <View style={styles.dot} />
+          </View>
+        </View>
+      </Pressable>
+
+      <View style={styles.actionRow}>
+        <View style={styles.weightChip}>
+          <Text style={styles.weightText}>App</Text>
+        </View>
+
+        <Pressable
+          onPress={onOpenApp}
+          style={styles.addBtn}
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${app.name}`}
+        >
+          <Text style={styles.addBtnText}>OPEN</Text>
+        </Pressable>
+      </View>
+
+      <Pressable onPress={onOpen}>
+        <Text style={styles.title} numberOfLines={3}>
+          {title}
+        </Text>
+
+        {highlight ? (
+          <View style={styles.featureTag}>
+            <Text style={styles.featureTagText}>{highlight}</Text>
+          </View>
+        ) : null}
+
+        {app.reviewCount > 0 ? (
+          <View style={styles.ratingRow}>
+            <StarRow rating={app.rating} />
+            <Text style={styles.reviewCount}>
+              {formatReviewCount(app.reviewCount)}
+            </Text>
+          </View>
+        ) : null}
+
+        <View style={styles.metaRow}>
+          <Ionicons name="open-outline" size={12} color={SHOP_TEXT_LIGHT} />
+          <Text style={styles.metaText}>View Details</Text>
+        </View>
       </Pressable>
     </View>
   );

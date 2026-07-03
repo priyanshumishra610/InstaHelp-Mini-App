@@ -1,13 +1,8 @@
 import { Input } from "@/components/ui/Input";
 import { MarketplaceChip } from "@/components/vendors/MarketplaceChip";
-import { GAME_OPEN_CREDIT_REWARD, VENDOR_REVEAL_CREDIT_COST } from "@/constants/vendorMarketplace";
 import type { ExploreEntitlements } from "@/services/explore/exploreEntitlements";
-import { useVendorLeadStore } from "@/store/vendorLeadStore";
-import { calendarDayKey } from "@/utils/calendarDay";
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import {
   type Dispatch,
   type ReactNode,
@@ -118,23 +113,6 @@ export function ExploreListHeader(props: ExploreListHeaderProps) {
     clearFilters,
   } = props;
 
-  const router = useRouter();
-  const bonusGridDay = useVendorLeadStore((s) => s.bonusTicTacToeAwardDayKey);
-  const bonusHangDay = useVendorLeadStore((s) => s.bonusHangmanAwardDayKey);
-  const bonusWhackE = useVendorLeadStore((s) => s.bonusWhackEasyDayKey);
-  const bonusWhackM = useVendorLeadStore((s) => s.bonusWhackMediumDayKey);
-  const bonusWhackH = useVendorLeadStore((s) => s.bonusWhackHardDayKey);
-
-  const todayKey = calendarDayKey();
-  const canClaimBonusCredits =
-    bonusGridDay !== todayKey ||
-    bonusHangDay !== todayKey ||
-    bonusWhackE !== todayKey ||
-    bonusWhackM !== todayKey ||
-    bonusWhackH !== todayKey;
-  const showGamesArcade =
-    !entitlements.skipGamesGrind && credits < VENDOR_REVEAL_CREDIT_COST;
-
   return (
     <View>
       <View className="px-4 pb-1 pt-1">
@@ -208,34 +186,6 @@ export function ExploreListHeader(props: ExploreListHeaderProps) {
               </Pressable>
             </View>
 
-            {showGamesArcade ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open InstaHelp games arcade"
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
-                    () => {},
-                  );
-                  router.push("/(tabs)/vendors/arcade");
-                }}
-                className="mt-4 flex-row items-center gap-3 overflow-hidden rounded-2xl border border-amber-200/80 bg-amber-50/80 px-3.5 py-3 active:opacity-90"
-              >
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-                  <Ionicons name="game-controller" size={19} color="#92400e" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[13px] font-extrabold text-neutral-900">
-                    Low credits — earn +{GAME_OPEN_CREDIT_REWARD} in the arcade
-                  </Text>
-                  <Text className="mt-0.5 text-[11px] font-medium text-neutral-500">
-                    {canClaimBonusCredits
-                      ? "Play games to unlock more vendor contacts."
-                      : "Keep playing — today's win bonuses are claimed."}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={17} color="#94a3b8" />
-              </Pressable>
-            ) : null}
           </View>
         </View>
 

@@ -27,7 +27,7 @@ export const EXPLORE_PLANS: readonly ExplorePlan[] = [
       "10 vendor reveals every week",
       "Verified vendors filter",
       "Save unlimited vendors",
-      "No daily game grind needed",
+      "Weekly reveals — no credit grind",
     ],
     limitsNote: "Weekly allowance resets every Monday. Unused reveals don't roll over.",
     recommended: true,
@@ -58,7 +58,7 @@ export const EXPLORE_PLANS: readonly ExplorePlan[] = [
     featuresHeader: "Included:",
     features: [
       "Welcome credits to start",
-      "Earn credits via InstaHelp games",
+      "Unlock vendor contacts with credits",
       "Search 4,500+ vendors nationwide",
       "Basic filters by city & category",
     ],

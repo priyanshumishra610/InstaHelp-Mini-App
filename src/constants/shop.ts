@@ -26,6 +26,11 @@ export const SHOP_CATEGORIES = [
     label: "Office Supplies",
     icon: "briefcase-outline" as const,
   },
+  {
+    id: "deals-offers",
+    label: "Deals & Offers",
+    icon: "pricetags-outline" as const,
+  },
 ] as const;
 
 export type ShopCategoryId = (typeof SHOP_CATEGORIES)[number]["id"];

@@ -8,6 +8,8 @@ import {
   getRecommendedServices,
 } from "@/constants/discoveryCategories";
 import { getWeeklyOffers } from "@/constants/weeklyOffers";
+import { useWeeklyOffers } from "@/hooks/useCmsContent";
+import { trackBannerClick } from "@/services/content/homeContentService";
 import { ACCENT } from "@/constants/theme";
 import { useDiscoveryStore } from "@/store/discoveryStore";
 import type { DiscoveryCategory, DiscoveryService } from "@/types/discovery";
@@ -106,7 +108,11 @@ function DiscoverySectionComponent({
 
   const popular = useMemo(() => getPopularServices(), []);
   const recommended = useMemo(() => getRecommendedServices(), []);
-  const weeklyOffers = useMemo(() => getWeeklyOffers().offers, []);
+  const { data: offersData } = useWeeklyOffers();
+  const weeklyOffers = useMemo(
+    () => offersData?.offers ?? getWeeklyOffers().offers,
+    [offersData],
+  );
 
   const handleServicePress = useCallback(
     (service: DiscoveryService, categoryId: string) => {
@@ -160,6 +166,7 @@ function DiscoverySectionComponent({
   const handleOfferPress = useCallback(
     (offer: WeeklyOffer) => {
       discoverySelection();
+      trackBannerClick(offer.id);
       const action = offer.action ?? "";
       if (action.startsWith("category:")) {
         const categoryId = action.slice("category:".length);

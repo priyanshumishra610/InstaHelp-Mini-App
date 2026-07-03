@@ -1,5 +1,6 @@
+import { ALL_SHOP_APPS, getShopAppById } from "@/apps";
+import { ShopAppDetail } from "@/components/shop/ShopAppDetail";
 import { ShopProductCard } from "@/components/shop/ShopProductCard";
-import { ShopProductDetail } from "@/components/shop/ShopProductDetail";
 import { Screen } from "@/components/ui/Screen";
 import { MarketplaceToast } from "@/components/vendors/MarketplaceToast";
 import {
@@ -13,19 +14,32 @@ import {
   SHOP_TEXT_LIGHT,
   SHOP_TEXT_MUTED,
 } from "@/constants/shopTheme";
-import { useShopCatalogMeta, useShopProducts } from "@/hooks/useShopCatalog";
-import { useShopSyncStatus } from "@/providers/ShopSyncProvider";
-import { openAffiliateLink } from "@/services/shop/shopAffiliateLinks";
+import { DealCard } from "@/features/deals/components/DealCard";
+import { useDealSearch } from "@/features/deals/hooks/useDeals";
+import { DealDetailScreen } from "@/features/deals/screens/DealDetailScreen";
+import { DealsHomeScreen } from "@/features/deals/screens/DealsHomeScreen";
+import {
+  filterDeals,
+  getDealById,
+  trackDealClick,
+} from "@/features/deals/services/dealsService";
+import type { Deal } from "@/features/deals/types/dealTypes";
+import {
+  filterShopApps,
+  getSimilarApps,
+} from "@/services/shop/shopAppFilters";
+import { openAppLink } from "@/services/shop/shopAppLinks";
+import {
+  initializeCuelinks,
+  openCuelinksAffiliateLink,
+} from "@/services/cuelinksService";
 import {
   SHOP_FILTER_OPTIONS,
   SHOP_SORT_OPTIONS,
-  filterShopProducts,
-  getUniqueBrands,
   type ShopFilterId,
   type ShopSortId,
 } from "@/services/shop/shopProductFilters";
-import { sortPlatformsByPrice } from "@/services/shop/shopPriceLogic";
-import type { ShopCatalogProduct } from "@/types/shopCatalog";
+import type { ShopApp } from "@/types/shopApp";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -40,16 +54,19 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type FilterMenuId = "filter" | "sort" | "brand";
+type FilterMenuId = "filter" | "sort";
+
+type SearchRow =
+  | { kind: "deal"; deal: Deal; key: string }
+  | { kind: "app"; app: ShopApp; key: string };
 
 const FILTER_CHIPS: {
   id: FilterMenuId;
   label: string;
-  icon: "options-outline" | "swap-vertical" | "pricetag-outline";
+  icon: "options-outline" | "swap-vertical";
 }[] = [
   { id: "filter", label: "Filter", icon: "options-outline" },
   { id: "sort", label: "Sort", icon: "swap-vertical" },
-  { id: "brand", label: "Brand", icon: "pricetag-outline" },
 ];
 const SIDEBAR_W = 52;
 const GRID_H_PAD = 8;
@@ -62,13 +79,6 @@ function categoryLabel(category: ShopCategoryId) {
 export function InstaHelpShopScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const products = useShopProducts();
-  const { isStale, fetchFailed } = useShopCatalogMeta();
-  const {
-    pricesUpdatedFlash,
-    clearPricesUpdatedFlash,
-    retry,
-  } = useShopSyncStatus();
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,19 +89,13 @@ export function InstaHelpShopScreen() {
   }, []);
 
   useEffect(() => {
-    if (pricesUpdatedFlash) {
-      showToast("Prices updated");
-      clearPricesUpdatedFlash();
-    }
-  }, [pricesUpdatedFlash, clearPricesUpdatedFlash, showToast]);
-
-  useEffect(() => {
+    initializeCuelinks();
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
-  const [category, setCategory] = useState<ShopCategoryId>("electronics");
+  const [category, setCategory] = useState<ShopCategoryId>("all");
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<FilterMenuId | null>(null);
@@ -99,58 +103,69 @@ export function InstaHelpShopScreen() {
   const [activeFilters, setActiveFilters] = useState<Set<ShopFilterId>>(
     () => new Set(),
   );
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
 
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const isDealsCategory = category === "deals-offers";
+  const isSearchActive = search.trim().length > 0;
 
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const selectedProduct = useMemo(
-    () => products.find((p) => p.id === selectedProductId) ?? null,
-    [products, selectedProductId],
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  const selectedApp = useMemo(
+    () => getShopAppById(selectedAppId ?? "") ?? null,
+    [selectedAppId],
   );
-  const sortedPlatforms = useMemo(
+  const selectedDeal = useMemo(() => {
+    if (!selectedDealId) return null;
+    return getDealById(selectedDealId) ?? null;
+  }, [selectedDealId]);
+
+  const dealSearchQuery = useDealSearch(search, isSearchActive);
+
+  const similarApps = useMemo(() => {
+    if (!selectedApp) return [];
+    return getSimilarApps(ALL_SHOP_APPS, selectedApp);
+  }, [selectedApp]);
+
+  const filteredApps = useMemo(
     () =>
-      selectedProduct
-        ? sortPlatformsByPrice(selectedProduct.platforms)
-        : [],
-    [selectedProduct],
-  );
-
-  const similarProducts = useMemo(() => {
-    if (!selectedProduct) return [];
-    return products
-      .filter(
-        (p) =>
-          p.id !== selectedProduct.id &&
-          p.categoryId === selectedProduct.categoryId,
-      )
-      .slice(0, 6);
-  }, [products, selectedProduct]);
-
-  const categoryProducts = useMemo(
-    () =>
-      category === "all"
-        ? products
-        : products.filter((p) => p.categoryId === category),
-    [category, products],
-  );
-
-  const brandOptions = useMemo(
-    () => getUniqueBrands(categoryProducts),
-    [categoryProducts],
-  );
-
-  const filteredProducts = useMemo(
-    () =>
-      filterShopProducts(products, {
-        category,
+      filterShopApps(ALL_SHOP_APPS, {
+        category: isSearchActive ? "all" : category,
         search,
         sortBy,
         filters: activeFilters,
-        brand: selectedBrand,
       }),
-    [products, category, search, sortBy, activeFilters, selectedBrand],
+    [category, search, sortBy, activeFilters, isSearchActive],
   );
+
+  const filteredDeals = useMemo(() => {
+    if (!isSearchActive) {
+      if (isDealsCategory) return [];
+      return filterDeals(dealSearchQuery.data ?? [], {
+        category,
+        search: "",
+      });
+    }
+    return dealSearchQuery.data ?? [];
+  }, [
+    isSearchActive,
+    isDealsCategory,
+    dealSearchQuery.data,
+    category,
+  ]);
+
+  const searchResults = useMemo((): SearchRow[] => {
+    if (!isSearchActive) return [];
+    const deals = filteredDeals.map((deal) => ({
+      kind: "deal" as const,
+      deal,
+      key: `deal-${deal.id}`,
+    }));
+    const apps = filteredApps.map((app) => ({
+      kind: "app" as const,
+      app,
+      key: `app-${app.id}`,
+    }));
+    return [...deals, ...apps];
+  }, [isSearchActive, filteredDeals, filteredApps]);
 
   const toggleFilter = useCallback((id: ShopFilterId) => {
     setActiveFilters((prev) => {
@@ -169,50 +184,7 @@ export function InstaHelpShopScreen() {
   const selectCategory = useCallback((id: ShopCategoryId) => {
     setCategory(id);
     setSearch("");
-    setSelectedBrand(null);
     setOpenMenu(null);
-  }, []);
-
-  const handleAffiliateOpen = useCallback(
-    async (
-      product: ShopCatalogProduct,
-      platform: ShopCatalogProduct["platforms"][number],
-    ) => {
-      if (!platform.affiliateUrl) return;
-      const result = await openAffiliateLink(
-        platform.affiliateUrl,
-        product.id,
-        platform.platform,
-      );
-      if (!result.ok) {
-        showToast("Could not open. Try again.");
-      }
-    },
-    [showToast],
-  );
-
-  const addToCart = useCallback((productId: string) => {
-    setCart((prev) => ({
-      ...prev,
-      [productId]: (prev[productId] ?? 0) + 1,
-    }));
-  }, []);
-
-  const incrementCart = useCallback((productId: string) => {
-    setCart((prev) => ({
-      ...prev,
-      [productId]: (prev[productId] ?? 0) + 1,
-    }));
-  }, []);
-
-  const decrementCart = useCallback((productId: string) => {
-    setCart((prev) => {
-      const next = { ...prev };
-      const n = (next[productId] ?? 0) - 1;
-      if (n <= 0) delete next[productId];
-      else next[productId] = n;
-      return next;
-    });
   }, []);
 
   const tileWidth = useMemo(() => {
@@ -221,9 +193,61 @@ export function InstaHelpShopScreen() {
     return Math.floor(w / 2);
   }, [windowWidth]);
 
-  const openProduct = useCallback((id: string) => {
-    setSelectedProductId(id);
+  const openApp = useCallback((id: string) => {
+    setSelectedDealId(null);
+    setSelectedAppId(id);
   }, []);
+
+  const openDeal = useCallback((id: string) => {
+    setSelectedAppId(null);
+    setSelectedDealId(id);
+  }, []);
+
+  const handleAppOpen = useCallback(
+    async (appId: string, websiteUrl: string) => {
+      const result = await openAppLink(websiteUrl, appId);
+      if (!result.ok) {
+        showToast("Could not open. Try again.");
+      }
+    },
+    [showToast],
+  );
+
+  const handleDealOpen = useCallback(
+    async (deal: Deal) => {
+      await trackDealClick(deal.id, deal.merchant);
+      const result = await openCuelinksAffiliateLink(deal.affiliateUrl, deal.id);
+      if (!result.ok) {
+        showToast("Could not open offer. Try again.");
+      }
+    },
+    [showToast],
+  );
+
+  const renderSearchRow = useCallback(
+    ({ item }: { item: SearchRow }) => {
+      if (item.kind === "deal") {
+        return (
+          <DealCard
+            deal={item.deal}
+            width={tileWidth}
+            onOpen={() => openDeal(item.deal.id)}
+            onGetDeal={() => void handleDealOpen(item.deal)}
+          />
+        );
+      }
+      return (
+        <ShopProductCard
+          variant="app"
+          app={item.app}
+          width={tileWidth}
+          onOpen={() => openApp(item.app.id)}
+          onOpenApp={() => void handleAppOpen(item.app.id, item.app.websiteUrl)}
+        />
+      );
+    },
+    [tileWidth, openDeal, openApp, handleDealOpen, handleAppOpen],
+  );
 
   return (
     <Screen className="bg-white">
@@ -273,19 +297,6 @@ export function InstaHelpShopScreen() {
             ) : null}
           </View>
         ) : null}
-
-        {(fetchFailed && isStale) || (fetchFailed && products.length === 0) ? (
-          <Pressable
-            onPress={() => void retry()}
-            style={styles.staleBanner}
-            accessibilityRole="button"
-          >
-            <Ionicons name="refresh-outline" size={14} color="#92400e" />
-            <Text style={styles.staleBannerText}>
-              Prices may be outdated. Tap to retry.
-            </Text>
-          </Pressable>
-        ) : null}
       </View>
 
       <View style={styles.mainRow}>
@@ -330,146 +341,94 @@ export function InstaHelpShopScreen() {
         </ScrollView>
 
         <View style={styles.productsPane}>
-          <View style={styles.filterBar}>
-            {FILTER_CHIPS.map((chip) => {
-              const isOpen = openMenu === chip.id;
-              const isActive =
-                chip.id === "filter"
-                  ? activeFilters.size > 0
-                  : chip.id === "sort"
-                    ? sortBy !== "featured"
-                    : selectedBrand != null;
+          {!isDealsCategory || isSearchActive ? (
+            <View style={styles.filterBar}>
+              {FILTER_CHIPS.map((chip) => {
+                const isOpen = openMenu === chip.id;
+                const isActive =
+                  chip.id === "filter"
+                    ? activeFilters.size > 0
+                    : sortBy !== "featured";
 
-              return (
-                <Pressable
-                  key={chip.id}
-                  onPress={() =>
-                    setOpenMenu((prev) => (prev === chip.id ? null : chip.id))
-                  }
-                  style={[
-                    styles.filterChip,
-                    (isOpen || isActive) && styles.filterChipActive,
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={chip.label}
-                  accessibilityState={{ expanded: isOpen }}
-                >
-                  <Ionicons
-                    name={chip.icon}
-                    size={9}
-                    color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_MUTED}
-                  />
-                  <Text
+                return (
+                  <Pressable
+                    key={chip.id}
+                    onPress={() =>
+                      setOpenMenu((prev) => (prev === chip.id ? null : chip.id))
+                    }
                     style={[
-                      styles.filterChipText,
-                      (isOpen || isActive) && styles.filterChipTextActive,
+                      styles.filterChip,
+                      (isOpen || isActive) && styles.filterChipActive,
                     ]}
-                  >
-                    {chip.label}
-                  </Text>
-                  <Ionicons
-                    name={isOpen ? "chevron-up" : "chevron-down"}
-                    size={8}
-                    color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_LIGHT}
-                  />
-                </Pressable>
-              );
-            })}
-          </View>
-
-          {openMenu === "filter" ? (
-            <View style={styles.menuPanel}>
-              {SHOP_FILTER_OPTIONS.map((opt) => {
-                const on = activeFilters.has(opt.id);
-                return (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => toggleFilter(opt.id)}
-                    style={styles.menuRow}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: on }}
+                    accessibilityRole="button"
+                    accessibilityLabel={chip.label}
+                    accessibilityState={{ expanded: isOpen }}
                   >
                     <Ionicons
-                      name={on ? "checkbox" : "square-outline"}
-                      size={16}
-                      color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
-                    />
-                    <Text style={styles.menuRowText}>{opt.label}</Text>
-                  </Pressable>
-                );
-              })}
-              {activeFilters.size > 0 ? (
-                <Pressable onPress={clearFilters} style={styles.menuClearBtn}>
-                  <Text style={styles.menuClearText}>Clear filters</Text>
-                </Pressable>
-              ) : null}
-            </View>
-          ) : null}
-
-          {openMenu === "sort" ? (
-            <View style={styles.menuPanel}>
-              {SHOP_SORT_OPTIONS.map((opt) => {
-                const on = sortBy === opt.id;
-                return (
-                  <Pressable
-                    key={opt.id}
-                    onPress={() => {
-                      setSortBy(opt.id);
-                      setOpenMenu(null);
-                    }}
-                    style={styles.menuRow}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: on }}
-                  >
-                    <Ionicons
-                      name={on ? "radio-button-on" : "radio-button-off"}
-                      size={16}
-                      color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                      name={chip.icon}
+                      size={9}
+                      color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_MUTED}
                     />
                     <Text
-                      style={[styles.menuRowText, on && styles.menuRowTextActive]}
+                      style={[
+                        styles.filterChipText,
+                        (isOpen || isActive) && styles.filterChipTextActive,
+                      ]}
                     >
-                      {opt.label}
+                      {chip.label}
                     </Text>
+                    <Ionicons
+                      name={isOpen ? "chevron-up" : "chevron-down"}
+                      size={8}
+                      color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                    />
                   </Pressable>
                 );
               })}
             </View>
           ) : null}
 
-          {openMenu === "brand" ? (
-            <View style={styles.menuPanel}>
-              <Pressable
-                onPress={() => {
-                  setSelectedBrand(null);
-                  setOpenMenu(null);
-                }}
-                style={styles.menuRow}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: selectedBrand == null }}
-              >
-                <Ionicons
-                  name={selectedBrand == null ? "radio-button-on" : "radio-button-off"}
-                  size={16}
-                  color={selectedBrand == null ? SHOP_GREEN : SHOP_TEXT_LIGHT}
-                />
-                <Text
-                  style={[
-                    styles.menuRowText,
-                    selectedBrand == null && styles.menuRowTextActive,
-                  ]}
-                >
-                  All brands
-                </Text>
-              </Pressable>
-              {brandOptions.length > 0 ? (
-                brandOptions.map((brand) => {
-                  const on = selectedBrand === brand;
+          {!isDealsCategory || isSearchActive ? (
+            openMenu === "filter" ? (
+              <View style={styles.menuPanel}>
+                {SHOP_FILTER_OPTIONS.map((opt) => {
+                  const on = activeFilters.has(opt.id);
                   return (
                     <Pressable
-                      key={brand}
+                      key={opt.id}
+                      onPress={() => toggleFilter(opt.id)}
+                      style={styles.menuRow}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: on }}
+                    >
+                      <Ionicons
+                        name={on ? "checkbox" : "square-outline"}
+                        size={16}
+                        color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
+                      />
+                      <Text style={styles.menuRowText}>{opt.label}</Text>
+                    </Pressable>
+                  );
+                })}
+                {activeFilters.size > 0 ? (
+                  <Pressable onPress={clearFilters} style={styles.menuClearBtn}>
+                    <Text style={styles.menuClearText}>Clear filters</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null
+          ) : null}
+
+          {!isDealsCategory || isSearchActive ? (
+            openMenu === "sort" ? (
+              <View style={styles.menuPanel}>
+                {SHOP_SORT_OPTIONS.map((opt) => {
+                  const on = sortBy === opt.id;
+                  return (
+                    <Pressable
+                      key={opt.id}
                       onPress={() => {
-                        setSelectedBrand(brand);
+                        setSortBy(opt.id);
                         setOpenMenu(null);
                       }}
                       style={styles.menuRow}
@@ -484,79 +443,98 @@ export function InstaHelpShopScreen() {
                       <Text
                         style={[styles.menuRowText, on && styles.menuRowTextActive]}
                       >
-                        {brand}
+                        {opt.label}
                       </Text>
                     </Pressable>
                   );
-                })
-              ) : (
-                <Text style={styles.menuEmptyText}>
-                  No brands in this category yet.
-                </Text>
-              )}
-            </View>
+                })}
+              </View>
+            ) : null
           ) : null}
 
-          <FlatList
-            data={filteredProducts}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            showsVerticalScrollIndicator={false}
-            style={styles.productList}
-            columnWrapperStyle={styles.gridRow}
-            contentContainerStyle={[
-              styles.gridContent,
-              { paddingBottom: 100 + insets.bottom },
-            ]}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Ionicons name="search-outline" size={28} color={SHOP_TEXT_LIGHT} />
-                <Text style={styles.emptyTitle}>
-                  {products.length === 0 ? "No products yet" : "No matches"}
-                </Text>
-                <Text style={styles.emptySubtitle}>
-                  {products.length === 0
-                    ? "Publish the Google Sheet with active rows."
-                    : activeFilters.size > 0 || selectedBrand || sortBy !== "featured"
-                      ? "Try clearing filters or changing sort."
-                      : "Try another category or search."}
-                </Text>
-              </View>
-            }
-            renderItem={({ item }) => (
-              <ShopProductCard
-                product={item}
-                width={tileWidth}
-                qtyInCart={cart[item.id] ?? 0}
-                onOpen={() => openProduct(item.id)}
-                onAdd={() => addToCart(item.id)}
-                onIncrement={() => incrementCart(item.id)}
-                onDecrement={() => decrementCart(item.id)}
-              />
-            )}
-          />
+          {isDealsCategory && !isSearchActive ? (
+            <DealsHomeScreen
+              onOpenDeal={openDeal}
+              onGetDeal={(deal) => void handleDealOpen(deal)}
+              bottomInset={insets.bottom}
+            />
+          ) : (
+            <FlatList
+              data={isSearchActive ? searchResults : filteredApps}
+              keyExtractor={(item) =>
+                isSearchActive
+                  ? (item as SearchRow).key
+                  : (item as ShopApp).id
+              }
+              numColumns={2}
+              showsVerticalScrollIndicator={false}
+              style={styles.productList}
+              columnWrapperStyle={styles.gridRow}
+              contentContainerStyle={[
+                styles.gridContent,
+                { paddingBottom: 100 + insets.bottom },
+              ]}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Ionicons name="search-outline" size={28} color={SHOP_TEXT_LIGHT} />
+                  <Text style={styles.emptyTitle}>No matches</Text>
+                  <Text style={styles.emptySubtitle}>
+                    {dealSearchQuery.isFetching
+                      ? "Searching deals and apps…"
+                      : activeFilters.size > 0 || sortBy !== "featured"
+                        ? "Try clearing filters or changing sort."
+                        : "Try another category or search."}
+                  </Text>
+                </View>
+              }
+              renderItem={
+                isSearchActive
+                  ? renderSearchRow
+                  : ({ item }) => (
+                      <ShopProductCard
+                        variant="app"
+                        app={item as ShopApp}
+                        width={tileWidth}
+                        onOpen={() => openApp((item as ShopApp).id)}
+                        onOpenApp={() =>
+                          void handleAppOpen(
+                            (item as ShopApp).id,
+                            (item as ShopApp).websiteUrl,
+                          )
+                        }
+                      />
+                    )
+              }
+            />
+          )}
         </View>
       </View>
 
-      {selectedProduct ? (
-        <ShopProductDetail
-          key={selectedProduct.id}
-          product={selectedProduct}
-          similarProducts={similarProducts}
-          sortedPlatforms={sortedPlatforms}
-          qtyInCart={cart[selectedProduct.id] ?? 0}
-          cart={cart}
-          onClose={() => setSelectedProductId(null)}
-          onAddToCart={() => addToCart(selectedProduct.id)}
-          onIncrement={() => incrementCart(selectedProduct.id)}
-          onDecrement={() => decrementCart(selectedProduct.id)}
-          onOpenProduct={openProduct}
-          onAffiliateOpen={(platform) =>
-            void handleAffiliateOpen(selectedProduct, platform)
+      {selectedApp ? (
+        <ShopAppDetail
+          key={selectedApp.id}
+          app={selectedApp}
+          similarApps={similarApps}
+          onClose={() => setSelectedAppId(null)}
+          onOpenApp={() =>
+            void handleAppOpen(selectedApp.id, selectedApp.websiteUrl)
           }
-          onGridAdd={addToCart}
-          onGridIncrement={incrementCart}
-          onGridDecrement={decrementCart}
+          onOpenAppDetail={openApp}
+          onGridOpenApp={(app) =>
+            void handleAppOpen(app.id, app.websiteUrl)
+          }
+        />
+      ) : null}
+
+      {selectedDeal ? (
+        <DealDetailScreen
+          key={selectedDeal.id}
+          deal={selectedDeal}
+          allDeals={dealSearchQuery.data ?? undefined}
+          onClose={() => setSelectedDealId(null)}
+          onShopNow={() => void handleDealOpen(selectedDeal)}
+          onOpenDeal={openDeal}
+          onGridShopNow={(deal) => void handleDealOpen(deal)}
         />
       ) : null}
     </Screen>
@@ -613,22 +591,6 @@ const styles = StyleSheet.create({
     color: SHOP_TEXT,
     padding: 0,
     margin: 0,
-  },
-  staleBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 8,
-    borderRadius: 8,
-    backgroundColor: "#fef3c7",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  staleBannerText: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#92400e",
   },
   mainRow: {
     flex: 1,
@@ -765,13 +727,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: SHOP_GREEN,
-  },
-  menuEmptyText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: SHOP_TEXT_MUTED,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
   },
   gridRow: {
     justifyContent: "space-between",

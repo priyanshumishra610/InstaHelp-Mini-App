@@ -4,6 +4,7 @@ import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import { ShopSyncProvider } from "@/providers/ShopSyncProvider";
+import { CmsRealtimeProvider } from "@/providers/CmsRealtimeProvider";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -50,6 +51,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryProvider>
+        <CmsRealtimeProvider />
         <AuthProvider>
           <ShopSyncProvider>
           <ThemeProvider value={DefaultTheme}>

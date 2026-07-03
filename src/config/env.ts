@@ -97,3 +97,12 @@ export const SHOP_SHEET_PUBLISH_ID = getPublicEnv(
 /** Razorpay Key ID (public) — secret stays in Apps Script Script properties */
 export const RAZORPAY_KEY_ID = getPublicEnv("EXPO_PUBLIC_RAZORPAY_KEY_ID");
 export const RAZORPAY_IS_CONFIGURED = Boolean(RAZORPAY_KEY_ID);
+
+/** Cuelinks publisher API token — request from sales@cuelinks.com */
+export const CUELINKS_API_TOKEN = getPublicEnv("EXPO_PUBLIC_CUELINKS_API_TOKEN");
+export const CUELINKS_PUBLISHER_ID = getPublicEnv("EXPO_PUBLIC_CUELINKS_PUBLISHER_ID");
+export const CUELINKS_IS_CONFIGURED = Boolean(CUELINKS_API_TOKEN);
+
+/** InstaHelp CMS content API — dynamic banners, categories, deals, mobile assets */
+export const CMS_API_URL = getPublicEnv("EXPO_PUBLIC_CMS_API_URL");
+export const CMS_IS_CONFIGURED = Boolean(CMS_API_URL);

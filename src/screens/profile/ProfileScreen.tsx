@@ -727,13 +727,6 @@ export function ProfileScreen() {
             />
             <RowHairline />
             <ActionRow
-              icon="game-controller-outline"
-              title="Games"
-              subtitle="+10 credits per game · up to 50/day"
-              onPress={() => router.push("/(tabs)/vendors/arcade")}
-            />
-            <RowHairline />
-            <ActionRow
               icon="briefcase-outline"
               title="Register as vendor"
               subtitle="Share business details for onboarding"

@@ -75,6 +75,9 @@ function buildPublicEnv() {
     "EXPO_PUBLIC_SHOP_PRODUCTS_GID",
     "EXPO_PUBLIC_SHOP_SHEET_PUBLISH_ID",
     "EXPO_PUBLIC_RAZORPAY_KEY_ID",
+    "EXPO_PUBLIC_CUELINKS_API_TOKEN",
+    "EXPO_PUBLIC_CUELINKS_PUBLISHER_ID",
+    "EXPO_PUBLIC_CMS_API_URL",
   ];
 
   /** @type {Record<string, string>} */

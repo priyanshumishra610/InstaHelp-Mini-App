@@ -1,6 +1,6 @@
 import type { ShopCategoryId } from "@/constants/shop";
 
-export type ShopProductCategoryId = Exclude<ShopCategoryId, "all">;
+export type ShopProductCategoryId = Exclude<ShopCategoryId, "all" | "deals-offers">;
 
 export type ShopProduct = {
   id: string;
