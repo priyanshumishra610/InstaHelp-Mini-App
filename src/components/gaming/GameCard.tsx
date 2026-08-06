@@ -51,7 +51,7 @@ export function GameCard({ game, index = 0, onPress }: Props) {
   }));
 
   const iconName = game.icon as keyof typeof Ionicons.glyphMap;
-  const colors = game.gradient.length >= 2 ? game.gradient : ["#6366f1", "#8b5cf6"];
+  const colors = game.gradient.length >= 2 ? game.gradient : ["#6366f1", "#0066FF"];
 
   return (
     <Animated.View style={[styles.outer, floatStyle]}>

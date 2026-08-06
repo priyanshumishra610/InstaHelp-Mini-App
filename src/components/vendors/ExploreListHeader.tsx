@@ -1,14 +1,14 @@
 import { Input } from "@/components/ui/Input";
-import { MarketplaceChip } from "@/components/vendors/MarketplaceChip";
+import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
+import { GlowButton } from "@/components/ui/GlowButton";
+import { GlassSurface } from "@/components/ui/GlassSurface";
+import { ExploreGlassCard } from "@/components/vendors/ExploreGlassCard";
+import { RADIUS } from "@/constants/designSystem";
+import { ACCENT, ACCENT_TINT } from "@/constants/theme";
 import type { ExploreEntitlements } from "@/services/explore/exploreEntitlements";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import {
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-} from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { MotiView } from "moti";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type ExploreListHeaderProps = {
   coords: { lat: number; lng: number } | null;
@@ -17,72 +17,15 @@ export type ExploreListHeaderProps = {
   explorePlanLabel?: string | null;
   entitlements: ExploreEntitlements;
   onUpgrade: () => void;
-  multiCityMode: boolean;
-  multiCityKeys: string[];
-  onToggleMultiCityMode: () => void;
-  onToggleMultiCityKey: (key: string) => void;
   onOpenHistory: () => void;
+  onOpenFilters: () => void;
   search: string;
-  setSearch: Dispatch<SetStateAction<string>>;
-  cityOptions: ReadonlyArray<readonly [string, string]>;
-  cityKey: string | null;
-  setCityKey: Dispatch<SetStateAction<string | null>>;
-  areaOptions: ReadonlyArray<readonly [string, string]>;
-  areaKey: string | null;
-  setAreaKey: Dispatch<SetStateAction<string | null>>;
-  sortMode: "recommended" | "distance" | "rating";
-  toggleSortMode: (next: "distance" | "rating") => void;
-  verifiedOnly: boolean;
-  setVerifiedOnly: Dispatch<SetStateAction<boolean>>;
-  availableNowOnly: boolean;
-  setAvailableNowOnly: Dispatch<SetStateAction<boolean>>;
+  setSearch: (value: string) => void;
   clearFilters: () => void;
 };
 
-function ChipRail({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <View className="mt-5">
-      <View className="mb-2 flex-row items-end justify-between pr-1">
-        <Text className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-neutral-500">
-          {title}
-        </Text>
-        {hint ? (
-          <Text className="text-[10px] font-semibold text-neutral-400">
-            {hint}
-          </Text>
-        ) : null}
-      </View>
-      <ScrollView
-        horizontal
-        nestedScrollEnabled
-        keyboardShouldPersistTaps="handled"
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 10, flexDirection: "row", paddingRight: 8 }}
-      >
-        {children}
-      </ScrollView>
-    </View>
-  );
-}
-
 export function ExploreListHeader(props: ExploreListHeaderProps) {
-  const heroCardShadow =
-    Platform.OS === "ios"
-      ? {
-          shadowColor: "#5B21B6",
-          shadowOffset: { width: 0, height: 12 },
-          shadowOpacity: 0.12,
-          shadowRadius: 24,
-        }
-      : { elevation: 4 };
+  const [searchFocused, setSearchFocused] = useState(false);
 
   const {
     coords,
@@ -91,66 +34,35 @@ export function ExploreListHeader(props: ExploreListHeaderProps) {
     explorePlanLabel,
     entitlements,
     onUpgrade,
-    multiCityMode,
-    multiCityKeys,
-    onToggleMultiCityMode,
-    onToggleMultiCityKey,
     onOpenHistory,
+    onOpenFilters,
     search,
     setSearch,
-    cityOptions,
-    cityKey,
-    setCityKey,
-    areaOptions,
-    areaKey,
-    setAreaKey,
-    sortMode,
-    toggleSortMode,
-    verifiedOnly,
-    setVerifiedOnly,
-    availableNowOnly,
-    setAvailableNowOnly,
     clearFilters,
   } = props;
 
   return (
-    <View>
-      <View className="px-4 pb-1 pt-1">
-        <View
-          className="overflow-hidden rounded-[26px] border border-neutral-200 bg-white"
-          style={
-            Platform.OS === "ios"
-              ? {
-                  shadowColor: "#5B21B6",
-                  shadowOffset: { width: 0, height: 12 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 22,
-                }
-              : { elevation: 3 }
-          }
-        >
-          <LinearGradient
-            colors={["#F5F3FF", "#FFFFFF", "#FFFFFF"]}
-            locations={[0, 0.45, 1]}
-            className="absolute inset-0"
-            pointerEvents="none"
-          />
-
-          <View className="relative px-4 pb-4 pt-4">
+    <View className="px-4 pb-1 pt-1">
+      <MotiView
+        from={{ opacity: 0, translateY: 12 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: "timing", duration: 420 }}
+      >
+        <ExploreGlassCard intensity="strong" radius={RADIUS.xxl}>
+          <View className="px-4 pb-4 pt-5">
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1 pr-2">
-                <View className="flex-row items-center gap-2">
-                  <View className="h-7 w-7 items-center justify-center rounded-lg bg-accent-soft">
-                    <Ionicons name="compass-outline" size={16} color="#7C3AED" />
-                  </View>
-                  <Text className="text-[10px] font-extrabold uppercase tracking-[0.28em] text-accent-muted">
-                    InstaHelp Explore
-                  </Text>
-                </View>
-                <Text className="mt-2.5 text-[22px] font-extrabold leading-[28px] tracking-tight text-neutral-950">
-                  Vendors across India
+                <Text
+                  className="text-[10px] font-semibold uppercase tracking-[0.22em]"
+                  style={{ color: ACCENT }}
+                >
+                  InstaHelp Explore
                 </Text>
-                <Text className="mt-1.5 text-[13px] font-medium leading-[19px] text-neutral-600">
+                <Text className="mt-2.5 text-[26px] font-extrabold leading-[32px] tracking-tight text-neutral-950">
+                  Vendors across{" "}
+                  <Text style={{ color: ACCENT }}>India</Text>
+                </Text>
+                <Text className="mt-2 text-[13px] font-medium leading-[19px] text-neutral-500">
                   {entitlements.isPro
                     ? entitlements.isProPlus
                       ? "Pro+ active — unlimited reveals & multi-city unlocked."
@@ -165,212 +77,185 @@ export function ExploreListHeader(props: ExploreListHeaderProps) {
                 onPress={onOpenHistory}
                 accessibilityRole="button"
                 accessibilityLabel="View credit history"
-                className="overflow-hidden rounded-2xl border border-accent/10 bg-white active:opacity-90"
-                style={heroCardShadow}
+                className="active:opacity-85"
               >
-                <View className="items-center px-3.5 py-3">
-                  <View className="h-9 w-9 items-center justify-center rounded-xl bg-accent-soft">
-                    <Ionicons name="diamond-outline" size={18} color="#7C3AED" />
-                  </View>
-                  <Text className="mt-1 text-xl font-black text-neutral-900">{credits}</Text>
-                  <Text className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-                    credits
-                  </Text>
-                  {explorePlanLabel ? (
-                    <Text className="mt-1 text-[8px] font-extrabold uppercase tracking-wide text-accent-deep">
-                      {explorePlanLabel}
+                <GlassSurface
+                  blur
+                  intensity="soft"
+                  shadow="sm"
+                  radius={RADIUS.lg}
+                  style={styles.creditsGlass}
+                >
+                  <View className="items-center px-4 py-3">
+                    <Text className="text-[9px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
+                      Balance
                     </Text>
-                  ) : null}
-                  <Ionicons name="chevron-down" size={12} color="#7C3AED" />
-                </View>
+                    <AnimatedNumber
+                      value={credits}
+                      className="mt-1 text-[22px] font-black"
+                      style={{ color: ACCENT }}
+                    />
+                    <Text className="mt-0.5 text-[9px] font-semibold uppercase tracking-widest text-neutral-400">
+                      credits
+                    </Text>
+                    {explorePlanLabel ? (
+                      <View className="mt-2 rounded-full px-2.5 py-0.5" style={styles.planPill}>
+                        <Text
+                          className="text-[8px] font-bold uppercase tracking-wide"
+                          style={{ color: ACCENT }}
+                        >
+                          {explorePlanLabel}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </GlassSurface>
               </Pressable>
             </View>
 
+            {!entitlements.isPro ? (
+              <View className="mt-4">
+                <GlowButton
+                  label="Upgrade Explore plan"
+                  onPress={onUpgrade}
+                  variant="primary"
+                  fullWidth
+                />
+              </View>
+            ) : null}
           </View>
-        </View>
+        </ExploreGlassCard>
+      </MotiView>
 
-        <View className="mt-4">
-          <View
-            className="flex-row items-center rounded-2xl border border-neutral-200 bg-white px-3"
-            style={
-              Platform.OS === "ios"
-                ? {
-                    shadowColor: "#0f172a",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 12,
-                  }
-                : { elevation: 2 }
-            }
-          >
-            <Ionicons name="search-outline" size={20} color="#94a3b8" />
+      <View className="mt-4 flex-row items-center gap-2.5">
+        <GlassSurface
+          blur={searchFocused}
+          intensity="medium"
+          shadow="sm"
+          radius={RADIUS.lg}
+          style={[
+            styles.searchGlass,
+            { flex: 1 },
+            searchFocused ? styles.searchGlassFocused : null,
+          ]}
+        >
+          <View className="flex-row items-center px-4">
             <Input
               value={search}
               onChangeText={setSearch}
-              placeholder="Search business, category, or service..."
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
+              placeholder="Search vendors..."
               autoCapitalize="none"
               autoCorrect={false}
-              className="flex-1 border-0 bg-transparent py-3.5 pl-2 pr-1 text-[15px]"
-              placeholderTextColor="#94a3b8"
+              className="flex-1 border-0 bg-transparent py-3.5 text-[15px] text-neutral-900"
+              placeholderTextColor="#A8A29E"
             />
             {search.length > 0 ? (
               <Pressable
                 onPress={() => setSearch("")}
                 hitSlop={10}
                 accessibilityLabel="Clear search"
-                className="rounded-full bg-neutral-100 p-1.5"
+                className="rounded-full px-2 py-1 active:opacity-70"
               >
-                <Ionicons name="close-circle" size={18} color="#64748b" />
+                <Text className="text-[12px] font-semibold" style={{ color: ACCENT }}>
+                  Clear
+                </Text>
               </Pressable>
             ) : null}
           </View>
+        </GlassSurface>
 
-          {activeFilterCount > 0 ? (
-            <View className="mt-2 flex-row items-center justify-between px-1">
-              <View className="flex-row items-center gap-1.5">
-                <Ionicons name="filter" size={13} color="#7C3AED" />
-                <Text className="text-[11px] font-bold text-neutral-600">
-                  {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
-                </Text>
-              </View>
+        <Pressable
+          onPress={onOpenFilters}
+          accessibilityRole="button"
+          accessibilityLabel="Open sort and filter"
+          className="active:opacity-90"
+        >
+          <GlassSurface blur intensity="medium" shadow="sm" radius={RADIUS.lg} style={styles.filterBtn}>
+            <View className="relative items-center justify-center px-3.5 py-3">
+              <Text className="text-[11px] font-bold" style={{ color: ACCENT }}>
+                Filter
+              </Text>
+              {activeFilterCount > 0 ? (
+                <View style={styles.filterBadge}>
+                  <Text className="text-[9px] font-extrabold text-white">
+                    {activeFilterCount}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </GlassSurface>
+        </Pressable>
+      </View>
+
+      {activeFilterCount > 0 ? (
+        <MotiView
+          from={{ opacity: 0, translateY: 6 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          className="mt-2.5"
+        >
+          <GlassSurface blur intensity="soft" shadow="sm" radius={RADIUS.md}>
+            <View className="flex-row items-center justify-between px-3.5 py-2.5">
+              <Text className="text-[12px] font-semibold text-neutral-600">
+                {activeFilterCount} filter{activeFilterCount === 1 ? "" : "s"} active
+              </Text>
               <Pressable
                 onPress={clearFilters}
                 accessibilityRole="button"
                 accessibilityLabel="Clear all filters"
-                className="flex-row items-center gap-1 rounded-full px-2 py-1 active:opacity-70"
+                className="rounded-full px-3 py-1.5 active:opacity-70"
+                style={styles.clearPill}
               >
-                <Ionicons name="refresh-outline" size={14} color="#7C3AED" />
-                <Text className="text-[11px] font-extrabold text-accent-deep">Clear all</Text>
+                <Text className="text-[11px] font-bold" style={{ color: ACCENT }}>
+                  Reset
+                </Text>
               </Pressable>
             </View>
-          ) : null}
+          </GlassSurface>
+        </MotiView>
+      ) : null}
 
-          <View className="mt-1">
-            <ChipRail
-              title="Cities"
-              hint={entitlements.canUseMultiCity ? "Pro+ multi-city compare" : "Top metros & hubs"}
-            >
-              {entitlements.canUseMultiCity ? (
-                <MarketplaceChip
-                  label={`Multi-city${multiCityMode ? ` · ${multiCityKeys.length}` : ""}`}
-                  active={multiCityMode}
-                  icon="git-compare-outline"
-                  compact
-                  onPress={() => {
-                    void Haptics.selectionAsync().catch(() => {});
-                    onToggleMultiCityMode();
-                  }}
-                />
-              ) : null}
-              <MarketplaceChip
-                label="All India"
-                active={!multiCityMode && cityKey === null}
-                icon="earth-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  if (multiCityMode) onToggleMultiCityMode();
-                  setCityKey(null);
-                  setAreaKey(null);
-                }}
-              />
-              {cityOptions.map(([key, label]) => (
-                <MarketplaceChip
-                  key={key}
-                  label={label}
-                  active={
-                    multiCityMode ? multiCityKeys.includes(key) : cityKey === key
-                  }
-                  icon="business-outline"
-                  compact
-                  onPress={() => {
-                    void Haptics.selectionAsync().catch(() => {});
-                    if (multiCityMode && entitlements.canUseMultiCity) {
-                      onToggleMultiCityKey(key);
-                      return;
-                    }
-                    setCityKey((cur) => (cur === key ? null : key));
-                    setAreaKey(null);
-                  }}
-                />
-              ))}
-            </ChipRail>
-
-            <ChipRail title="Areas" hint="Popular neighbourhoods">
-              <MarketplaceChip
-                label="All areas"
-                active={areaKey === null}
-                icon="globe-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  setAreaKey(null);
-                }}
-              />
-              {areaOptions.map(([key, label]) => (
-                <MarketplaceChip
-                  key={key}
-                  label={label}
-                  active={areaKey === key}
-                  icon="location-outline"
-                  compact
-                  onPress={() => {
-                    void Haptics.selectionAsync().catch(() => {});
-                    setAreaKey((cur) => (cur === key ? null : key));
-                  }}
-                />
-              ))}
-            </ChipRail>
-
-            <ChipRail title="Smart sort & filters">
-              <MarketplaceChip
-                label="Nearby"
-                active={sortMode === "distance"}
-                icon="navigate-circle-outline"
-                compact
-                onPress={() => toggleSortMode("distance")}
-              />
-              <MarketplaceChip
-                label="Top rated"
-                active={sortMode === "rating"}
-                icon="trophy-outline"
-                compact
-                onPress={() => toggleSortMode("rating")}
-              />
-              <MarketplaceChip
-                label={entitlements.canUseVerifiedFilter ? "Verified only" : "Verified · Pro"}
-                active={verifiedOnly}
-                icon={
-                  entitlements.canUseVerifiedFilter
-                    ? "shield-checkmark-outline"
-                    : "lock-closed-outline"
-                }
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  if (!entitlements.canUseVerifiedFilter) {
-                    onUpgrade();
-                    return;
-                  }
-                  setVerifiedOnly((v) => !v);
-                }}
-              />
-              <MarketplaceChip
-                label="Open now · est."
-                active={availableNowOnly}
-                icon="partly-sunny-outline"
-                compact
-                onPress={() => {
-                  void Haptics.selectionAsync().catch(() => {});
-                  setAvailableNowOnly((v) => !v);
-                }}
-              />
-            </ChipRail>
-          </View>
-        </View>
-
-        <View className="h-2" />
-      </View>
+      <View className="h-2" />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  creditsGlass: {
+    minWidth: 88,
+    borderColor: "rgba(0,74,173,0.14)",
+  },
+  planPill: {
+    backgroundColor: ACCENT_TINT,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,74,173,0.15)",
+  },
+  searchGlass: {
+    overflow: "hidden",
+  },
+  searchGlassFocused: {
+    borderColor: "rgba(0,74,173,0.35)",
+  },
+  filterBtn: {
+    minWidth: 72,
+    borderColor: "rgba(0,74,173,0.18)",
+  },
+  filterBadge: {
+    position: "absolute",
+    top: 6,
+    right: 8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  clearPill: {
+    backgroundColor: ACCENT_TINT,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,74,173,0.12)",
+  },
+});

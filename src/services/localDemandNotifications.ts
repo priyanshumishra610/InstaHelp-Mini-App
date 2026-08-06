@@ -740,7 +740,7 @@ async function ensureAndroidChannel() {
     name: "Nearby demand signals",
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 180, 120, 180],
-    lightColor: "#7C3AED",
+    lightColor: "#004aad",
     sound: null,
     description:
       "Calm, hyperlocal InstaHelp® signals — not promotions.",

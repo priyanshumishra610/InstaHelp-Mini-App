@@ -1,49 +1,29 @@
-import { ALL_SHOP_APPS, getShopAppById } from "@/apps";
-import { ShopAppDetail } from "@/components/shop/ShopAppDetail";
-import { ShopProductCard } from "@/components/shop/ShopProductCard";
-import { Screen } from "@/components/ui/Screen";
-import { MarketplaceToast } from "@/components/vendors/MarketplaceToast";
+/**
+ * InstaHelp Shop — curated store directory.
+ * Layout, copy, and catalog mirrored from https://instahelp.in/shop
+ */
+import { WEB_SHOP } from "@/constants/shopWebTheme";
 import {
-  SHOP_CATEGORIES,
-  type ShopCategoryId,
-} from "@/constants/shop";
-import {
-  SHOP_GREEN,
-  SHOP_GREEN_LIGHT,
-  SHOP_TEXT,
-  SHOP_TEXT_LIGHT,
-  SHOP_TEXT_MUTED,
-} from "@/constants/shopTheme";
-import { DealCard } from "@/features/deals/components/DealCard";
-import { useDealSearch } from "@/features/deals/hooks/useDeals";
-import { DealDetailScreen } from "@/features/deals/screens/DealDetailScreen";
-import { DealsHomeScreen } from "@/features/deals/screens/DealsHomeScreen";
-import {
-  filterDeals,
-  getDealById,
-  trackDealClick,
-} from "@/features/deals/services/dealsService";
-import type { Deal } from "@/features/deals/types/dealTypes";
-import {
-  filterShopApps,
-  getSimilarApps,
-} from "@/services/shop/shopAppFilters";
-import { openAppLink } from "@/services/shop/shopAppLinks";
+  SHOP_STORES,
+  SHOP_STORE_SECTIONS,
+  shopCategoryImage,
+  shopStoreLogoUrl,
+  type ShopStore,
+  type ShopStoreCategoryId,
+  type ShopStoreSection,
+} from "@/data/shopStores";
 import {
   initializeCuelinks,
-  openCuelinksAffiliateLink,
+  openCuelinksTrackedUrl,
 } from "@/services/cuelinksService";
-import {
-  SHOP_FILTER_OPTIONS,
-  SHOP_SORT_OPTIONS,
-  type ShopFilterId,
-  type ShopSortId,
-} from "@/services/shop/shopProductFilters";
-import type { ShopApp } from "@/types/shopApp";
+import { dialPhone } from "@/utils/vendorContactActions";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FlatList,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -54,702 +34,622 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type FilterMenuId = "filter" | "sort";
+type FilterId = "all" | ShopStoreCategoryId;
 
-type SearchRow =
-  | { kind: "deal"; deal: Deal; key: string }
-  | { kind: "app"; app: ShopApp; key: string };
-
-const FILTER_CHIPS: {
-  id: FilterMenuId;
-  label: string;
-  icon: "options-outline" | "swap-vertical";
-}[] = [
-  { id: "filter", label: "Filter", icon: "options-outline" },
-  { id: "sort", label: "Sort", icon: "swap-vertical" },
+const FILTERS: { id: FilterId; label: string }[] = [
+  { id: "all", label: "All" },
+  ...SHOP_STORE_SECTIONS.map((s) => ({ id: s.id as FilterId, label: s.title })),
 ];
-const SIDEBAR_W = 52;
-const GRID_H_PAD = 8;
-const GRID_GUTTER = 8;
 
-function categoryLabel(category: ShopCategoryId) {
-  return SHOP_CATEGORIES.find((c) => c.id === category)?.label ?? "All";
+function CategoryBadge({
+  section,
+  size = 44,
+}: {
+  section: ShopStoreSection;
+  size?: number;
+}) {
+  return (
+    <Image
+      source={shopCategoryImage(section.id)}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size * 0.32,
+      }}
+      contentFit="cover"
+      accessibilityIgnoresInvertColors
+    />
+  );
 }
 
-export function InstaHelpShopScreen() {
+function faviconUrl(url: string) {
+  try {
+    const host = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
+  } catch {
+    return null;
+  }
+}
+
+function StoreTile({
+  store,
+  tileWidth,
+  onOpen,
+}: {
+  store: ShopStore;
+  tileWidth: number;
+  onOpen: (store: ShopStore) => void;
+}) {
+  const [src, setSrc] = useState(shopStoreLogoUrl(store));
+  const [failed, setFailed] = useState(false);
+  const isWordmark = store.logoType === "wordmark" && !failed;
+
+  return (
+    <Pressable
+      onPress={() => onOpen(store)}
+      style={({ pressed }) => [
+        styles.tile,
+        { width: tileWidth },
+        pressed && styles.tilePressed,
+      ]}
+      accessibilityRole="link"
+      accessibilityLabel={`Open ${store.name}`}
+    >
+      <View style={[styles.tileIcon, isWordmark && styles.tileIconWordmark]}>
+        {failed ? (
+          <Text style={styles.tileInitial} numberOfLines={1}>
+            {store.name.slice(0, 2).toUpperCase()}
+          </Text>
+        ) : (
+          <Image
+            source={{ uri: src }}
+            style={isWordmark ? styles.tileLogoWordmark : styles.tileLogo}
+            contentFit="contain"
+            onError={() => {
+              const fallback = faviconUrl(store.url);
+              if (fallback && src !== fallback) {
+                setSrc(fallback);
+                return;
+              }
+              setFailed(true);
+            }}
+            accessibilityIgnoresInvertColors
+          />
+        )}
+      </View>
+      <Text style={styles.tileName} numberOfLines={2}>
+        {store.name}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<FilterId>("all");
 
-  const showToast = useCallback((msg: string) => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast(msg);
-    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  const query = search.trim().toLowerCase();
+  const isSearching = query.length > 0;
+
+  const matchesStore = useCallback(
+    (store: ShopStore) => {
+      if (!query) return true;
+      const section = SHOP_STORE_SECTIONS.find((s) => s.id === store.category);
+      return (
+        store.name.toLowerCase().includes(query) ||
+        Boolean(section?.title.toLowerCase().includes(query))
+      );
+    },
+    [query],
+  );
+
+  const searchResults = useMemo(() => {
+    if (!isSearching) return [];
+    return SHOP_STORES.filter(matchesStore);
+  }, [isSearching, matchesStore]);
+
+  const visibleSections = useMemo(() => {
+    if (isSearching) return [];
+    const sections =
+      filter === "all"
+        ? SHOP_STORE_SECTIONS
+        : SHOP_STORE_SECTIONS.filter((s) => s.id === filter);
+    return sections
+      .map((section) => ({
+        section,
+        stores: SHOP_STORES.filter((s) => s.category === section.id),
+      }))
+      .filter((row) => row.stores.length > 0);
+  }, [filter, isSearching]);
+
+  const cols = 4;
+  const hPad = 16;
+  const gutter = 8;
+  const tileWidth = Math.floor(
+    (windowWidth - hPad * 2 - 14 * 2 - gutter * (cols - 1)) / cols,
+  );
+
+  const openStore = useCallback(async (store: ShopStore) => {
+    const result = await openCuelinksTrackedUrl(store.url, {
+      subid: store.id,
+      subid2: Platform.OS,
+      subid3: `shop-${store.category}`,
+      source: "app",
+      analyticsId: `shop-${store.id}`,
+    });
+    if (!result.ok) {
+      await Linking.openURL(store.url).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
     initializeCuelinks();
-    return () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    };
   }, []);
 
-  const [category, setCategory] = useState<ShopCategoryId>("all");
-  const [search, setSearch] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [openMenu, setOpenMenu] = useState<FilterMenuId | null>(null);
-  const [sortBy, setSortBy] = useState<ShopSortId>("featured");
-  const [activeFilters, setActiveFilters] = useState<Set<ShopFilterId>>(
-    () => new Set(),
-  );
-
-  const isDealsCategory = category === "deals-offers";
-  const isSearchActive = search.trim().length > 0;
-
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
-  const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
-  const selectedApp = useMemo(
-    () => getShopAppById(selectedAppId ?? "") ?? null,
-    [selectedAppId],
-  );
-  const selectedDeal = useMemo(() => {
-    if (!selectedDealId) return null;
-    return getDealById(selectedDealId) ?? null;
-  }, [selectedDealId]);
-
-  const dealSearchQuery = useDealSearch(search, isSearchActive);
-
-  const similarApps = useMemo(() => {
-    if (!selectedApp) return [];
-    return getSimilarApps(ALL_SHOP_APPS, selectedApp);
-  }, [selectedApp]);
-
-  const filteredApps = useMemo(
-    () =>
-      filterShopApps(ALL_SHOP_APPS, {
-        category: isSearchActive ? "all" : category,
-        search,
-        sortBy,
-        filters: activeFilters,
-      }),
-    [category, search, sortBy, activeFilters, isSearchActive],
-  );
-
-  const filteredDeals = useMemo(() => {
-    if (!isSearchActive) {
-      if (isDealsCategory) return [];
-      return filterDeals(dealSearchQuery.data ?? [], {
-        category,
-        search: "",
-      });
-    }
-    return dealSearchQuery.data ?? [];
-  }, [
-    isSearchActive,
-    isDealsCategory,
-    dealSearchQuery.data,
-    category,
-  ]);
-
-  const searchResults = useMemo((): SearchRow[] => {
-    if (!isSearchActive) return [];
-    const deals = filteredDeals.map((deal) => ({
-      kind: "deal" as const,
-      deal,
-      key: `deal-${deal.id}`,
-    }));
-    const apps = filteredApps.map((app) => ({
-      kind: "app" as const,
-      app,
-      key: `app-${app.id}`,
-    }));
-    return [...deals, ...apps];
-  }, [isSearchActive, filteredDeals, filteredApps]);
-
-  const toggleFilter = useCallback((id: ShopFilterId) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  const callSupport = useCallback(() => {
+    void dialPhone(WEB_SHOP.supportPhoneTel);
   }, []);
 
-  const clearFilters = useCallback(() => {
-    setActiveFilters(new Set());
-    setOpenMenu(null);
-  }, []);
-
-  const selectCategory = useCallback((id: ShopCategoryId) => {
-    setCategory(id);
+  const selectFilter = useCallback((id: FilterId) => {
+    setFilter(id);
     setSearch("");
-    setOpenMenu(null);
   }, []);
 
-  const tileWidth = useMemo(() => {
-    const mainW = windowWidth - SIDEBAR_W;
-    const w = mainW - GRID_H_PAD * 2 - GRID_GUTTER;
-    return Math.floor(w / 2);
-  }, [windowWidth]);
-
-  const openApp = useCallback((id: string) => {
-    setSelectedDealId(null);
-    setSelectedAppId(id);
+  const onSearchChange = useCallback((text: string) => {
+    setSearch(text);
+    if (text.trim()) setFilter("all");
   }, []);
 
-  const openDeal = useCallback((id: string) => {
-    setSelectedAppId(null);
-    setSelectedDealId(id);
-  }, []);
-
-  const handleAppOpen = useCallback(
-    async (appId: string, websiteUrl: string) => {
-      const result = await openAppLink(websiteUrl, appId);
-      if (!result.ok) {
-        showToast("Could not open. Try again.");
-      }
-    },
-    [showToast],
-  );
-
-  const handleDealOpen = useCallback(
-    async (deal: Deal) => {
-      await trackDealClick(deal.id, deal.merchant);
-      const result = await openCuelinksAffiliateLink(deal.affiliateUrl, deal.id);
-      if (!result.ok) {
-        showToast("Could not open offer. Try again.");
-      }
-    },
-    [showToast],
-  );
-
-  const renderSearchRow = useCallback(
-    ({ item }: { item: SearchRow }) => {
-      if (item.kind === "deal") {
-        return (
-          <DealCard
-            deal={item.deal}
-            width={tileWidth}
-            onOpen={() => openDeal(item.deal.id)}
-            onGetDeal={() => void handleDealOpen(item.deal)}
-          />
-        );
-      }
-      return (
-        <ShopProductCard
-          variant="app"
-          app={item.app}
-          width={tileWidth}
-          onOpen={() => openApp(item.app.id)}
-          onOpenApp={() => void handleAppOpen(item.app.id, item.app.websiteUrl)}
-        />
-      );
-    },
-    [tileWidth, openDeal, openApp, handleDealOpen, handleAppOpen],
-  );
+  const topPad = embedded ? 8 : insets.top + 8;
+  const hasResults = isSearching
+    ? searchResults.length > 0
+    : visibleSections.length > 0;
 
   return (
-    <Screen className="bg-white">
-      {toast ? <MarketplaceToast message={toast} key={toast} /> : null}
-
-      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerTitle}>{categoryLabel(category)}</Text>
+    <View style={styles.root}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 96,
+        }}
+        keyboardShouldPersistTaps="handled"
+        stickyHeaderIndices={[1]}
+      >
+        {/* Hero */}
+        <View style={[styles.hero, { paddingTop: topPad + 12 }]}>
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <LinearGradient
+              colors={[WEB_SHOP.gray50, WEB_SHOP.white]}
+              style={StyleSheet.absoluteFill}
+            />
           </View>
-          <View style={styles.headerActions}>
-            <Pressable
-              onPress={() => setSearchOpen((v) => !v)}
-              style={styles.headerIconBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Search"
-            >
-              <Ionicons name="search-outline" size={22} color={SHOP_TEXT} />
-            </Pressable>
-            <Pressable
-              style={styles.headerIconBtn}
-              accessibilityRole="button"
-              accessibilityLabel="Share"
-            >
-              <Ionicons name="share-social-outline" size={22} color={SHOP_TEXT} />
-            </Pressable>
-          </View>
+          <Text style={styles.heroTitle}>
+            Shop smarter.{"\n"}
+            <Text style={styles.heroTitleEm}>Best stores only.</Text>
+          </Text>
         </View>
 
-        {searchOpen ? (
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color={SHOP_TEXT_MUTED} />
+        {/* Sticky toolbar */}
+        <View style={styles.toolbar}>
+          <View style={styles.searchWrap}>
+            <Ionicons
+              name="search"
+              size={18}
+              color={WEB_SHOP.gray400}
+              style={styles.searchIcon}
+            />
             <TextInput
               value={search}
-              onChangeText={setSearch}
-              placeholder={`Search ${categoryLabel(category)}`}
-              placeholderTextColor={SHOP_TEXT_LIGHT}
+              onChangeText={onSearchChange}
+              placeholder="Search stores..."
+              placeholderTextColor={WEB_SHOP.gray400}
               style={styles.searchInput}
               autoCorrect={false}
               autoCapitalize="none"
-              autoFocus
+              clearButtonMode="while-editing"
+              accessibilityLabel="Search stores"
             />
             {search.length > 0 ? (
               <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color={SHOP_TEXT_LIGHT} />
+                <Ionicons name="close-circle" size={18} color={WEB_SHOP.gray300} />
               </Pressable>
             ) : null}
           </View>
-        ) : null}
-      </View>
 
-      <View style={styles.mainRow}>
-        <ScrollView
-          style={styles.sidebar}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 80 }}
-        >
-          {SHOP_CATEGORIES.map((cat) => {
-            const active = category === cat.id;
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => selectCategory(cat.id)}
-                style={[styles.sideItem, active && styles.sideItemActive]}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={cat.label}
-              >
-                {active ? <View style={styles.sideActiveBar} /> : null}
-                <View
-                  style={[
-                    styles.sideIconWrap,
-                    active && styles.sideIconWrapActive,
-                  ]}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersRow}
+          >
+            {FILTERS.map((chip) => {
+              const active = filter === chip.id;
+              return (
+                <Pressable
+                  key={chip.id}
+                  onPress={() => selectFilter(chip.id)}
+                  style={[styles.filterChip, active && styles.filterChipActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
                 >
-                  <Ionicons
-                    name={cat.icon}
-                    size={18}
-                    color={active ? SHOP_GREEN : SHOP_TEXT_MUTED}
-                  />
-                </View>
-                <Text
-                  style={[styles.sideLabel, active && styles.sideLabelActive]}
-                  numberOfLines={2}
-                >
-                  {cat.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        <View style={styles.productsPane}>
-          {!isDealsCategory || isSearchActive ? (
-            <View style={styles.filterBar}>
-              {FILTER_CHIPS.map((chip) => {
-                const isOpen = openMenu === chip.id;
-                const isActive =
-                  chip.id === "filter"
-                    ? activeFilters.size > 0
-                    : sortBy !== "featured";
-
-                return (
-                  <Pressable
-                    key={chip.id}
-                    onPress={() =>
-                      setOpenMenu((prev) => (prev === chip.id ? null : chip.id))
-                    }
+                  <Text
                     style={[
-                      styles.filterChip,
-                      (isOpen || isActive) && styles.filterChipActive,
+                      styles.filterChipText,
+                      active && styles.filterChipTextActive,
                     ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={chip.label}
-                    accessibilityState={{ expanded: isOpen }}
                   >
-                    <Ionicons
-                      name={chip.icon}
-                      size={9}
-                      color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_MUTED}
-                    />
-                    <Text
-                      style={[
-                        styles.filterChipText,
-                        (isOpen || isActive) && styles.filterChipTextActive,
-                      ]}
-                    >
-                      {chip.label}
-                    </Text>
-                    <Ionicons
-                      name={isOpen ? "chevron-up" : "chevron-down"}
-                      size={8}
-                      color={isOpen || isActive ? SHOP_GREEN : SHOP_TEXT_LIGHT}
-                    />
-                  </Pressable>
-                );
-              })}
+                    {chip.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Sections */}
+        <View style={styles.main}>
+          {!hasResults ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="search-outline" size={22} color={WEB_SHOP.gray400} />
+              </View>
+              <Text style={styles.emptyTitle}>No stores found</Text>
+              <Text style={styles.emptyBody}>
+                Try another name or pick a category above.
+              </Text>
             </View>
-          ) : null}
-
-          {!isDealsCategory || isSearchActive ? (
-            openMenu === "filter" ? (
-              <View style={styles.menuPanel}>
-                {SHOP_FILTER_OPTIONS.map((opt) => {
-                  const on = activeFilters.has(opt.id);
-                  return (
-                    <Pressable
-                      key={opt.id}
-                      onPress={() => toggleFilter(opt.id)}
-                      style={styles.menuRow}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: on }}
-                    >
-                      <Ionicons
-                        name={on ? "checkbox" : "square-outline"}
-                        size={16}
-                        color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
-                      />
-                      <Text style={styles.menuRowText}>{opt.label}</Text>
-                    </Pressable>
-                  );
-                })}
-                {activeFilters.size > 0 ? (
-                  <Pressable onPress={clearFilters} style={styles.menuClearBtn}>
-                    <Text style={styles.menuClearText}>Clear filters</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            ) : null
-          ) : null}
-
-          {!isDealsCategory || isSearchActive ? (
-            openMenu === "sort" ? (
-              <View style={styles.menuPanel}>
-                {SHOP_SORT_OPTIONS.map((opt) => {
-                  const on = sortBy === opt.id;
-                  return (
-                    <Pressable
-                      key={opt.id}
-                      onPress={() => {
-                        setSortBy(opt.id);
-                        setOpenMenu(null);
-                      }}
-                      style={styles.menuRow}
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: on }}
-                    >
-                      <Ionicons
-                        name={on ? "radio-button-on" : "radio-button-off"}
-                        size={16}
-                        color={on ? SHOP_GREEN : SHOP_TEXT_LIGHT}
-                      />
-                      <Text
-                        style={[styles.menuRowText, on && styles.menuRowTextActive]}
-                      >
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null
-          ) : null}
-
-          {isDealsCategory && !isSearchActive ? (
-            <DealsHomeScreen
-              onOpenDeal={openDeal}
-              onGetDeal={(deal) => void handleDealOpen(deal)}
-              bottomInset={insets.bottom}
-            />
-          ) : (
-            <FlatList
-              data={isSearchActive ? searchResults : filteredApps}
-              keyExtractor={(item) =>
-                isSearchActive
-                  ? (item as SearchRow).key
-                  : (item as ShopApp).id
-              }
-              numColumns={2}
-              showsVerticalScrollIndicator={false}
-              style={styles.productList}
-              columnWrapperStyle={styles.gridRow}
-              contentContainerStyle={[
-                styles.gridContent,
-                { paddingBottom: 100 + insets.bottom },
-              ]}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Ionicons name="search-outline" size={28} color={SHOP_TEXT_LIGHT} />
-                  <Text style={styles.emptyTitle}>No matches</Text>
-                  <Text style={styles.emptySubtitle}>
-                    {dealSearchQuery.isFetching
-                      ? "Searching deals and apps…"
-                      : activeFilters.size > 0 || sortBy !== "featured"
-                        ? "Try clearing filters or changing sort."
-                        : "Try another category or search."}
+          ) : isSearching ? (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHead}>
+                <View style={styles.catFallbackSearch}>
+                  <Ionicons name="search" size={18} color={WEB_SHOP.accent} />
+                </View>
+                <View style={styles.sectionMeta}>
+                  <Text style={styles.sectionTitle}>Search results</Text>
+                  <Text style={styles.sectionSub}>
+                    {searchResults.length} stores found
                   </Text>
                 </View>
-              }
-              renderItem={
-                isSearchActive
-                  ? renderSearchRow
-                  : ({ item }) => (
-                      <ShopProductCard
-                        variant="app"
-                        app={item as ShopApp}
-                        width={tileWidth}
-                        onOpen={() => openApp((item as ShopApp).id)}
-                        onOpenApp={() =>
-                          void handleAppOpen(
-                            (item as ShopApp).id,
-                            (item as ShopApp).websiteUrl,
-                          )
-                        }
-                      />
-                    )
-              }
-            />
+              </View>
+              <View style={styles.grid}>
+                {searchResults.map((store) => (
+                  <StoreTile
+                    key={store.id}
+                    store={store}
+                    tileWidth={tileWidth}
+                    onOpen={openStore}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : (
+            visibleSections.map(({ section, stores }) => (
+              <View key={section.id} style={styles.sectionCard}>
+                <View style={styles.sectionHead}>
+                  <View style={styles.catLogoWrap}>
+                    <CategoryBadge section={section} size={44} />
+                  </View>
+                  <View style={styles.sectionMeta}>
+                    <Text style={styles.sectionTitle}>{section.title}</Text>
+                    <Text style={styles.sectionSub}>
+                      {stores.length} curated stores
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.grid}>
+                  {stores.map((store) => (
+                    <StoreTile
+                      key={store.id}
+                      store={store}
+                      tileWidth={tileWidth}
+                      onOpen={openStore}
+                    />
+                  ))}
+                </View>
+              </View>
+            ))
           )}
+
+          {/* CTA */}
+          <View style={styles.ctaCard}>
+            <View style={styles.ctaCopy}>
+              <Text style={styles.ctaTitle}>Need help placing an order?</Text>
+              <Text style={styles.ctaBody}>
+                Our team can find the best deal and coordinate delivery for you.
+              </Text>
+            </View>
+            <Pressable
+              onPress={callSupport}
+              style={({ pressed }) => [
+                styles.ctaBtn,
+                pressed && styles.ctaBtnPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Call ${WEB_SHOP.supportPhoneDisplay}`}
+            >
+              <Text style={styles.ctaBtnText}>
+                Call {WEB_SHOP.supportPhoneDisplay}
+              </Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.disclaimer}>
+            InstaHelp Shop links you to official third-party websites. We are not
+            affiliated with listed brands.
+          </Text>
         </View>
-      </View>
-
-      {selectedApp ? (
-        <ShopAppDetail
-          key={selectedApp.id}
-          app={selectedApp}
-          similarApps={similarApps}
-          onClose={() => setSelectedAppId(null)}
-          onOpenApp={() =>
-            void handleAppOpen(selectedApp.id, selectedApp.websiteUrl)
-          }
-          onOpenAppDetail={openApp}
-          onGridOpenApp={(app) =>
-            void handleAppOpen(app.id, app.websiteUrl)
-          }
-        />
-      ) : null}
-
-      {selectedDeal ? (
-        <DealDetailScreen
-          key={selectedDeal.id}
-          deal={selectedDeal}
-          allDeals={dealSearchQuery.data ?? undefined}
-          onClose={() => setSelectedDealId(null)}
-          onShopNow={() => void handleDealOpen(selectedDeal)}
-          onOpenDeal={openDeal}
-          onGridShopNow={(deal) => void handleDealOpen(deal)}
-        />
-      ) : null}
-    </Screen>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: "#ffffff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    paddingHorizontal: 14,
-    paddingBottom: 10,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  headerLeft: {
+  root: {
     flex: 1,
+    backgroundColor: WEB_SHOP.white,
   },
-  headerTitle: {
-    fontSize: 18,
+  hero: {
+    position: "relative",
+    overflow: "hidden",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    alignItems: "center",
+  },
+  heroTitle: {
+    fontSize: 28,
     fontWeight: "800",
-    color: SHOP_TEXT,
+    letterSpacing: -0.8,
+    lineHeight: 34,
+    color: WEB_SHOP.black,
+    textAlign: "center",
   },
-  headerActions: {
+  heroTitleEm: {
+    color: WEB_SHOP.accent,
+    fontWeight: "800",
+  },
+  toolbar: {
+    backgroundColor: "rgba(255,255,255,0.96)",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0,0,0,0.04)",
+  },
+  searchWrap: {
     flexDirection: "row",
-    gap: 4,
-  },
-  headerIconBtn: {
-    height: 36,
-    width: 36,
     alignItems: "center",
-    justifyContent: "center",
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 10,
-    borderRadius: 10,
+    backgroundColor: WEB_SHOP.white,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#f9fafb",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderColor: WEB_SHOP.gray200,
+    borderRadius: WEB_SHOP.radiusPill,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    marginBottom: 12,
+    gap: 10,
+  },
+  searchIcon: {
+    marginLeft: 2,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: "500",
+    color: WEB_SHOP.black,
+    paddingVertical: 12,
+  },
+  filtersRow: {
+    gap: 8,
+    paddingVertical: 2,
+    paddingRight: 8,
+  },
+  filterChip: {
+    backgroundColor: WEB_SHOP.gray100,
+    borderRadius: WEB_SHOP.radiusPill,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  filterChipActive: {
+    backgroundColor: WEB_SHOP.yellow,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  filterChipText: {
+    fontSize: 13,
     fontWeight: "600",
-    color: SHOP_TEXT,
-    padding: 0,
-    margin: 0,
+    color: WEB_SHOP.black,
   },
-  mainRow: {
-    flex: 1,
+  filterChipTextActive: {
+    color: WEB_SHOP.black,
+  },
+  main: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 14,
+  },
+  sectionCard: {
+    backgroundColor: WEB_SHOP.white,
+    borderWidth: 1,
+    borderColor: WEB_SHOP.gray200,
+    borderRadius: WEB_SHOP.radiusMd,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  sectionHead: {
     flexDirection: "row",
-  },
-  sidebar: {
-    width: SIDEBAR_W,
-    flexShrink: 0,
-    flexGrow: 0,
-    borderRightWidth: 1,
-    borderRightColor: "#f0f0f0",
-    backgroundColor: "#ffffff",
-  },
-  sideItem: {
     alignItems: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 2,
-    position: "relative",
+    gap: 12,
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: WEB_SHOP.gray100,
   },
-  sideItemActive: {
-    backgroundColor: SHOP_GREEN_LIGHT,
+  catLogoWrap: {
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  sideActiveBar: {
-    position: "absolute",
-    left: 0,
-    top: 6,
-    bottom: 6,
-    width: 2,
-    borderRadius: 1,
-    backgroundColor: SHOP_GREEN,
-  },
-  sideIconWrap: {
-    height: 32,
-    width: 32,
-    borderRadius: 16,
-    backgroundColor: "#f3f4f6",
+  catFallbackSearch: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: WEB_SHOP.gray50,
+    borderWidth: 1,
+    borderColor: WEB_SHOP.gray200,
     alignItems: "center",
     justifyContent: "center",
   },
-  sideIconWrapActive: {
-    backgroundColor: "#ffffff",
-  },
-  sideLabel: {
-    marginTop: 3,
-    fontSize: 8,
-    fontWeight: "600",
-    color: SHOP_TEXT_MUTED,
-    textAlign: "center",
-    lineHeight: 10,
-    width: SIDEBAR_W - 4,
-  },
-  sideLabelActive: {
-    color: SHOP_GREEN,
-    fontWeight: "800",
-  },
-  productsPane: {
+  sectionMeta: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: "#ffffff",
   },
-  productList: {
-    flex: 1,
-  },
-  filterBar: {
-    flexDirection: "row",
-    flexGrow: 0,
-    flexShrink: 0,
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-  },
-  filterChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "#ffffff",
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    gap: 2,
-  },
-  filterChipActive: {
-    borderColor: SHOP_GREEN,
-    backgroundColor: SHOP_GREEN_LIGHT,
-  },
-  filterChipText: {
-    fontSize: 9,
-    fontWeight: "600",
-    color: SHOP_TEXT,
-    includeFontPadding: false,
-    lineHeight: 11,
-  },
-  filterChipTextActive: {
-    color: SHOP_GREEN,
-    fontWeight: "700",
-  },
-  menuPanel: {
-    flexGrow: 0,
-    flexShrink: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    backgroundColor: "#fafafa",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    gap: 2,
-  },
-  menuRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 7,
-    paddingHorizontal: 4,
-  },
-  menuRowText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: SHOP_TEXT,
-  },
-  menuRowTextActive: {
-    color: SHOP_GREEN,
+  sectionTitle: {
+    fontSize: 17,
     fontWeight: "800",
+    letterSpacing: -0.4,
+    color: WEB_SHOP.black,
   },
-  menuClearBtn: {
-    alignSelf: "flex-start",
+  sectionSub: {
     marginTop: 2,
-    paddingVertical: 4,
-    paddingHorizontal: 4,
+    fontSize: 12,
+    fontWeight: "500",
+    color: WEB_SHOP.gray400,
   },
-  menuClearText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: SHOP_GREEN,
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    rowGap: 12,
+    justifyContent: "flex-start",
   },
-  gridRow: {
-    justifyContent: "space-between",
-    paddingHorizontal: GRID_H_PAD,
-  },
-  gridContent: {
-    paddingTop: 2,
-  },
-  emptyState: {
-    padding: 24,
+  tile: {
     alignItems: "center",
+    gap: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  tilePressed: {
+    transform: [{ scale: 0.96 }],
+  },
+  tileIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: WEB_SHOP.gray50,
+    borderWidth: 1,
+    borderColor: WEB_SHOP.gray200,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  tileIconWordmark: {
+    paddingHorizontal: 6,
+  },
+  tileLogo: {
+    width: 40,
+    height: 40,
+  },
+  tileLogoWordmark: {
+    width: 48,
+    height: 20,
+  },
+  tileInitial: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: WEB_SHOP.gray400,
+  },
+  tileName: {
+    fontSize: 10,
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 13,
+    color: WEB_SHOP.gray700,
+    maxWidth: "100%",
+  },
+  empty: {
+    alignItems: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 16,
+  },
+  emptyIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: WEB_SHOP.gray100,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
   },
   emptyTitle: {
-    marginTop: 10,
-    fontSize: 15,
-    fontWeight: "800",
-    color: SHOP_TEXT,
+    fontSize: 20,
+    fontWeight: "700",
+    color: WEB_SHOP.black,
+    marginBottom: 8,
   },
-  emptySubtitle: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: "600",
-    color: SHOP_TEXT_MUTED,
+  emptyBody: {
+    fontSize: 14,
+    color: WEB_SHOP.gray400,
     textAlign: "center",
+  },
+  ctaCard: {
+    marginTop: 10,
+    backgroundColor: WEB_SHOP.black,
+    borderRadius: WEB_SHOP.radiusLg,
+    paddingHorizontal: 18,
+    paddingVertical: 20,
+    gap: 14,
+    alignItems: "stretch",
+  },
+  ctaCopy: {
+    alignItems: "center",
+  },
+  ctaTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: -0.3,
+    color: WEB_SHOP.white,
+    textAlign: "center",
+  },
+  ctaBody: {
+    marginTop: 4,
+    fontSize: 13,
+    color: "rgba(255,255,255,0.65)",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  ctaBtn: {
+    backgroundColor: WEB_SHOP.yellow,
+    borderRadius: WEB_SHOP.radiusPill,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    alignItems: "center",
+  },
+  ctaBtnPressed: {
+    backgroundColor: WEB_SHOP.yellowDk,
+  },
+  ctaBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: WEB_SHOP.black,
+  },
+  disclaimer: {
+    marginTop: 14,
+    marginBottom: 8,
+    fontSize: 11,
+    lineHeight: 18,
+    color: WEB_SHOP.gray400,
+    textAlign: "center",
+    paddingHorizontal: 8,
   },
 });

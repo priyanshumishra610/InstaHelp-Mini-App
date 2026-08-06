@@ -152,7 +152,7 @@ export function HangmanGameScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <LinearGradient
-          colors={["#7c3aed", "#9333ea", "#c084fc"]}
+          colors={["#004aad", "#0066FF", "#FFD600"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="overflow-hidden rounded-[24px] p-px"
@@ -177,7 +177,7 @@ export function HangmanGameScreen() {
 
             <View className="mt-3 flex-row flex-wrap gap-2">
               <View className="flex-row items-center gap-1.5 rounded-xl border border-neutral-100 bg-neutral-50 px-2.5 py-1.5">
-                <Ionicons name="wallet-outline" size={16} color="#7C3AED" />
+                <Ionicons name="wallet-outline" size={16} color="#004aad" />
                 <Text className="text-[12px] font-extrabold text-neutral-800">
                   {credits} cr
                 </Text>
@@ -188,7 +188,7 @@ export function HangmanGameScreen() {
                 <Ionicons
                   name={claimedToday ? "checkmark-done" : "gift-outline"}
                   size={16}
-                  color={claimedToday ? "#059669" : "#7c3aed"}
+                  color={claimedToday ? "#059669" : "#004aad"}
                 />
                 <Text
                   className={`text-[11px] font-extrabold ${claimedToday ? "text-emerald-800" : "text-violet-900"}`}
@@ -273,7 +273,7 @@ export function HangmanGameScreen() {
         </View>
 
         <LinearGradient
-          colors={["#7c3aed", "#581c87"]}
+          colors={["#004aad", "#581c87"]}
           className="mt-6 overflow-hidden rounded-full"
           style={
             Platform.OS === "ios"

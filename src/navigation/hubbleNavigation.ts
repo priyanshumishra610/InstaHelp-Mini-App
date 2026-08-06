@@ -6,7 +6,7 @@ import { router } from "expo-router";
  */
 export function pushHubbleWebView(params: Record<string, string>) {
   router.push({
-    pathname: "/(tabs)/giftcards",
-    params,
+    pathname: "/(tabs)/shop",
+    params: { section: "giftcards", ...params },
   } as never);
 }

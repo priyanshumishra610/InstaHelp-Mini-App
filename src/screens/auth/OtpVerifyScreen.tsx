@@ -11,7 +11,7 @@ import { Redirect } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-/** OTP / Firebase auth disabled — sheet sign-in uses phone only. */
+/** OTP / Firebase auth disabled — backend sign-in uses phone only. */
 export function OtpVerifyScreen() {
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,

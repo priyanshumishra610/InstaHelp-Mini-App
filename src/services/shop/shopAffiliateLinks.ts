@@ -1,6 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as WebBrowser from "expo-web-browser";
+import { Platform } from "react-native";
 
+import {
+  initializeCuelinks,
+  openCuelinksTrackedUrl,
+} from "@/services/cuelinksService";
 import type { AffiliateTapLog, ShopPlatform } from "@/types/shopCatalog";
 
 const TAP_LOG_KEY = "instahelp-shop-affiliate-taps";
@@ -16,8 +21,19 @@ export async function openAffiliateLink(
     return { ok: false, error: "empty" };
   }
 
+  initializeCuelinks();
+
   try {
     await logAffiliateTap(productId, platform);
+    const result = await openCuelinksTrackedUrl(trimmed, {
+      subid: productId,
+      subid2: Platform.OS,
+      subid3: `product-${platform}`,
+      source: "app",
+      analyticsId: `product-${productId}`,
+    });
+    if (result.ok) return { ok: true };
+
     await WebBrowser.openBrowserAsync(trimmed, {
       presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
       enableBarCollapsing: true,

@@ -81,7 +81,7 @@ export async function apiGetUserProfile(phone: string) {
   return postJson<UserProfile>({ action: "getUserProfile", phone });
 }
 
-/** Upsert phone row in Profiles/Users sheet (sign-in / registration). */
+/** Upsert phone row in the backend (sign-in / registration). */
 export async function apiRegisterPhone(phone: string) {
   return postJson<UserProfile>({ action: "register", phone });
 }

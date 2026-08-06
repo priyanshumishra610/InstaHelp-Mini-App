@@ -370,7 +370,7 @@ export function ShopProductDetail({
                   Best price across stores
                 </Text>
                 <Text style={styles.infoCardSub}>
-                  Tap a store to open affiliate link
+                  Tap a store to open the offer
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={SHOP_TEXT_LIGHT} />

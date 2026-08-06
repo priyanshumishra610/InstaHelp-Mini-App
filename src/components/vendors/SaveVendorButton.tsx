@@ -24,7 +24,7 @@ export function SaveVendorButton({ vendorId, size = 20, className }: Props) {
       <Ionicons
         name={saved ? "bookmark" : "bookmark-outline"}
         size={size}
-        color={saved ? "#7C3AED" : "#525252"}
+        color={saved ? "#0A0A0A" : "#737373"}
       />
     </Pressable>
   );

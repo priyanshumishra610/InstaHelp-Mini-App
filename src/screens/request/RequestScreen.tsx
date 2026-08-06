@@ -2,7 +2,7 @@ import { serviceRequestSchema } from "@/api/schemas/serviceRequest";
 import { QUICK_SERVICES } from "@/constants/quickServices";
 import { ServiceIcon } from "@/components/service/ServiceIcon";
 import { Button } from "@/components/ui/Button";
-import { DateTimePickerField } from "@/components/ui/DateTimePickerField";
+import { DateTimeSlotPicker } from "@/components/ui/DateTimeSlotPicker";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
@@ -28,13 +28,6 @@ import Animated, { FadeInUp } from "react-native-reanimated";
 import type { z } from "zod";
 
 type Form = z.infer<typeof serviceRequestSchema>;
-
-const TIME_PRESETS = [
-  "Today, ASAP",
-  "Today evening",
-  "Tomorrow morning",
-  "This weekend",
-];
 
 function StepRow({
   step,
@@ -183,17 +176,13 @@ export function RequestScreen() {
               end={{ x: 1, y: 1 }}
               className="mt-2 overflow-hidden rounded-3xl border border-accent-tint/80 p-5"
               style={{
-                shadowColor: "#7C3AED",
+                shadowColor: "#004aad",
                 shadowOpacity: 0.08,
                 shadowRadius: 16,
                 shadowOffset: { width: 0, height: 8 },
                 elevation: 4,
               }}
             >
-              <View
-                pointerEvents="none"
-                className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-accent/10"
-              />
               <View className="flex-row items-center gap-4">
                 {service ? (
                   <View className="rounded-2xl border border-white/80 bg-white p-2 shadow-sm">
@@ -302,55 +291,16 @@ export function RequestScreen() {
             <Controller
               control={control}
               name="preferredTime"
-              render={({ field: { onChange, onBlur, value } }) => (
+              render={({ field: { onChange, value } }) => (
                 <FormField
                   label="Preferred time"
                   error={errors.preferredTime?.message}
                 >
-                  <Input
-                    placeholder="e.g. Today 4–6 pm or Saturday 10 am"
+                  <DateTimeSlotPicker
                     value={value}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
+                    onChange={onChange}
                     error={!!errors.preferredTime}
                   />
-                  <View className="mt-3 flex-row flex-wrap gap-2">
-                    {TIME_PRESETS.map((t) => {
-                      const on = watchedTime === t;
-                      return (
-                        <Pressable
-                          key={t}
-                          onPress={() => onChange(t)}
-                          className={`rounded-2xl px-3.5 py-2 active:opacity-90 ${
-                            on
-                              ? "bg-accent shadow-sm"
-                              : "border border-neutral-200 bg-neutral-50"
-                          }`}
-                        >
-                          <Text
-                            className={`text-xs font-bold ${
-                              on
-                                ? "text-accent-foreground"
-                                : "text-neutral-700"
-                            }`}
-                          >
-                            {t}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                  <View className="mt-4">
-                    <DateTimePickerField
-                      label="Pick exact time"
-                      value={
-                        value && !TIME_PRESETS.includes(value)
-                          ? value
-                          : undefined
-                      }
-                      onPick={(formatted) => onChange(formatted)}
-                    />
-                  </View>
                 </FormField>
               )}
             />
@@ -434,7 +384,7 @@ export function RequestScreen() {
                     </Text>
                   </View>
                   <View className="h-9 w-9 items-center justify-center rounded-full bg-white">
-                    <Ionicons name="add" size={20} color="#7C3AED" />
+                    <Ionicons name="add" size={20} color="#004aad" />
                   </View>
                 </Pressable>
               )}

@@ -3,6 +3,7 @@ import { SplashExitOverlay } from "@/components/ui/SplashExitOverlay";
 import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { ExperienceSyncProvider } from "@/providers/ExperienceSyncProvider";
 import { ShopSyncProvider } from "@/providers/ShopSyncProvider";
 import { CmsRealtimeProvider } from "@/providers/CmsRealtimeProvider";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
@@ -54,6 +55,7 @@ export default function RootLayout() {
         <CmsRealtimeProvider />
         <AuthProvider>
           <ShopSyncProvider>
+          <ExperienceSyncProvider>
           <ThemeProvider value={DefaultTheme}>
             <View style={{ flex: 1, backgroundColor: SURFACE }} className="flex-1">
               <StatusBar style="dark" />
@@ -113,6 +115,7 @@ export default function RootLayout() {
               </Stack>
             </View>
           </ThemeProvider>
+          </ExperienceSyncProvider>
           </ShopSyncProvider>
         </AuthProvider>
       </QueryProvider>

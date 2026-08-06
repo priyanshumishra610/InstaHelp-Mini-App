@@ -25,11 +25,10 @@ export const SHOP_SORT_OPTIONS: { id: ShopSortId; label: string }[] = [
 ];
 
 export const SHOP_FILTER_OPTIONS: { id: ShopFilterId; label: string }[] = [
+  { id: "discount", label: "On discount" },
+  { id: "in-stock", label: "In stock" },
   { id: "rated-4", label: "Rated 4★ & above" },
   { id: "has-reviews", label: "Has reviews" },
-  { id: "apps", label: "Apps" },
-  { id: "trending-apps", label: "Trending Apps" },
-  { id: "new-apps", label: "New Apps" },
 ];
 
 function isInStock(stock: string): boolean {

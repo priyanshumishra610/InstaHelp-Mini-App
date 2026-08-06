@@ -1,10 +1,18 @@
+import { LoginHeroVisual } from "@/components/auth/LoginHeroVisual";
+import { AppAtmosphere } from "@/components/ui/AppAtmosphere";
+import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
 import {
-  SPLASH_BACKGROUND,
   SPLASH_BRAND_TAGLINE,
   SPLASH_BRAND_TITLE,
   SPLASH_MIN_DURATION_MS,
 } from "@/constants/splash";
-import { LinearGradient } from "expo-linear-gradient";
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  useFonts,
+} from "@expo-google-fonts/poppins";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useRef, useState } from "react";
@@ -16,78 +24,21 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withRepeat,
-  withSequence,
   withTiming,
 } from "react-native-reanimated";
 
 const BRAND_DELAY_MS = 120;
-const LETTER_STAGGER_MS = 52;
-const LETTER_IN_MS = 400;
-const TAGLINE_DELAY_MS = BRAND_DELAY_MS + SPLASH_BRAND_TITLE.length * LETTER_STAGGER_MS + 80;
-const TAGLINE_IN_MS = 420;
-const TITLE_PULSE_MS = 1400;
-const EXIT_MS = 560;
-
-const LETTERS = SPLASH_BRAND_TITLE.split("");
+const TAGLINE_DELAY_MS = 380;
+const HERO_DELAY_MS = 280;
+const EXIT_MS = 480;
 
 type Props = {
   onFinish?: () => void;
   onExitStart?: () => void;
   minDurationMs?: number;
-  /** Wait until auth/storage is ready before fade-out */
   readyToExit?: boolean;
-  /** Skip min-duration wait and run exit immediately (overlay handoff). */
   exitImmediately?: boolean;
 };
-
-function AnimatedLetter({
-  char,
-  index,
-  exiting,
-}: {
-  char: string;
-  index: number;
-  exiting: boolean;
-}) {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(8);
-
-  useEffect(() => {
-    if (exiting) return;
-    const delay = BRAND_DELAY_MS + index * LETTER_STAGGER_MS;
-    opacity.value = withDelay(
-      delay,
-      withTiming(1, { duration: LETTER_IN_MS, easing: Easing.out(Easing.cubic) }),
-    );
-    translateY.value = withDelay(
-      delay,
-      withTiming(0, { duration: LETTER_IN_MS, easing: Easing.out(Easing.cubic) }),
-    );
-    return () => {
-      cancelAnimation(opacity);
-      cancelAnimation(translateY);
-    };
-  }, [exiting, index, opacity, translateY]);
-
-  useEffect(() => {
-    if (!exiting) return;
-    opacity.value = withTiming(0, {
-      duration: EXIT_MS * 0.85,
-      easing: Easing.in(Easing.cubic),
-    });
-    translateY.value = withTiming(-6, { duration: EXIT_MS * 0.85 });
-  }, [exiting, opacity, translateY]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  return (
-    <Animated.Text style={[styles.titleLetter, style]}>{char}</Animated.Text>
-  );
-}
 
 export function AnimatedSplash({
   onFinish,
@@ -97,15 +48,26 @@ export function AnimatedSplash({
   exitImmediately = false,
 }: Props) {
   const screenOpacity = useSharedValue(1);
-  const titlePulse = useSharedValue(1);
+  const brandOpacity = useSharedValue(0);
+  const brandTranslateY = useSharedValue(10);
+  const heroOpacity = useSharedValue(0);
+  const heroTranslateY = useSharedValue(14);
   const taglineOpacity = useSharedValue(0);
-  const taglineTranslateY = useSharedValue(6);
+  const taglineTranslateY = useSharedValue(8);
+  const barProgress = useSharedValue(0);
 
   const onFinishRef = useRef(onFinish);
   const onExitStartRef = useRef(onExitStart);
   const [minElapsed, setMinElapsed] = useState(exitImmediately);
   const [exiting, setExiting] = useState(exitImmediately);
   const exitStarted = useRef(exitImmediately);
+
+  const [fontsLoaded] = useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
 
   useEffect(() => {
     onFinishRef.current = onFinish;
@@ -123,48 +85,69 @@ export function AnimatedSplash({
   }, []);
 
   useEffect(() => {
-    if (exiting) return;
+    if (exiting || !fontsLoaded) return;
 
-    const pulseStart =
-      BRAND_DELAY_MS + LETTERS.length * LETTER_STAGGER_MS + LETTER_IN_MS;
-    titlePulse.value = withDelay(
-      pulseStart,
-      withRepeat(
-        withSequence(
-          withTiming(1.025, {
-            duration: TITLE_PULSE_MS,
-            easing: Easing.inOut(Easing.ease),
-          }),
-          withTiming(1, {
-            duration: TITLE_PULSE_MS,
-            easing: Easing.inOut(Easing.ease),
-          }),
-        ),
-        -1,
-        false,
-      ),
+    brandOpacity.value = withDelay(
+      BRAND_DELAY_MS,
+      withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }),
+    );
+    brandTranslateY.value = withDelay(
+      BRAND_DELAY_MS,
+      withTiming(0, { duration: 420, easing: Easing.out(Easing.cubic) }),
+    );
+
+    heroOpacity.value = withDelay(
+      HERO_DELAY_MS,
+      withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) }),
+    );
+    heroTranslateY.value = withDelay(
+      HERO_DELAY_MS,
+      withTiming(0, { duration: 520, easing: Easing.out(Easing.cubic) }),
     );
 
     taglineOpacity.value = withDelay(
       TAGLINE_DELAY_MS,
-      withTiming(1, { duration: TAGLINE_IN_MS, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }),
     );
     taglineTranslateY.value = withDelay(
       TAGLINE_DELAY_MS,
-      withTiming(0, { duration: TAGLINE_IN_MS, easing: Easing.out(Easing.cubic) }),
+      withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }),
+    );
+
+    barProgress.value = withDelay(
+      TAGLINE_DELAY_MS + 80,
+      withTiming(1, {
+        duration: Math.max(minDurationMs - TAGLINE_DELAY_MS - 200, 900),
+        easing: Easing.inOut(Easing.cubic),
+      }),
     );
 
     return () => {
-      cancelAnimation(titlePulse);
+      cancelAnimation(brandOpacity);
+      cancelAnimation(brandTranslateY);
+      cancelAnimation(heroOpacity);
+      cancelAnimation(heroTranslateY);
       cancelAnimation(taglineOpacity);
       cancelAnimation(taglineTranslateY);
+      cancelAnimation(barProgress);
       cancelAnimation(screenOpacity);
     };
-  }, [exiting, screenOpacity, taglineOpacity, taglineTranslateY, titlePulse]);
+  }, [
+    barProgress,
+    brandOpacity,
+    brandTranslateY,
+    exiting,
+    fontsLoaded,
+    heroOpacity,
+    heroTranslateY,
+    minDurationMs,
+    screenOpacity,
+    taglineOpacity,
+    taglineTranslateY,
+  ]);
 
   useEffect(() => {
-    const canExit =
-      exitImmediately || (minElapsed && readyToExit);
+    const canExit = exitImmediately || (minElapsed && readyToExit);
     if (!canExit || exitStarted.current) return;
     exitStarted.current = true;
     setExiting(true);
@@ -179,11 +162,11 @@ export function AnimatedSplash({
       onFinishRef.current?.();
     };
 
-    cancelAnimation(titlePulse);
-    titlePulse.value = withTiming(1, { duration: 120 });
-
-    taglineOpacity.value = withTiming(0, { duration: EXIT_MS * 0.85 });
-    taglineTranslateY.value = withTiming(-4, { duration: EXIT_MS * 0.85 });
+    taglineOpacity.value = withTiming(0, { duration: EXIT_MS * 0.55 });
+    taglineTranslateY.value = withTiming(-6, { duration: EXIT_MS * 0.55 });
+    barProgress.value = withTiming(1, { duration: EXIT_MS * 0.35 });
+    brandOpacity.value = withTiming(0, { duration: EXIT_MS * 0.75 });
+    heroOpacity.value = withTiming(0, { duration: EXIT_MS * 0.75 });
     screenOpacity.value = withTiming(
       0,
       { duration: EXIT_MS, easing: Easing.inOut(Easing.cubic) },
@@ -198,21 +181,29 @@ export function AnimatedSplash({
       if (fallback) clearTimeout(fallback);
     };
   }, [
+    barProgress,
+    brandOpacity,
     exitImmediately,
+    heroOpacity,
     minElapsed,
     readyToExit,
     screenOpacity,
     taglineOpacity,
     taglineTranslateY,
-    titlePulse,
   ]);
 
   const screenStyle = useAnimatedStyle(() => ({
     opacity: screenOpacity.value,
   }));
 
-  const titleRowStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: titlePulse.value }],
+  const brandStyle = useAnimatedStyle(() => ({
+    opacity: brandOpacity.value,
+    transform: [{ translateY: brandTranslateY.value }],
+  }));
+
+  const heroStyle = useAnimatedStyle(() => ({
+    opacity: heroOpacity.value,
+    transform: [{ translateY: heroTranslateY.value }],
   }));
 
   const taglineStyle = useAnimatedStyle(() => ({
@@ -220,29 +211,46 @@ export function AnimatedSplash({
     transform: [{ translateY: taglineTranslateY.value }],
   }));
 
+  const barStyle = useAnimatedStyle(() => ({
+    width: 72 * Math.max(barProgress.value, 0.04),
+    opacity: 0.45 + barProgress.value * 0.45,
+  }));
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.root}>
+        <StatusBar style="dark" />
+        <AppAtmosphere variant="auth" />
+      </View>
+    );
+  }
+
   return (
     <Animated.View style={[styles.root, screenStyle]}>
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={["#0A0A1A", "#0f1028", "#12122a"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <StatusBar style="dark" />
+      <AppAtmosphere variant="auth" />
+
       <View style={styles.center}>
-        <Animated.View style={[styles.brandBlock, titleRowStyle]}>
-          <View style={styles.titleRow}>
-            {LETTERS.map((char, index) => (
-              <AnimatedLetter
-                key={`${char}-${index}`}
-                char={char}
-                index={index}
-                exiting={exiting}
-              />
-            ))}
-          </View>
-          <Animated.Text style={[styles.tagline, taglineStyle]}>
+        <Animated.View style={[styles.brandBlock, brandStyle]}>
+          <Animated.Text style={[styles.title, { fontFamily: AUTH_FONT.bold }]}>
+            {SPLASH_BRAND_TITLE}
+          </Animated.Text>
+          <Animated.Text
+            style={[styles.tagline, taglineStyle, { fontFamily: AUTH_FONT.medium }]}
+          >
             {SPLASH_BRAND_TAGLINE}
           </Animated.Text>
         </Animated.View>
+
+        <Animated.View style={[styles.heroWrap, heroStyle]}>
+          <LoginHeroVisual />
+        </Animated.View>
+
+        {!exiting ? (
+          <View style={styles.progressTrack}>
+            <Animated.View style={[styles.progressBar, barStyle]} />
+          </View>
+        ) : null}
       </View>
     </Animated.View>
   );
@@ -251,36 +259,51 @@ export function AnimatedSplash({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: SPLASH_BACKGROUND,
+    backgroundColor: "#F7F6FB",
     alignItems: "center",
     justifyContent: "center",
   },
   center: {
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
+    width: "100%",
+    maxWidth: 440,
   },
   brandBlock: {
     alignItems: "center",
   },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  titleLetter: {
-    fontSize: 40,
-    fontWeight: "800",
-    color: "#ffffff",
-    letterSpacing: -0.8,
+  title: {
+    fontSize: 34,
+    color: "#111827",
+    letterSpacing: -0.6,
     textAlign: "center",
   },
   tagline: {
-    marginTop: 10,
-    fontSize: 15,
-    fontWeight: "500",
-    color: "rgba(255,255,255,0.58)",
+    marginTop: 6,
+    fontSize: 14,
     letterSpacing: 0.2,
+    color: "#6B7280",
     textAlign: "center",
   },
+  heroWrap: {
+    marginTop: 8,
+    width: "100%",
+    alignItems: "center",
+  },
+  progressTrack: {
+    marginTop: 28,
+    width: 72,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,74,173,0.12)",
+    overflow: "hidden",
+  },
+  progressBar: {
+    height: "100%",
+    borderRadius: 2,
+    backgroundColor: AUTH_PRIMARY,
+  },
 });
+
+export { SPLASH_BRAND_TITLE };

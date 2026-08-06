@@ -17,6 +17,7 @@ export function shopProductsCsvUrl(): string {
   return `https://docs.google.com/spreadsheets/d/${SHOP_SHEET_ID}/export?format=csv&gid=${SHOP_PRODUCTS_GID}`;
 }
 
+/** Catalog sync watermark cell (DASHBOARD!A2). */
 export function shopTimestampCsvUrl(): string {
   if (SHOP_SHEET_PUBLISH_ID) {
     return `https://docs.google.com/spreadsheets/d/e/${SHOP_SHEET_PUBLISH_ID}/gviz/tq?tqx=out:csv&range=DASHBOARD!A2`;

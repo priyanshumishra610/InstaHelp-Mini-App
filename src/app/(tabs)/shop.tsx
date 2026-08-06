@@ -1,5 +1,5 @@
-import { InstaHelpShopScreen } from "@/screens/shop/InstaHelpShopScreen";
+import { MergedShopScreen } from "@/screens/shop/MergedShopScreen";
 
 export default function ShopRoute() {
-  return <InstaHelpShopScreen />;
+  return <MergedShopScreen />;
 }

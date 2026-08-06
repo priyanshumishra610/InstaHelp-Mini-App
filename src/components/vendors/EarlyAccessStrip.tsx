@@ -1,10 +1,11 @@
 import { EARLY_ACCESS_CATEGORIES } from "@/constants/exploreEntitlements";
 import { MarketplaceVendorCard } from "@/components/vendors/MarketplaceVendorCard";
+import { GlowButton } from "@/components/ui/GlowButton";
+import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
 import type { VendorRecord } from "@/types/vendorMarketplace";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   vendors: VendorRecord[];
@@ -31,60 +32,43 @@ export function EarlyAccessStrip({
     );
     return vendors
       .filter((v) => set.has(v.category.trim().toLowerCase()))
-      .slice(0, canAccess ? 6 : 3);
+      .slice(0, canAccess ? 4 : 2);
   }, [canAccess, vendors]);
 
   if (earlyVendors.length === 0) return null;
 
   if (!canAccess) {
     return (
-      <View className="mx-4 mb-3 overflow-hidden rounded-3xl border border-accent/20 bg-accent-soft/40 p-4">
-        <View className="flex-row items-start gap-3">
-          <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
-            <Ionicons name="sparkles" size={20} color="#7C3AED" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-[15px] font-extrabold text-neutral-900">
-              Early access categories
-            </Text>
-            <Text className="mt-1 text-[12px] leading-5 text-neutral-600">
-              Pro+ unlocks {EARLY_ACCESS_CATEGORIES.slice(0, 2).join(", ")} and more
-              before they go mainstream.
-            </Text>
-            <Pressable
-              onPress={() => router.push("/(tabs)/vendors/plans")}
-              className="mt-3 self-start rounded-full bg-neutral-950 px-4 py-2.5"
-            >
-              <Text className="text-[12px] font-bold text-white">
-                Unlock with Pro+
-              </Text>
-            </Pressable>
-          </View>
+      <View style={styles.promoBlock}>
+        <Text style={[styles.promoTitle, { fontFamily: AUTH_FONT.bold }]}>
+          Early access categories
+        </Text>
+        <Text style={[styles.promoCopy, { fontFamily: AUTH_FONT.regular }]}>
+          Pro+ unlocks premium categories before they go mainstream.
+        </Text>
+        <View style={styles.promoCta}>
+          <GlowButton
+            label="Unlock with Pro+"
+            onPress={() => router.push("/(tabs)/vendors/plans")}
+            variant="soft"
+          />
         </View>
       </View>
     );
   }
 
   return (
-    <View className="pb-2">
-      <View className="px-4 pb-2">
-        <View className="flex-row items-center gap-2">
-          <Ionicons name="sparkles" size={16} color="#7C3AED" />
-          <Text className="text-[14px] font-extrabold text-neutral-900">
-            Early access · Pro+
-          </Text>
-        </View>
-        <Text className="mt-0.5 text-[11px] font-semibold text-neutral-500">
-          New categories live for Pro+ members first
-        </Text>
-      </View>
+    <View style={styles.block}>
+      <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
+        EARLY ACCESS · PRO+
+      </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 0 }}
+        contentContainerStyle={styles.scrollContent}
       >
         {earlyVendors.map((vendor) => (
-          <View key={vendor.id} style={{ width: 320, marginRight: 12 }}>
+          <View key={vendor.id} style={styles.cardWrap}>
             <MarketplaceVendorCard
               vendor={vendor}
               distanceKm={distanceKmFromUser(vendor)}
@@ -99,3 +83,45 @@ export function EarlyAccessStrip({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  block: {
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  eyebrow: {
+    paddingHorizontal: 20,
+    marginBottom: 8,
+    fontSize: 10,
+    letterSpacing: 1.3,
+    color: AUTH_PRIMARY,
+  },
+  scrollContent: {
+    paddingHorizontal: 12,
+  },
+  cardWrap: {
+    width: 300,
+    marginHorizontal: 8,
+  },
+  promoBlock: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,74,173,0.08)",
+  },
+  promoTitle: {
+    fontSize: 16,
+    color: "#111827",
+  },
+  promoCopy: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#6B7280",
+  },
+  promoCta: {
+    marginTop: 12,
+    alignSelf: "flex-start",
+  },
+});

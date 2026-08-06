@@ -1,7 +1,17 @@
+import { SPRING } from "@/constants/designSystem";
 import { ACCENT } from "@/constants/theme";
 import { cn } from "@/utils/cn";
+import * as Haptics from "expo-haptics";
+import { MotiView } from "moti";
 import type { PropsWithChildren } from "react";
 import { ActivityIndicator, Pressable, Text } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Variant = "primary" | "secondary" | "ghost" | "outline" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -28,8 +38,16 @@ export function Button({
   loading,
   accessibilityLabel,
 }: Props) {
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   const handlePress = () => {
     if (disabled || loading) return;
+    if (variant === "primary" || variant === "danger") {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     onPress?.();
   };
 
@@ -45,30 +63,42 @@ export function Button({
   };
 
   const styles: Record<Variant, string> = {
-    primary: "bg-accent  active:opacity-90",
-    secondary: "bg-neutral-900 dark:bg-white active:opacity-90",
+    primary: "bg-accent-yellow active:opacity-90",
+    secondary: "bg-accent active:opacity-90",
     ghost: "bg-transparent active:opacity-70",
     outline:
       "border border-neutral-300 dark:border-neutral-700 bg-transparent active:opacity-80",
     danger: "bg-red-500 active:opacity-90",
   };
   const textStyles: Record<Variant, string> = {
-    primary: "text-accent-foreground font-bold",
-    secondary: "text-white dark:text-neutral-900 font-semibold",
+    primary: "text-neutral-950 font-bold",
+    secondary: "text-white font-semibold",
     ghost: "text-neutral-900 dark:text-white font-medium",
     outline: "text-neutral-900 dark:text-neutral-100 font-semibold",
     danger: "text-white font-semibold",
   };
 
   const indicatorColor =
-    variant === "outline" || variant === "ghost" ? ACCENT : "#ffffff";
+    variant === "primary"
+      ? "#0A0A0A"
+      : variant === "outline" || variant === "ghost"
+        ? ACCENT
+        : "#ffffff";
 
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !!disabled || !!loading }}
       onPress={handlePress}
+      onPressIn={() => {
+        if (disabled || loading) return;
+        scale.value = withSpring(0.96, SPRING.snappy);
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, SPRING.gentle);
+      }}
+      style={pressStyle}
       className={cn(
         "items-center justify-center",
         sizes[size],
@@ -77,15 +107,22 @@ export function Button({
         className,
       )}
     >
-      {loading ? (
-        <ActivityIndicator color={indicatorColor} />
-      ) : typeof children === "string" ? (
-        <Text className={cn(sizeText[size], textStyles[variant], textClassName)}>
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
-    </Pressable>
+      <MotiView
+        key={loading ? "loading" : "content"}
+        from={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ type: "timing", duration: 150 }}
+      >
+        {loading ? (
+          <ActivityIndicator color={indicatorColor} />
+        ) : typeof children === "string" ? (
+          <Text className={cn(sizeText[size], textStyles[variant], textClassName)}>
+            {children}
+          </Text>
+        ) : (
+          children
+        )}
+      </MotiView>
+    </AnimatedPressable>
   );
 }

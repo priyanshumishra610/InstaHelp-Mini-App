@@ -40,7 +40,7 @@ export function TrendingServicesRow() {
                       router.push(`/request/${svc.slug}`);
                     } else {
                       router.push({
-                        pathname: "/(tabs)/vendors",
+                        pathname: "/(tabs)",
                         params: { search: svc.name },
                       });
                     }
@@ -51,7 +51,7 @@ export function TrendingServicesRow() {
                     <Ionicons
                       name={(svc.icon as ComponentProps<typeof Ionicons>["name"]) ?? "construct-outline"}
                       size={22}
-                      color="#7C3AED"
+                      color="#004aad"
                     />
                   </View>
                   <Text

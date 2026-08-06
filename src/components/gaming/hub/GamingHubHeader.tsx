@@ -16,11 +16,10 @@ export function GamingHubHeader({ onGiftPress, onMenuPress }: Props) {
       <View style={styles.actions}>
         <View style={styles.avatarWrap}>
           <LinearGradient
-            colors={["#7c3aed", "#4f46e5", "#7C3AED"]}
+            colors={["#004aad", "#003780"]}
             style={styles.avatar}
           >
-            <View style={styles.bubbleA} />
-            <View style={styles.bubbleB} />
+            <Ionicons name="game-controller" size={20} color="#fff" />
           </LinearGradient>
         </View>
 
@@ -83,24 +82,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-  },
-  bubbleA: {
-    position: "absolute",
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "rgba(255,255,255,0.45)",
-    top: 8,
-    left: 6,
-  },
-  bubbleB: {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "rgba(196,181,253,0.9)",
-    bottom: 7,
-    right: 8,
   },
   iconBtn: {
     padding: 2,

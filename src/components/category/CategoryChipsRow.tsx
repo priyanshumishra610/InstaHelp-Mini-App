@@ -1,10 +1,9 @@
+import { FilterPill } from "@/components/ui/FilterPill";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useCategories } from "@/hooks/useCategories";
-import { Ionicons } from "@expo/vector-icons";
-import type { ComponentProps } from "react";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
-
-type IoniconName = ComponentProps<typeof Ionicons>["name"];
+import { MotiView } from "moti";
+import { ScrollView, View } from "react-native";
 
 export function CategoryChipsRow() {
   const router = useRouter();
@@ -14,46 +13,41 @@ export function CategoryChipsRow() {
 
   return (
     <View className="mt-6">
-      <View className="mb-3 px-5">
-        <Text className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-accent-muted">
-          Categories
-        </Text>
-        <Text className="mt-1 text-[18px] font-extrabold text-neutral-900">
-          Browse by service type
-        </Text>
+      <View className="px-5">
+        <SectionHeader
+          eyebrow="Categories"
+          title="Browse by service type"
+          delay={0}
+        />
       </View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+        contentContainerStyle={{ paddingHorizontal: 20, gap: 10, paddingVertical: 4 }}
       >
         {loading
           ? [0, 1, 2, 3].map((i) => (
-              <View
+              <MotiView
                 key={i}
+                from={{ opacity: 0.4 }}
+                animate={{ opacity: 1 }}
+                transition={{ type: "timing", duration: 800, loop: true }}
                 className="h-10 w-28 rounded-full bg-neutral-100"
               />
             ))
-          : categories.map((cat) => (
-              <Pressable
+          : categories.map((cat, index) => (
+              <FilterPill
                 key={cat.id}
+                label={cat.name}
+                icon="explore"
+                index={index}
                 onPress={() =>
                   router.push({
-                    pathname: "/(tabs)/vendors",
+                    pathname: "/(tabs)",
                     params: { category: cat.name },
                   })
                 }
-                className="flex-row items-center gap-2 rounded-full border border-accent/15 bg-white px-4 py-2.5 active:opacity-90"
-              >
-                <Ionicons
-                  name={(cat.icon as IoniconName) ?? "grid-outline"}
-                  size={16}
-                  color="#7C3AED"
-                />
-                <Text className="text-[12px] font-bold text-neutral-800">
-                  {cat.name}
-                </Text>
-              </Pressable>
+              />
             ))}
       </ScrollView>
     </View>

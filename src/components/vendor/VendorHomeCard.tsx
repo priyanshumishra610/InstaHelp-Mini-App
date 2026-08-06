@@ -1,16 +1,21 @@
+import { clayCardStyle } from "@/components/ui/GlassSurface";
+import { AnimatedPressable } from "@/components/ui/AnimatedPressable";
+import { AppIcon } from "@/components/ui/AppIcon";
+import { RADIUS } from "@/constants/designSystem";
 import { formatStartingPrice } from "@/services/vendors/vendorPresentation";
 import { vendorGallerySources } from "@/services/vendors/vendorPresentation";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import type { VendorRecord } from "@/types/vendorMarketplace";
-import { Image, Pressable, Text, View } from "react-native";
+import { MotiView } from "moti";
+import { Image, Text, View } from "react-native";
 
 type Props = {
   vendor: VendorRecord;
   distanceKm?: number | null;
   onPress: () => void;
+  index?: number;
 };
 
-// Fallbacks sourced from `assets/Resort list.csv` image columns.
 const RESORT_DATA_FALLBACK_IMAGES = [
   "https://assets.hyatt.com/content/dam/hyatt/hyattdam/images/2016/10/10/1651/Grand-Hyatt-Goa-P029-Hotel-Pool.jpg/Grand-Hyatt-Goa-P029-Hotel-Pool.16x9.jpg?imwidth=2560",
   "https://cdn.sanity.io/images/ocl5w36p/prod5/5c70cae58e378301924776dfce5ca539f25197a0-1920x1440.jpg?w=768&auto=format&dpr=2",
@@ -21,7 +26,7 @@ const RESORT_DATA_FALLBACK_IMAGES = [
   "https://hotel.hardrock.com/goa/files/6021/HRH_Goa_Pool_10.jpeg",
 ];
 
-export function VendorHomeCard({ vendor, distanceKm, onPress }: Props) {
+export function VendorHomeCard({ vendor, distanceKm, onPress, index = 0 }: Props) {
   const title = vendorDisplayName(vendor);
   const price = formatStartingPrice(vendor);
   const vendorImages = vendorGallerySources(vendor);
@@ -31,49 +36,54 @@ export function VendorHomeCard({ vendor, distanceKm, onPress }: Props) {
   const imageUrl = vendorImages[0] ?? RESORT_DATA_FALLBACK_IMAGES[fallbackIndex];
 
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      className="mr-3 w-[168px] overflow-hidden rounded-2xl border border-white bg-white active:opacity-90"
-      style={{
-        shadowColor: "#0f172a",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 14,
-        elevation: 3,
-      }}
+    <MotiView
+      from={{ opacity: 0, translateX: 16 }}
+      animate={{ opacity: 1, translateX: 0 }}
+      transition={{ type: "timing", duration: 380, delay: index * 60 }}
     >
-      <View className="h-[92px] bg-accent-soft">
-        <Image
-          source={{ uri: imageUrl }}
-          className="h-full w-full"
-          resizeMode="cover"
-        />
-        {vendor.isVerified ? (
-          <View className="absolute right-2 top-2 rounded-full bg-white/95 px-2 py-0.5">
-            <Text className="text-[9px] font-extrabold text-accent-deep">
-              Verified
-            </Text>
-          </View>
-        ) : null}
-      </View>
-      <View className="px-3 py-3">
-        <Text className="text-[13px] font-extrabold text-neutral-900" numberOfLines={2}>
-          {title}
-        </Text>
-        <Text className="mt-1 text-[11px] font-semibold text-neutral-500" numberOfLines={1}>
-          {vendor.category}
-          {vendor.areaLabel ? ` · ${vendor.areaLabel}` : ""}
-        </Text>
-        <View className="mt-2 flex-row items-center justify-between">
-          <Text className="text-[11px] font-bold text-accent-deep">{price}</Text>
-          {distanceKm != null ? (
-            <Text className="text-[10px] font-semibold text-neutral-400">
-              {distanceKm.toFixed(1)} km
-            </Text>
+      <AnimatedPressable
+        onPress={onPress}
+        accessibilityRole="button"
+        className="mr-3 w-[176px]"
+        style={clayCardStyle(RADIUS.xl)}
+      >
+        <View className="relative h-[100px] bg-accent-soft">
+          <Image
+            source={{ uri: imageUrl }}
+            className="h-full w-full"
+            resizeMode="cover"
+          />
+          <View className="absolute inset-0 bg-black/5" />
+          {vendor.isVerified ? (
+            <View className="absolute right-2.5 top-2.5 flex-row items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1">
+              <AppIcon name="shield" size={10} color="#004aad" />
+              <Text className="text-[9px] font-extrabold text-accent-deep">
+                Verified
+              </Text>
+            </View>
           ) : null}
         </View>
-      </View>
-    </Pressable>
+        <View className="px-3.5 py-3.5">
+          <Text className="text-[14px] font-extrabold leading-tight text-neutral-900" numberOfLines={2}>
+            {title}
+          </Text>
+          <Text className="mt-1.5 text-[11px] font-medium text-neutral-500" numberOfLines={1}>
+            {vendor.category}
+            {vendor.areaLabel ? ` · ${vendor.areaLabel}` : ""}
+          </Text>
+          <View className="mt-2.5 flex-row items-center justify-between">
+            <Text className="text-[12px] font-extrabold text-accent">{price}</Text>
+            {distanceKm != null ? (
+              <View className="flex-row items-center gap-0.5">
+                <AppIcon name="navigate" size={10} color="#94A3B8" />
+                <Text className="text-[10px] font-semibold text-neutral-400">
+                  {distanceKm.toFixed(1)} km
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </AnimatedPressable>
+    </MotiView>
   );
 }

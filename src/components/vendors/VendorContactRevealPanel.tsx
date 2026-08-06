@@ -83,7 +83,7 @@ export function VendorContactRevealPanel({
             }
             className="mt-2 flex-row items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 active:bg-neutral-50"
           >
-            <Ionicons name="mail-outline" size={18} color="#7C3AED" />
+            <Ionicons name="mail-outline" size={18} color="#004aad" />
             <Text className="text-[14px] font-semibold text-neutral-800">
               Email
             </Text>
@@ -96,7 +96,7 @@ export function VendorContactRevealPanel({
   return (
     <View className="rounded-xl border border-neutral-200 bg-white p-4">
       <View className="items-center py-2">
-        <Ionicons name="lock-closed-outline" size={28} color="#7C3AED" />
+        <Ionicons name="lock-closed-outline" size={28} color="#004aad" />
         <Text className="mt-2 text-[16px] font-semibold text-neutral-900">
           Contact locked
         </Text>

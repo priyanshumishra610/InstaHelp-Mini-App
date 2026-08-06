@@ -1,7 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -9,23 +10,24 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 
 type PinProps = {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
   size: "sm" | "lg";
-  glow?: boolean;
   delay?: number;
   baseRotate?: number;
   baseTranslateY?: number;
   floatRange?: number;
 };
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 function MapPin({
   icon,
   size,
-  glow,
   delay = 0,
   baseRotate = 0,
   baseTranslateY = 0,
@@ -37,7 +39,7 @@ function MapPin({
 
   const translateY = useSharedValue(0);
   const rotate = useSharedValue(0);
-  const glowScale = useSharedValue(1);
+  const pressScale = useSharedValue(1);
 
   useEffect(() => {
     const duration = isLarge ? 2800 : 3200;
@@ -77,38 +79,35 @@ function MapPin({
         true,
       ),
     );
-
-    if (glow) {
-      glowScale.value = withRepeat(
-        withSequence(
-          withTiming(1.12, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-          withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.ease) }),
-        ),
-        -1,
-        false,
-      );
-    }
-  }, [delay, floatRange, glow, glowScale, isLarge, rotate, translateY]);
+  }, [delay, floatRange, isLarge, rotate, translateY]);
 
   const pinAnim = useAnimatedStyle(() => ({
     transform: [
       { translateY: baseTranslateY + translateY.value },
       { rotate: `${baseRotate + rotate.value}deg` },
+      { scale: pressScale.value },
     ],
   }));
 
-  const glowAnim = useAnimatedStyle(() => ({
-    transform: [{ scale: glowScale.value }],
-    opacity: 0.75 + (glowScale.value - 1) * 1.2,
-  }));
-
   return (
-    <Animated.View style={[styles.pinWrap, pinAnim]}>
-      {glow ? (
-        <Animated.View
-          style={[styles.pinGlow, isLarge && styles.pinGlowLg, glowAnim]}
-        />
-      ) : null}
+    <AnimatedPressable
+      accessibilityRole="button"
+      accessibilityLabel={`Service pin ${icon}`}
+      onPressIn={() => {
+        pressScale.value = withSpring(0.9, { damping: 14, stiffness: 360 });
+      }}
+      onPressOut={() => {
+        pressScale.value = withSpring(1, { damping: 12, stiffness: 280 });
+      }}
+      onPress={() => {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        pressScale.value = withSequence(
+          withSpring(1.08, { damping: 10, stiffness: 320 }),
+          withSpring(1, { damping: 12, stiffness: 260 }),
+        );
+      }}
+      style={[styles.pinWrap, pinAnim]}
+    >
       <LinearGradient
         colors={["#7C3AED", "#5B21B6", "#4C1D95"]}
         start={{ x: 0.2, y: 0 }}
@@ -126,50 +125,18 @@ function MapPin({
         ]}
       >
         <View style={[styles.pinInner, isLarge && styles.pinInnerLg]}>
-          <Ionicons name={icon} size={isLarge ? 28 : 22} color="#fff" />
+          <MaterialCommunityIcons name={icon} size={isLarge ? 28 : 22} color="#fff" />
         </View>
       </LinearGradient>
       <View style={[styles.pinTip, { width: w * 0.22, marginTop: -2 }]} />
-    </Animated.View>
+    </AnimatedPressable>
   );
 }
 
-function GlowRing() {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.85);
-
-  useEffect(() => {
-    scale.value = withRepeat(
-      withSequence(
-        withTiming(1.08, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      false,
-    );
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.7, { duration: 3000, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      false,
-    );
-  }, [opacity, scale]);
-
-  const ringAnim = useAnimatedStyle(() => ({
-    transform: [{ scaleX: 1.4 * scale.value }, { scaleY: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return <Animated.View style={[styles.ring, ringAnim]} />;
-}
-
-/** Floating home / services / packaging pins — District-style hero */
+/** Service marks with float motion and tap bounce */
 export function LoginHeroVisual() {
   return (
     <View style={styles.stage}>
-      <GlowRing />
       <View style={styles.pins}>
         <MapPin
           icon="home-outline"
@@ -181,16 +148,15 @@ export function LoginHeroVisual() {
         />
         <View style={styles.pinCenter}>
           <MapPin
-            icon="construct"
+            icon="hammer-wrench"
             size="lg"
-            glow
             delay={200}
             baseTranslateY={-4}
             floatRange={12}
           />
         </View>
         <MapPin
-          icon="cube-outline"
+          icon="package-variant-closed"
           size="sm"
           delay={400}
           baseRotate={8}
@@ -209,19 +175,6 @@ const styles = StyleSheet.create({
     height: 220,
     marginTop: 8,
   },
-  ring: {
-    position: "absolute",
-    bottom: 18,
-    width: 200,
-    height: 36,
-    borderRadius: 100,
-    backgroundColor: "rgba(124,58,237,0.35)",
-    shadowColor: "#A78BFA",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 24,
-    elevation: 8,
-  },
   pins: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -231,38 +184,24 @@ const styles = StyleSheet.create({
   },
   pinWrap: {
     alignItems: "center",
-    opacity: 0.92,
-  },
-  pinGlow: {
-    position: "absolute",
-    top: 8,
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "rgba(251,191,36,0.35)",
-  },
-  pinGlowLg: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    top: 4,
+    opacity: 0.95,
   },
   pin: {
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.35)",
+    shadowColor: "#5B21B6",
+    shadowOffset: { width: 4, height: 10 },
+    shadowOpacity: 0.28,
     shadowRadius: 16,
-    elevation: 10,
+    elevation: 8,
   },
   pinInner: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.14)",
     alignItems: "center",
     justifyContent: "center",
   },

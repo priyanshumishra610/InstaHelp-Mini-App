@@ -22,7 +22,7 @@ export type UserProfile = {
   anniversary?: string | null;
   /**
    * Profile photo (file URI or data URL). Kept on device only — not sent to the
-   * concierge sheet.
+   * backend.
    */
   avatarUri?: string;
   /**
@@ -33,7 +33,7 @@ export type UserProfile = {
   /** Consumer vs local business — drives opportunity-style notification copy. */
   role?: "consumer" | "business";
   /**
-   * How InstaHelp should reach you (stored locally; not sent to the sheet API).
+   * How InstaHelp should reach you (stored locally; not sent to the backend API).
    */
   preferredContact?: ProfilePreferredContact;
   addresses: SavedAddress[];

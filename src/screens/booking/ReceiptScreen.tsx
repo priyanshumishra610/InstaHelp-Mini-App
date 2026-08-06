@@ -125,10 +125,6 @@ export function ReceiptScreen() {
         contentContainerStyle={{ paddingBottom: 60 }}
       >
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
-          />
           <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
             Receipt
           </Text>
@@ -234,7 +230,7 @@ export function ReceiptScreen() {
             <Ionicons
               name={copied ? "checkmark" : "copy-outline"}
               size={18}
-              color={copied ? "#7C3AED" : "#525252"}
+              color={copied ? "#004aad" : "#525252"}
             />
             <Text
               className={`text-sm font-bold ${

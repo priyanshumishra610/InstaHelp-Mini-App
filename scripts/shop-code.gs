@@ -1,14 +1,17 @@
 /**
- * InstaHelp Shop — Google Sheet backend
+ * InstaHelp Shop — catalog admin script
  *
- * Run once after attaching to your spreadsheet:
- *   1. setupShopSheets()
- *   2. createTriggers()
+ * Attach this script to your Shop spreadsheet, then run once:
+ *   bootstrapShopCatalog()
  *
- * Sheet ID: 1oFNlCO_z2rek3FweEGBKqk_2lLi7fWD0QKUg-_l67TE
+ * That creates PRODUCTS / CATEGORIES / BRANDS / DASHBOARD tabs,
+ * seeds sample rows, recomputes prices, and installs sync triggers.
+ *
+ * After setup: File → Share → Anyone with the link (Viewer)
+ * so the mobile app can load the live catalog.
  */
-const CONFIG = {
-  SHEET_ID: "1oFNlCO_z2rek3FweEGBKqk_2lLi7fWD0QKUg-_l67TE",
+var CONFIG = {
+  SHEET_ID: "1XfPC6fcV_Ct97vDwaRJDVbZ2hJNQRvj2FWj0nddqwR4",
   TEAM_EMAIL: "yourteam@email.com",
   AMAZON_AFFILIATE_ID: "youraffid-21",
   FLIPKART_AFFILIATE_ID: "youraffid",
@@ -18,17 +21,17 @@ const CONFIG = {
   PRICE_MAX: 500000,
 };
 
-const PRODUCTS_SHEET = "PRODUCTS";
-const DASHBOARD_SHEET = "DASHBOARD";
-const CATEGORIES_SHEET = "CATEGORIES";
-const BRANDS_SHEET = "BRANDS";
-const CHANGE_LOG_SHEET = "Change Log";
-const AFFILIATE_CONFIG_SHEET = "AFFILIATE_CONFIG";
+var PRODUCTS_SHEET = "PRODUCTS";
+var DASHBOARD_SHEET = "DASHBOARD";
+var CATEGORIES_SHEET = "CATEGORIES";
+var BRANDS_SHEET = "BRANDS";
+var CHANGE_LOG_SHEET = "Change Log";
+var AFFILIATE_CONFIG_SHEET = "AFFILIATE_CONFIG";
 
-const SYNC_CELL = "A2";
+var SYNC_CELL = "A2";
 
 /** Column order — app reads by header name, not position. */
-const PRODUCTS_HEADERS = [
+var PRODUCTS_HEADERS = [
   "product_id",
   "product_name",
   "category",
@@ -60,7 +63,7 @@ const PRODUCTS_HEADERS = [
   "is_active",
 ];
 
-const SHOP_CATEGORIES = [
+var SHOP_CATEGORIES = [
   "electronics",
   "fashion",
   "home-kitchen",
@@ -73,7 +76,7 @@ const SHOP_CATEGORIES = [
   "office-supplies",
 ];
 
-const CATEGORY_ALIASES = {
+var CATEGORY_ALIASES = {
   electronic: "electronics",
   gadgets: "electronics",
   apparel: "fashion",
@@ -97,21 +100,21 @@ const CATEGORY_ALIASES = {
   stationery: "office-supplies",
 };
 
-const PRICE_HEADERS = [
+var PRICE_HEADERS = [
   "amazon_price",
   "flipkart_price",
   "myntra_price",
   "meesho_price",
 ];
 
-const AFFILIATE_HEADERS = [
+var AFFILIATE_HEADERS = [
   "amazon_aff_link",
   "flipkart_aff_link",
   "myntra_aff_link",
   "meesho_aff_link",
 ];
 
-const WATCH_HEADERS = [
+var WATCH_HEADERS = [
   "product_name",
   "category",
   "sub_category",
@@ -138,39 +141,71 @@ const WATCH_HEADERS = [
   "is_active",
 ];
 
-// ─── One-time setup ───────────────────────────────────────────────────────────
+// ─── One-time bootstrap ───────────────────────────────────────────────────────
+
+/**
+ * Run this once from the Apps Script editor.
+ * Creates every tab, headers, sample products, dashboard sync cell, and triggers.
+ */
+function bootstrapShopCatalog() {
+  setupShopSheets();
+  createTriggers();
+  var ss = getSpreadsheet_();
+  var products = ss.getSheetByName(PRODUCTS_SHEET);
+  var gid = products ? String(products.getSheetId()) : "0";
+  writeDashboardNote_(
+    "Bootstrap complete. PRODUCTS sheet gid=" +
+      gid +
+      ". Share the file as Anyone with the link (Viewer). App env: EXPO_PUBLIC_SHOP_PRODUCTS_GID=" +
+      gid,
+  );
+  ss.toast("Shop catalog ready — PRODUCTS gid " + gid, "InstaHelp Shop", 8);
+}
 
 /**
  * Creates / repairs PRODUCTS, CATEGORIES, BRANDS, DASHBOARD tabs.
  * Safe to re-run — adds missing columns without deleting rows.
  */
 function setupShopSheets() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
+  var ss = getSpreadsheet_();
 
   setupCategoriesSheet_(ss);
   setupBrandsSheet_(ss);
+  setupAffiliateConfigSheet_(ss);
   setupProductsSheet_(ss);
   ensureDashboard_();
   recomputeAllProducts_();
 
+  var products = ss.getSheetByName(PRODUCTS_SHEET);
+  var gid = products ? String(products.getSheetId()) : "0";
   writeDashboardNote_(
     "Setup complete at " +
       nowIstIso_() +
-      ". Fill brand, images (url_1–4), sort_priority. Publish sheet to web.",
+      ". PRODUCTS gid=" +
+      gid +
+      ". Share as Anyone with the link (Viewer).",
   );
-  ss.toast("InstaHelp Shop sheets ready", "Setup", 6);
+  ss.toast("InstaHelp Shop sheets ready (gid " + gid + ")", "Setup", 6);
+}
+
+function getSpreadsheet_() {
+  try {
+    var active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (e) {
+    // Fall through to openById
+  }
+  return SpreadsheetApp.openById(CONFIG.SHEET_ID);
 }
 
 function setupCategoriesSheet_(ss) {
-  let sheet = ss.getSheetByName(CATEGORIES_SHEET);
+  var sheet = ss.getSheetByName(CATEGORIES_SHEET);
   if (!sheet) {
     sheet = ss.insertSheet(CATEGORIES_SHEET);
   }
   sheet.clear();
-  sheet.getRange(1, 1, 1, 3).setValues([
-    ["category_id", "label", "app_filter"],
-  ]);
-  const rows = SHOP_CATEGORIES.map(function (id) {
+  sheet.getRange(1, 1, 1, 3).setValues([["category_id", "label", "app_filter"]]);
+  var rows = SHOP_CATEGORIES.map(function (id) {
     return [id, categoryLabel_(id), "yes"];
   });
   sheet.getRange(2, 1, rows.length, 3).setValues(rows);
@@ -179,19 +214,21 @@ function setupCategoriesSheet_(ss) {
 }
 
 function setupBrandsSheet_(ss) {
-  let sheet = ss.getSheetByName(BRANDS_SHEET);
+  var sheet = ss.getSheetByName(BRANDS_SHEET);
   if (!sheet) {
     sheet = ss.insertSheet(BRANDS_SHEET);
   }
   if (sheet.getLastRow() < 2) {
     sheet.clear();
     sheet.getRange(1, 1, 1, 2).setValues([["brand", "active"]]);
-    sheet.getRange(2, 1, 6, 2).setValues([
+    sheet.getRange(2, 1, 8, 2).setValues([
       ["Samsung", "yes"],
       ["Apple", "yes"],
       ["Nike", "yes"],
       ["Puma", "yes"],
       ["Lakme", "yes"],
+      ["Boat", "yes"],
+      ["Prestige", "yes"],
       ["Generic", "yes"],
     ]);
   }
@@ -199,10 +236,52 @@ function setupBrandsSheet_(ss) {
   sheet.autoResizeColumns(1, 2);
 }
 
-function setupProductsSheet_(ss) {
-  let sheet = ss.getSheetByName(PRODUCTS_SHEET);
+function setupAffiliateConfigSheet_(ss) {
+  var sheet = ss.getSheetByName(AFFILIATE_CONFIG_SHEET);
   if (!sheet) {
-    sheet = ss.insertSheet(PRODUCTS_SHEET);
+    sheet = ss.insertSheet(AFFILIATE_CONFIG_SHEET);
+  }
+  if (sheet.getLastRow() < 2) {
+    sheet.clear();
+    sheet.getRange(1, 1, 1, 2).setValues([["key", "value"]]);
+    sheet.getRange(2, 1, 4, 2).setValues([
+      ["amazon_affiliate_id", CONFIG.AMAZON_AFFILIATE_ID],
+      ["flipkart_affiliate_id", CONFIG.FLIPKART_AFFILIATE_ID],
+      ["myntra_affiliate_id", CONFIG.MYNTRA_AFFILIATE_ID],
+      ["meesho_affiliate_id", CONFIG.MEESHO_AFFILIATE_ID],
+    ]);
+  }
+  sheet.setFrozenRows(1);
+}
+
+function setupProductsSheet_(ss) {
+  var sheet = ss.getSheetByName(PRODUCTS_SHEET);
+  if (!sheet) {
+    var first = ss.getSheets()[0];
+    var firstName = first ? first.getName() : "";
+    var firstEmpty = first && first.getLastRow() <= 1;
+    var reserved =
+      firstName === CATEGORIES_SHEET ||
+      firstName === BRANDS_SHEET ||
+      firstName === DASHBOARD_SHEET ||
+      firstName === AFFILIATE_CONFIG_SHEET ||
+      firstName === CHANGE_LOG_SHEET;
+
+    if (first && firstEmpty && !reserved) {
+      first.setName(PRODUCTS_SHEET);
+      sheet = first;
+    } else {
+      sheet = ss.insertSheet(PRODUCTS_SHEET, 0);
+    }
+  }
+
+  try {
+    if (sheet.getIndex() !== 1) {
+      ss.setActiveSheet(sheet);
+      ss.moveActiveSheet(1);
+    }
+  } catch (e) {
+    // Non-fatal — gid is what the app uses
   }
 
   ensureHeaders_(sheet, PRODUCTS_HEADERS);
@@ -211,15 +290,15 @@ function setupProductsSheet_(ss) {
 }
 
 function ensureHeaders_(sheet, requiredHeaders) {
-  const lastCol = Math.max(sheet.getLastColumn(), 1);
-  const existing = sheet
+  var lastCol = Math.max(sheet.getLastColumn(), 1);
+  var existing = sheet
     .getRange(1, 1, 1, lastCol)
     .getValues()[0]
     .map(function (h) {
       return normalizeHeader_(h);
     });
 
-  const missing = [];
+  var missing = [];
   requiredHeaders.forEach(function (header) {
     if (existing.indexOf(normalizeHeader_(header)) < 0) {
       missing.push(header);
@@ -227,59 +306,190 @@ function ensureHeaders_(sheet, requiredHeaders) {
   });
 
   if (missing.length) {
-    const startCol = existing.length + 1;
+    var startCol = existing[0] ? existing.length + 1 : 1;
+    if (!existing[0] && existing.length === 1) startCol = 1;
     sheet.getRange(1, startCol, 1, missing.length).setValues([missing]);
   }
 
-  // Normalize row 1 to canonical order when sheet is new / empty body
   if (sheet.getLastRow() <= 1) {
     sheet.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]);
-    sheet.getRange(2, 1, 1, requiredHeaders.length).setValues([
-      [
-        "PRD0001",
-        "Sample Product",
-        "electronics",
-        "Earbuds",
-        "Samsung",
-        "https://images.unsplash.com/photo-1585386959984-a4155223168f?w=800",
-        "",
-        "",
-        "",
-        "Short description for the app product page.",
-        "Noise cancelling|28h battery|Dual mic",
-        "Bestseller",
-        1999,
-        1899,
-        "",
-        "",
-        "",
-        "",
-        "https://amazon.in/dp/EXAMPLE?tag=" + CONFIG.AMAZON_AFFILIATE_ID,
-        "https://flipkart.com/p/EXAMPLE",
-        "",
-        "",
-        4.4,
-        1200,
-        "In stock",
-        10,
-        "",
-        "",
-        "yes",
-      ],
-    ]);
+    seedSampleProducts_(sheet);
   }
 }
 
+function seedSampleProducts_(sheet) {
+  var aff = CONFIG.AMAZON_AFFILIATE_ID;
+  var rows = [
+    [
+      "PRD1001",
+      "Noise Cancelling Earbuds",
+      "electronics",
+      "Earbuds",
+      "Boat",
+      "https://images.unsplash.com/photo-1585386959984-a4155223168f?w=800",
+      "",
+      "",
+      "",
+      "Comfort-fit earbuds with deep bass and clear calls.",
+      "Noise cancelling|28h battery|Dual mic",
+      "Bestseller",
+      1999,
+      1899,
+      "",
+      "",
+      "",
+      "",
+      "https://www.amazon.in/dp/EXAMPLE1?tag=" + aff,
+      "https://www.flipkart.com/p/itm?pid=EXAMPLE1",
+      "",
+      "",
+      4.4,
+      1242,
+      "In stock",
+      10,
+      "",
+      "",
+      "yes",
+    ],
+    [
+      "PRD1002",
+      "Sport Smartwatch 44mm",
+      "electronics",
+      "Wearables",
+      "Samsung",
+      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+      "",
+      "",
+      "",
+      "Track workouts, steps and sleep with a bright display.",
+      "Fitness tracking|Water resistant|Always-on display",
+      "Top rated",
+      3499,
+      3299,
+      "",
+      "",
+      "",
+      "",
+      "https://www.amazon.in/dp/EXAMPLE2?tag=" + aff,
+      "https://www.flipkart.com/p/itm?pid=EXAMPLE2",
+      "",
+      "",
+      4.6,
+      832,
+      "In stock",
+      20,
+      "",
+      "",
+      "yes",
+    ],
+    [
+      "PRD1003",
+      "Vitamin C Brightening Serum",
+      "beauty",
+      "Skincare",
+      "Lakme",
+      "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=800",
+      "",
+      "",
+      "",
+      "Gentle vitamin C blend for everyday glow.",
+      "Lightweight|Daily use|Non-greasy",
+      "Glow",
+      899,
+      849,
+      799,
+      "",
+      "",
+      "",
+      "https://www.amazon.in/dp/EXAMPLE3?tag=" + aff,
+      "https://www.flipkart.com/p/itm?pid=EXAMPLE3",
+      "https://www.myntra.com/buy/EXAMPLE3",
+      "",
+      4.3,
+      541,
+      "In stock",
+      30,
+      "",
+      "",
+      "yes",
+    ],
+    [
+      "PRD1004",
+      "Running Shoes — Men",
+      "fashion",
+      "Footwear",
+      "Nike",
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
+      "",
+      "",
+      "",
+      "Cushioned daily trainers for road runs and gym days.",
+      "Breathable mesh|Cushion midsole|Durable outsole",
+      "New",
+      4999,
+      4699,
+      4599,
+      "",
+      "",
+      "",
+      "https://www.amazon.in/dp/EXAMPLE4?tag=" + aff,
+      "https://www.flipkart.com/p/itm?pid=EXAMPLE4",
+      "https://www.myntra.com/buy/EXAMPLE4",
+      "",
+      4.5,
+      2104,
+      "In stock",
+      15,
+      "",
+      "",
+      "yes",
+    ],
+    [
+      "PRD1005",
+      "Non-Stick Cookware Set (3pc)",
+      "home-kitchen",
+      "Cookware",
+      "Prestige",
+      "https://images.unsplash.com/photo-1556911220-bff31c28b763?w=800",
+      "",
+      "",
+      "",
+      "Everyday non-stick pans for quick Indian cooking.",
+      "PFOA-free|Induction ready|Easy clean",
+      "Value pick",
+      2499,
+      2299,
+      "",
+      "",
+      "",
+      "",
+      "https://www.amazon.in/dp/EXAMPLE5?tag=" + aff,
+      "https://www.flipkart.com/p/itm?pid=EXAMPLE5",
+      "",
+      "",
+      4.2,
+      980,
+      "In stock",
+      40,
+      "",
+      "",
+      "yes",
+    ],
+  ];
+  sheet.getRange(2, 1, rows.length, PRODUCTS_HEADERS.length).setValues(rows);
+}
+
 function applyProductsFormatting_(sheet) {
-  const map = getHeaderMap_(sheet);
-  const headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn());
+  var map = getHeaderMap_(sheet);
+  var headerRow = sheet.getRange(1, 1, 1, sheet.getLastColumn());
   headerRow.setFontWeight("bold").setBackground("#edf7ea");
 
-  const computed = ["best_platform", "discount_pct", "on_discount", "in_stock"];
+  var computed = ["best_platform", "discount_pct", "on_discount", "in_stock"];
   computed.forEach(function (name) {
-    const col = map[name];
+    var col = map[name];
     if (col) {
-      sheet.getRange(2, col, Math.max(sheet.getLastRow() - 1, 1), 1)
+      sheet
+        .getRange(2, col, Math.max(sheet.getLastRow() - 1, 1), 1)
         .setBackground("#f3f4f6")
         .setFontColor("#6b7280");
     }
@@ -290,34 +500,34 @@ function applyProductsFormatting_(sheet) {
 }
 
 function applyProductsValidations_(ss, sheet) {
-  const map = getHeaderMap_(sheet);
-  const lastRow = Math.max(sheet.getLastRow(), 200);
+  var map = getHeaderMap_(sheet);
+  var lastRow = Math.max(sheet.getLastRow(), 200);
 
   if (map.category) {
-    const rule = SpreadsheetApp.newDataValidation()
+    var catRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(SHOP_CATEGORIES, true)
       .setAllowInvalid(false)
       .build();
-    sheet.getRange(2, map.category, lastRow - 1, 1).setDataValidation(rule);
+    sheet.getRange(2, map.category, lastRow - 1, 1).setDataValidation(catRule);
   }
 
   if (map.brand) {
-    const brands = getActiveBrands_(ss);
+    var brands = getActiveBrands_(ss);
     if (brands.length) {
-      const rule = SpreadsheetApp.newDataValidation()
+      var brandRule = SpreadsheetApp.newDataValidation()
         .requireValueInList(brands, true)
         .setAllowInvalid(true)
         .build();
-      sheet.getRange(2, map.brand, lastRow - 1, 1).setDataValidation(rule);
+      sheet.getRange(2, map.brand, lastRow - 1, 1).setDataValidation(brandRule);
     }
   }
 
   if (map.is_active) {
-    const rule = SpreadsheetApp.newDataValidation()
+    var activeRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(["yes", "no"], true)
       .setAllowInvalid(false)
       .build();
-    sheet.getRange(2, map.is_active, lastRow - 1, 1).setDataValidation(rule);
+    sheet.getRange(2, map.is_active, lastRow - 1, 1).setDataValidation(activeRule);
   }
 
   if (map.sort_priority) {
@@ -325,7 +535,7 @@ function applyProductsValidations_(ss, sheet) {
   }
 
   PRICE_HEADERS.forEach(function (name) {
-    const col = map[name];
+    var col = map[name];
     if (col) {
       sheet.getRange(2, col, lastRow - 1, 1).setNumberFormat("₹#,##0");
     }
@@ -387,18 +597,18 @@ function onChangeHandler_(e) {
 }
 
 function onEdit_(e) {
-  const sheet = e.range.getSheet();
+  var sheet = e.range.getSheet();
   if (sheet.getName() !== PRODUCTS_SHEET) return;
 
-  const row = e.range.getRow();
+  var row = e.range.getRow();
   if (row < 2) return;
 
-  const map = getHeaderMap_(sheet);
-  const col = e.range.getColumn();
-  const header = getHeaderByCol_(map, col);
+  var map = getHeaderMap_(sheet);
+  var col = e.range.getColumn();
+  var header = getHeaderByCol_(map, col);
 
   if (header && PRICE_HEADERS.indexOf(header) >= 0) {
-    const numeric = parsePrice_(e.range.getValue());
+    var numeric = parsePrice_(e.range.getValue());
     if (
       numeric !== null &&
       (numeric < CONFIG.PRICE_MIN || numeric > CONFIG.PRICE_MAX)
@@ -407,7 +617,7 @@ function onEdit_(e) {
         e.range.setValue(e.oldValue);
       }
       e.range.setBackground("#ffc7ce");
-      SpreadsheetApp.openById(CONFIG.SHEET_ID).toast(
+      getSpreadsheet_().toast(
         "Price must be between ₹" + CONFIG.PRICE_MIN + " and ₹" + CONFIG.PRICE_MAX,
         "Invalid price",
         5,
@@ -418,7 +628,7 @@ function onEdit_(e) {
   }
 
   if (header === "category") {
-    const normalized = normalizeCategory_(e.range.getValue());
+    var normalized = normalizeCategory_(e.range.getValue());
     if (normalized !== String(e.range.getValue() || "").trim()) {
       e.range.setValue(normalized);
     }
@@ -436,25 +646,23 @@ function onChange_(e) {
   if (!e || !e.changeType) return;
 
   if (e.changeType === "INSERT_ROW" || e.changeType === "INSERT_GRID") {
-    const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(
-      PRODUCTS_SHEET,
-    );
+    var sheet = getSpreadsheet_().getSheetByName(PRODUCTS_SHEET);
     if (!sheet) return;
 
-    const activeRange = sheet.getActiveRange();
+    var activeRange = sheet.getActiveRange();
     if (!activeRange || activeRange.getSheet().getName() !== PRODUCTS_SHEET) {
       touchSyncTimestamp_();
       return;
     }
 
-    const row = activeRange.getRow();
+    var row = activeRange.getRow();
     if (row < 2) return;
 
-    const map = getHeaderMap_(sheet);
-    const idCol = map.product_id || 1;
-    const productIdCell = sheet.getRange(row, idCol);
+    var map = getHeaderMap_(sheet);
+    var idCol = map.product_id || 1;
+    var productIdCell = sheet.getRange(row, idCol);
     if (!String(productIdCell.getValue() || "").trim()) {
-      const id = generateProductId_();
+      var id = generateProductId_();
       productIdCell.setValue(id);
       fillAffiliatePlaceholders_(sheet, row, map, id);
     }
@@ -465,15 +673,15 @@ function onChange_(e) {
   }
 }
 
-// ─── Row compute (filter / sort helpers for the app) ──────────────────────────
+// ─── Row compute ──────────────────────────────────────────────────────────────
 
 function recomputeAllProducts_() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const sheet = ss.getSheetByName(PRODUCTS_SHEET);
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName(PRODUCTS_SHEET);
   if (!sheet || sheet.getLastRow() < 2) return;
 
-  const map = getHeaderMap_(sheet);
-  for (let row = 2; row <= sheet.getLastRow(); row++) {
+  var map = getHeaderMap_(sheet);
+  for (var row = 2; row <= sheet.getLastRow(); row++) {
     recomputeProductRow_(sheet, row, map);
   }
   touchSyncTimestamp_();
@@ -481,12 +689,10 @@ function recomputeAllProducts_() {
 
 function recomputeProductRow_(sheet, row, map) {
   map = map || getHeaderMap_(sheet);
-  const values = sheet
-    .getRange(row, 1, row, sheet.getLastColumn())
-    .getValues()[0];
+  var values = sheet.getRange(row, 1, row, sheet.getLastColumn()).getValues()[0];
 
-  const prices = [];
-  const platforms = [
+  var prices = [];
+  var platforms = [
     { key: "amazon_price", label: "Amazon" },
     { key: "flipkart_price", label: "Flipkart" },
     { key: "myntra_price", label: "Myntra" },
@@ -494,17 +700,17 @@ function recomputeProductRow_(sheet, row, map) {
   ];
 
   platforms.forEach(function (p) {
-    const col = map[p.key];
+    var col = map[p.key];
     if (!col) return;
-    const price = parsePrice_(values[col - 1]);
+    var price = parsePrice_(values[col - 1]);
     if (price != null) {
       prices.push({ label: p.label, price: price });
     }
   });
 
-  let bestPlatform = "";
-  let bestPrice = null;
-  let maxPrice = null;
+  var bestPlatform = "";
+  var bestPrice = null;
+  var maxPrice = null;
 
   prices.forEach(function (p) {
     if (bestPrice === null || p.price < bestPrice) {
@@ -516,15 +722,16 @@ function recomputeProductRow_(sheet, row, map) {
     }
   });
 
-  let discountPct = "";
+  var discountPct = "";
   if (bestPrice != null && maxPrice != null && maxPrice > bestPrice) {
     discountPct = Math.round(((maxPrice - bestPrice) / maxPrice) * 100);
   }
 
-  const stockCol = map.stock;
-  const stockVal = stockCol ? String(values[stockCol - 1] || "") : "";
-  const inStock = isInStock_(stockVal) ? "yes" : "no";
-  const onDiscount = discountPct !== "" && Number(discountPct) > 0 ? "yes" : "no";
+  var stockCol = map.stock;
+  var stockVal = stockCol ? String(values[stockCol - 1] || "") : "";
+  var inStock = isInStock_(stockVal) ? "yes" : "no";
+  var onDiscount =
+    discountPct !== "" && Number(discountPct) > 0 ? "yes" : "no";
 
   if (map.best_platform) {
     sheet.getRange(row, map.best_platform).setValue(bestPlatform);
@@ -543,41 +750,46 @@ function recomputeProductRow_(sheet, row, map) {
 // ─── Scheduled jobs ───────────────────────────────────────────────────────────
 
 function scheduledPriceFetch_() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const productsSheet = ss.getSheetByName(PRODUCTS_SHEET);
-  const configSheet = ss.getSheetByName(AFFILIATE_CONFIG_SHEET);
+  var ss = getSpreadsheet_();
+  var productsSheet = ss.getSheetByName(PRODUCTS_SHEET);
+  var configSheet = ss.getSheetByName(AFFILIATE_CONFIG_SHEET);
   if (!productsSheet) return;
 
-  const credentials = readAffiliateConfig_(configSheet);
+  var credentials = readAffiliateConfig_(configSheet);
   if (!credentials.configured) {
     logDashboardEvent_("Price fetch skipped — AFFILIATE_CONFIG not configured");
     return;
   }
 
-  const map = getHeaderMap_(productsSheet);
-  const data = productsSheet.getDataRange().getValues();
+  var map = getHeaderMap_(productsSheet);
+  var data = productsSheet.getDataRange().getValues();
   if (data.length < 2) return;
 
-  let updated = 0;
-  const failures = [];
+  var updated = 0;
+  var failures = [];
 
-  for (let r = 1; r < data.length; r++) {
-    const idCol = (map.product_id || 1) - 1;
-    const activeCol = map.is_active ? map.is_active - 1 : -1;
-    const productId = String(data[r][idCol] || "").trim();
+  for (var r = 1; r < data.length; r++) {
+    var idCol = (map.product_id || 1) - 1;
+    var activeCol = map.is_active ? map.is_active - 1 : -1;
+    var productId = String(data[r][idCol] || "").trim();
     if (!productId) continue;
-    if (activeCol >= 0 && String(data[r][activeCol] || "").trim().toLowerCase() !== "yes") {
+    if (
+      activeCol >= 0 &&
+      String(data[r][activeCol] || "").trim().toLowerCase() !== "yes"
+    ) {
       continue;
     }
 
     try {
-      const prices = fetchAffiliatePrices_(productId, credentials);
+      var prices = fetchAffiliatePrices_(productId, credentials);
       if (prices.amazon != null && map.amazon_price) {
         productsSheet.getRange(r + 1, map.amazon_price).setValue(prices.amazon);
         updated++;
       }
       if (prices.flipkart != null && map.flipkart_price) {
-        productsSheet.getRange(r + 1, map.flipkart_price).setValue(prices.flipkart);
+        productsSheet
+          .getRange(r + 1, map.flipkart_price)
+          .setValue(prices.flipkart);
       }
       recomputeProductRow_(productsSheet, r + 1, map);
     } catch (err) {
@@ -595,57 +807,66 @@ function scheduledPriceFetch_() {
 }
 
 function autoPublish_() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const file = DriveApp.getFileById(CONFIG.SHEET_ID);
-  file.setDescription(
-    "InstaHelp Shop republish " + nowIstIso_() + " — forces published CSV refresh",
-  );
+  var ss = getSpreadsheet_();
+  var file = DriveApp.getFileById(ss.getId());
+  file.setDescription("InstaHelp Shop catalog refresh " + nowIstIso_());
   recomputeAllProducts_();
-  ss.getSheetByName(DASHBOARD_SHEET) &&
-    ss
-      .getSheetByName(DASHBOARD_SHEET)
-      .getRange("B2")
-      .setValue("Last republish: " + nowIstIso_());
-  logDashboardEvent_("Auto-publish + recompute at " + nowIstIso_());
+  var dash = ss.getSheetByName(DASHBOARD_SHEET);
+  if (dash) {
+    dash.getRange("B2").setValue("Last refresh: " + nowIstIso_());
+  }
+  logDashboardEvent_("Auto-refresh + recompute at " + nowIstIso_());
 }
 
 function weeklyEmailAlert_() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const sheet = ss.getSheetByName(PRODUCTS_SHEET);
+  var ss = getSpreadsheet_();
+  var sheet = ss.getSheetByName(PRODUCTS_SHEET);
   if (!sheet) return;
 
-  const map = getHeaderMap_(sheet);
-  const rows = sheet.getDataRange().getValues();
-  let active = 0;
-  let outOfStock = 0;
-  let onDiscount = 0;
+  var map = getHeaderMap_(sheet);
+  var rows = sheet.getDataRange().getValues();
+  var active = 0;
+  var outOfStock = 0;
+  var onDiscount = 0;
 
-  for (let i = 1; i < rows.length; i++) {
-    const activeCol = map.is_active ? map.is_active - 1 : -1;
-    if (activeCol >= 0 && String(rows[i][activeCol] || "").trim().toLowerCase() !== "yes") {
+  for (var i = 1; i < rows.length; i++) {
+    var activeCol = map.is_active ? map.is_active - 1 : -1;
+    if (
+      activeCol >= 0 &&
+      String(rows[i][activeCol] || "").trim().toLowerCase() !== "yes"
+    ) {
       continue;
     }
     active++;
 
-    const inStockCol = map.in_stock ? map.in_stock - 1 : -1;
-    if (inStockCol >= 0 && String(rows[i][inStockCol] || "").trim().toLowerCase() === "no") {
+    var inStockCol = map.in_stock ? map.in_stock - 1 : -1;
+    if (
+      inStockCol >= 0 &&
+      String(rows[i][inStockCol] || "").trim().toLowerCase() === "no"
+    ) {
       outOfStock++;
     }
 
-    const discountCol = map.on_discount ? map.on_discount - 1 : -1;
-    if (discountCol >= 0 && String(rows[i][discountCol] || "").trim().toLowerCase() === "yes") {
+    var discountCol = map.on_discount ? map.on_discount - 1 : -1;
+    if (
+      discountCol >= 0 &&
+      String(rows[i][discountCol] || "").trim().toLowerCase() === "yes"
+    ) {
       onDiscount++;
     }
   }
 
-  const sheetUrl =
-    "https://docs.google.com/spreadsheets/d/" + CONFIG.SHEET_ID + "/edit";
-  const body =
+  var body =
     "InstaHelp Shop weekly summary\n\n" +
-    "Active products: " + active + "\n" +
-    "Out of stock: " + outOfStock + "\n" +
-    "On discount: " + onDiscount + "\n\n" +
-    "Open sheet: " + sheetUrl;
+    "Active products: " +
+    active +
+    "\n" +
+    "Out of stock: " +
+    outOfStock +
+    "\n" +
+    "On discount: " +
+    onDiscount +
+    "\n";
 
   MailApp.sendEmail(CONFIG.TEAM_EMAIL, "InstaHelp Shop — weekly summary", body);
 }
@@ -653,16 +874,18 @@ function weeklyEmailAlert_() {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getHeaderMap_(sheet) {
-  const lastCol = sheet.getLastColumn();
-  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const map = {};
+  var lastCol = sheet.getLastColumn();
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var map = {};
   headers.forEach(function (h, i) {
-    const key = normalizeHeader_(h);
+    var key = normalizeHeader_(h);
     if (key) map[key] = i + 1;
   });
-  // Legacy alias
   if (!map.image_url_1 && map.image_url) {
     map.image_url_1 = map.image_url;
+  }
+  if (!map.product_name && map.name) {
+    map.product_name = map.name;
   }
   return map;
 }
@@ -682,7 +905,7 @@ function normalizeHeader_(value) {
 }
 
 function normalizeCategory_(value) {
-  const raw = String(value || "").trim().toLowerCase();
+  var raw = String(value || "").trim().toLowerCase();
   if (!raw) return "electronics";
   if (SHOP_CATEGORIES.indexOf(raw) >= 0) return raw;
   if (CATEGORY_ALIASES[raw]) return CATEGORY_ALIASES[raw];
@@ -699,20 +922,20 @@ function categoryLabel_(id) {
 }
 
 function getActiveBrands_(ss) {
-  const sheet = ss.getSheetByName(BRANDS_SHEET);
+  var sheet = ss.getSheetByName(BRANDS_SHEET);
   if (!sheet || sheet.getLastRow() < 2) return [];
-  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
-  const brands = [];
+  var rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  var brands = [];
   rows.forEach(function (row) {
-    const name = String(row[0] || "").trim();
-    const active = String(row[1] || "yes").trim().toLowerCase();
+    var name = String(row[0] || "").trim();
+    var active = String(row[1] || "yes").trim().toLowerCase();
     if (name && active === "yes") brands.push(name);
   });
   return brands;
 }
 
 function isInStock_(stock) {
-  const s = String(stock || "").trim().toLowerCase();
+  var s = String(stock || "").trim().toLowerCase();
   if (!s) return true;
   return (
     s !== "no" &&
@@ -723,20 +946,26 @@ function isInStock_(stock) {
 }
 
 function ensureDashboard_() {
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  let dash = ss.getSheetByName(DASHBOARD_SHEET);
+  var ss = getSpreadsheet_();
+  var dash = ss.getSheetByName(DASHBOARD_SHEET);
   if (!dash) {
     dash = ss.insertSheet(DASHBOARD_SHEET);
     dash.getRange("A1").setValue("last_updated");
     dash.getRange("B1").setValue("notes");
     dash.getRange("C1").setValue("active_products");
     dash.getRange("D1").setValue("brands_count");
+    dash.getRange("E1").setValue("products_gid");
   }
   if (!String(dash.getRange(SYNC_CELL).getValue() || "").trim()) {
     dash.getRange(SYNC_CELL).setValue(nowIstIso_());
   }
 
-  let log = ss.getSheetByName(CHANGE_LOG_SHEET);
+  var products = ss.getSheetByName(PRODUCTS_SHEET);
+  if (products) {
+    dash.getRange("E2").setValue(String(products.getSheetId()));
+  }
+
+  var log = ss.getSheetByName(CHANGE_LOG_SHEET);
   if (!log) {
     log = ss.insertSheet(CHANGE_LOG_SHEET);
     log.hideSheet();
@@ -746,30 +975,38 @@ function ensureDashboard_() {
 
 function touchSyncTimestamp_() {
   ensureDashboard_();
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const dash = ss.getSheetByName(DASHBOARD_SHEET);
+  var ss = getSpreadsheet_();
+  var dash = ss.getSheetByName(DASHBOARD_SHEET);
   dash.getRange(SYNC_CELL).setValue(nowIstIso_());
 
-  const products = ss.getSheetByName(PRODUCTS_SHEET);
+  var products = ss.getSheetByName(PRODUCTS_SHEET);
   if (products && products.getLastRow() > 1) {
-    const map = getHeaderMap_(products);
-    let active = 0;
-    const data = products.getRange(2, 1, products.getLastRow() - 1, products.getLastColumn()).getValues();
-    const activeCol = map.is_active ? map.is_active - 1 : -1;
+    var map = getHeaderMap_(products);
+    var active = 0;
+    var data = products
+      .getRange(2, 1, products.getLastRow() - 1, products.getLastColumn())
+      .getValues();
+    var activeCol = map.is_active ? map.is_active - 1 : -1;
     data.forEach(function (row) {
-      if (activeCol < 0 || String(row[activeCol] || "").trim().toLowerCase() === "yes") {
+      if (
+        activeCol < 0 ||
+        String(row[activeCol] || "").trim().toLowerCase() === "yes"
+      ) {
         active++;
       }
     });
     dash.getRange("C2").setValue(active);
     dash.getRange("D2").setValue(getActiveBrands_(ss).length);
+    dash.getRange("E2").setValue(String(products.getSheetId()));
   }
 }
 
 function logDashboardEvent_(message) {
   ensureDashboard_();
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  ss.getSheetByName(DASHBOARD_SHEET).getRange("B2").setValue(String(message || ""));
+  getSpreadsheet_()
+    .getSheetByName(DASHBOARD_SHEET)
+    .getRange("B2")
+    .setValue(String(message || ""));
 }
 
 function writeDashboardNote_(message) {
@@ -777,14 +1014,14 @@ function writeDashboardNote_(message) {
 }
 
 function nowIstIso_() {
-  const tz = "Asia/Kolkata";
-  const formatted = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd'T'HH:mm:ss");
+  var tz = "Asia/Kolkata";
+  var formatted = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd'T'HH:mm:ss");
   return formatted + "+05:30";
 }
 
 function parsePrice_(value) {
   if (value === "" || value === null || value === undefined) return null;
-  const n = Number(String(value).replace(/[^0-9.]/g, ""));
+  var n = Number(String(value).replace(/[^0-9.]/g, ""));
   return isNaN(n) ? null : n;
 }
 
@@ -793,18 +1030,21 @@ function generateProductId_() {
 }
 
 function fillAffiliatePlaceholders_(sheet, row, map, productId) {
-  const templates = {
+  var templates = {
     amazon_aff_link:
-      "https://amazon.in/dp/PLACEHOLDER?tag=" + CONFIG.AMAZON_AFFILIATE_ID,
+      "https://www.amazon.in/dp/PLACEHOLDER?tag=" + CONFIG.AMAZON_AFFILIATE_ID,
     flipkart_aff_link:
-      "https://flipkart.com/p/" + productId + "?affid=" + CONFIG.FLIPKART_AFFILIATE_ID,
-    myntra_aff_link: "https://myntra.com/buy/" + productId,
-    meesho_aff_link: "https://meesho.com/p/" + productId,
+      "https://www.flipkart.com/p/" +
+      productId +
+      "?affid=" +
+      CONFIG.FLIPKART_AFFILIATE_ID,
+    myntra_aff_link: "https://www.myntra.com/buy/" + productId,
+    meesho_aff_link: "https://www.meesho.com/p/" + productId,
   };
   AFFILIATE_HEADERS.forEach(function (name) {
-    const col = map[name];
+    var col = map[name];
     if (!col) return;
-    const cell = sheet.getRange(row, col);
+    var cell = sheet.getRange(row, col);
     if (!String(cell.getValue() || "").trim()) {
       cell.setValue(templates[name] || "");
     }
@@ -813,8 +1053,8 @@ function fillAffiliatePlaceholders_(sheet, row, map, productId) {
 
 function appendChangeLog_(e) {
   ensureDashboard_();
-  const log = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CHANGE_LOG_SHEET);
-  const editor =
+  var log = getSpreadsheet_().getSheetByName(CHANGE_LOG_SHEET);
+  var editor =
     Session.getActiveUser().getEmail() ||
     Session.getEffectiveUser().getEmail() ||
     "unknown";
@@ -823,8 +1063,8 @@ function appendChangeLog_(e) {
 
 function appendChangeLogFromRow_(row, action) {
   ensureDashboard_();
-  const log = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName(CHANGE_LOG_SHEET);
-  const editor =
+  var log = getSpreadsheet_().getSheetByName(CHANGE_LOG_SHEET);
+  var editor =
     Session.getActiveUser().getEmail() ||
     Session.getEffectiveUser().getEmail() ||
     "unknown";
@@ -835,11 +1075,11 @@ function readAffiliateConfig_(sheet) {
   if (!sheet || sheet.getLastRow() < 2) {
     return { configured: false };
   }
-  const values = sheet.getDataRange().getValues();
-  const config = { configured: false };
-  for (let i = 1; i < values.length; i++) {
-    const key = String(values[i][0] || "").trim().toLowerCase();
-    const val = String(values[i][1] || "").trim();
+  var values = sheet.getDataRange().getValues();
+  var config = { configured: false };
+  for (var i = 1; i < values.length; i++) {
+    var key = String(values[i][0] || "").trim().toLowerCase();
+    var val = String(values[i][1] || "").trim();
     if (key && val) {
       config[key] = val;
       config.configured = true;

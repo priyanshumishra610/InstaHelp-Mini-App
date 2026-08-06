@@ -72,7 +72,7 @@ export function ArcadeHubScreen() {
             accessibilityLabel={`${credits} vendor credits`}
           >
             <LinearGradient
-              colors={["#7C3AED", "#8B5CF6"]}
+              colors={["#004aad", "#0066FF"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.creditsGradient}

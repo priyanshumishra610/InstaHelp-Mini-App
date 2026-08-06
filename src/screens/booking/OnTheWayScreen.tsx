@@ -110,7 +110,7 @@ function ProgressBar({ percent }: { percent: number }) {
           {
             height: "100%",
             borderRadius: 999,
-            backgroundColor: "#8B5CF6",
+            backgroundColor: "#0066FF",
           },
           style,
         ]}
@@ -180,10 +180,6 @@ export function OnTheWayScreen() {
         contentContainerStyle={{ paddingBottom: 60 }}
       >
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
-          />
           <View className="flex-row items-center gap-2">
             <PulsingDot />
             <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/85">

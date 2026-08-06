@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
     ...Platform.select({
       ios: {
-        shadowColor: "#a78bfa",
+        shadowColor: "#0066FF",
         shadowOpacity: 0.6,
         shadowRadius: 16,
       },

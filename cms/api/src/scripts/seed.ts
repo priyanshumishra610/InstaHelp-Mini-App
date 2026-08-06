@@ -30,7 +30,7 @@ const SAMPLE_CATEGORIES = [
   { name: "Travel", slug: "travel", theme_color: "#0ea5e9", display_priority: 100 },
   { name: "Beauty", slug: "beauty", theme_color: "#ec4899", display_priority: 90 },
   { name: "Doctors", slug: "doctors", theme_color: "#10b981", display_priority: 80 },
-  { name: "Real Estate", slug: "real-estate", theme_color: "#8b5cf6", display_priority: 70 },
+  { name: "Real Estate", slug: "real-estate", theme_color: "#0066FF", display_priority: 70 },
   { name: "Logistics", slug: "logistics", theme_color: "#f59e0b", display_priority: 60 },
   { name: "Bills", slug: "bills", theme_color: "#6366f1", display_priority: 50 },
   { name: "Repairs", slug: "repairs", theme_color: "#ef4444", display_priority: 40 },

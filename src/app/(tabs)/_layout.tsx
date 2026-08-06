@@ -1,11 +1,17 @@
-import { TAB_BAR_BASE_HEIGHT, WhatsAppFab } from "@/components/support/WhatsAppFab";
-import { ACCENT } from "@/constants/theme";
+import { GlassTabBarBackground } from "@/components/navigation/GlassTabBarBackground";
+import { GlassTabBarButton } from "@/components/navigation/GlassTabBarButton";
+import { GlassTabIcon } from "@/components/navigation/GlassTabIcon";
+import {
+  slideSceneInterpolator,
+  slideTransitionSpec,
+} from "@/components/navigation/tabSlideTransition";
+import { TAB_BAR_BASE_HEIGHT, HomeHubFab } from "@/components/home/HomeHubFab";
+import { COLORS, RADIUS } from "@/constants/designSystem";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
 import { useAuth } from "@/providers/AuthProvider";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
-import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs, router } from "expo-router";
 import { useEffect, useMemo } from "react";
 import { View } from "react-native";
@@ -40,62 +46,66 @@ export default function TabsLayout() {
     return <Redirect href={destination ?? "/(auth)/phone"} />;
   }
 
-  const bottomInset = Math.max(insets.bottom, 8);
+  const floatGap = 10;
+  const bottomInset = Math.max(insets.bottom, 8) + floatGap;
+  const tabBarHeight = TAB_BAR_BASE_HEIGHT + bottomInset;
 
   return (
     <View className="relative flex-1">
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: ACCENT,
-          tabBarInactiveTintColor: "#9ca3af",
+          animation: "shift",
+          sceneStyleInterpolator: slideSceneInterpolator,
+          transitionSpec: slideTransitionSpec,
+          tabBarActiveTintColor: COLORS.accent,
+          tabBarInactiveTintColor: COLORS.ink,
+          tabBarBackground: () => <GlassTabBarBackground />,
+          tabBarButton: (props) => <GlassTabBarButton {...props} />,
           tabBarStyle: {
-            borderTopColor: "#ececec",
-            backgroundColor: "#ffffff",
-            height: TAB_BAR_BASE_HEIGHT + bottomInset,
-            paddingBottom: bottomInset,
-            paddingTop: 6,
+            position: "absolute",
+            left: 22,
+            right: 22,
+            bottom: bottomInset,
+            height: TAB_BAR_BASE_HEIGHT,
+            paddingBottom: 4,
+            paddingTop: 4,
+            paddingHorizontal: 6,
+            borderTopWidth: 0,
+            backgroundColor: "transparent",
+            borderRadius: RADIUS.pill,
+            elevation: 0,
+            shadowOpacity: 0,
+            overflow: "visible",
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
+          sceneStyle: {
+            paddingBottom: tabBarHeight + 10,
+          },
+          tabBarLabelStyle: {
+            fontSize: 10,
+            fontWeight: "600",
+            letterSpacing: 0.1,
+            marginTop: 1,
+          },
+          tabBarItemStyle: {
+            paddingTop: 0,
+          },
         }}
       >
         <Tabs.Screen
           name="index"
           options={{
             title: "Home",
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? "home" : "home-outline"}
-                color={color}
-                size={size}
-              />
+            tabBarIcon: ({ color, focused }) => (
+              <GlassTabIcon name="home" color={color} focused={focused} size={20} />
             ),
           }}
         />
         <Tabs.Screen
           name="vendors"
           options={{
-            title: "Explore",
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? "grid" : "grid-outline"}
-                color={color}
-                size={size}
-              />
-            ),
+            href: null,
           }}
-          listeners={({ navigation }) => ({
-            tabPress: (e) => {
-              const vendorsRoute = navigation
-                .getState()
-                .routes.find((r) => r.name === "vendors");
-              const stackIndex = vendorsRoute?.state?.index ?? 0;
-              if (stackIndex > 0) {
-                e.preventDefault();
-                router.navigate("/(tabs)/vendors");
-              }
-            },
-          })}
         />
         <Tabs.Screen
           name="bookings"
@@ -108,11 +118,12 @@ export default function TabsLayout() {
           name="experiences"
           options={{
             title: "Experiences",
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? "compass" : "compass-outline"}
+            tabBarIcon: ({ color, focused }) => (
+              <GlassTabIcon
+                name="experiences"
                 color={color}
-                size={size}
+                focused={focused}
+                size={20}
               />
             ),
           }}
@@ -121,53 +132,38 @@ export default function TabsLayout() {
           name="shop"
           options={{
             title: "Shop",
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? "bag" : "bag-outline"}
-                color={color}
-                size={size}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="giftcards"
-          options={{
-            title: "GiftCards",
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? "gift" : "gift-outline"}
-                color={color}
-                size={size}
-              />
+            tabBarIcon: ({ color, focused }) => (
+              <GlassTabIcon name="shop" color={color} focused={focused} size={20} />
             ),
           }}
           listeners={({ navigation }) => ({
             tabPress: (e) => {
-              const giftcardsRoute = navigation
+              const shopRoute = navigation
                 .getState()
-                .routes.find((r) => r.name === "giftcards");
-              const params = giftcardsRoute?.params as Record<string, unknown> | undefined;
+                .routes.find((r) => r.name === "shop");
+              const params = shopRoute?.params as Record<string, unknown> | undefined;
               const hasDeepLinkParams = Boolean(
                 params?.sdkPath || params?.brandId || params?.category,
               );
               if (hasDeepLinkParams) {
                 e.preventDefault();
-                router.navigate("/(tabs)/giftcards");
+                router.navigate("/(tabs)/shop");
               }
             },
           })}
         />
         <Tabs.Screen
+          name="giftcards"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: ({ color, focused, size }) => (
-              <Ionicons
-                name={focused ? "person" : "person-outline"}
-                color={color}
-                size={size}
-              />
+            tabBarIcon: ({ color, focused }) => (
+              <GlassTabIcon name="profile" color={color} focused={focused} size={20} />
             ),
           }}
         />
@@ -179,7 +175,7 @@ export default function TabsLayout() {
           }}
         />
       </Tabs>
-      <WhatsAppFab />
+      <HomeHubFab />
     </View>
   );
 }

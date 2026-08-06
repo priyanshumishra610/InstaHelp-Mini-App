@@ -3,7 +3,7 @@ import { useOnboardingStore } from "@/store/onboardingStore";
 import { useSheetAuthStore } from "@/store/sheetAuthStore";
 import { useEffect, useState } from "react";
 
-/** App routing waits for auth + persisted onboarding/sheet phone hydration. */
+/** App routing waits for auth + persisted onboarding/auth phone hydration. */
 export function useAuthHydration(): boolean {
   const { isReady } = useAuth();
   const [onboardingHydrated, setOnboardingHydrated] = useState(() =>

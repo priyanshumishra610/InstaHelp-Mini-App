@@ -73,7 +73,7 @@ export function BookingsScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#7C3AED"
+            tintColor="#004aad"
           />
         }
       >
@@ -95,14 +95,6 @@ export function BookingsScreen() {
               entering={FadeInUp.duration(420).delay(60)}
               className="mt-6 overflow-hidden rounded-[28px] bg-accent p-6 shadow-sm"
             >
-              <View
-                pointerEvents="none"
-                className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-brand-blue"
-              />
-              <View
-                pointerEvents="none"
-                className="absolute -bottom-16 -left-8 h-32 w-32 rounded-full bg-accent-deep/40"
-              />
 
               <View className="flex-row items-center gap-4">
                 <View className="h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-white/35 bg-white/10">
@@ -208,7 +200,7 @@ export function BookingsScreen() {
 
         {isPending ? (
           <View className="mt-12 items-center">
-            <ActivityIndicator color="#7C3AED" />
+            <ActivityIndicator color="#004aad" />
           </View>
         ) : isError ? (
           <EmptyState
@@ -265,7 +257,7 @@ export function BookingsScreen() {
                     className="flex-row items-start gap-3 px-4 py-4 active:bg-neutral-200/50 dark:active:bg-neutral-800"
                   >
                     <View className="mt-0.5 h-10 w-10 items-center justify-center rounded-full bg-accent-soft dark:bg-accent/25">
-                      <Ionicons name="receipt-outline" size={18} color="#7C3AED" />
+                      <Ionicons name="receipt-outline" size={18} color="#004aad" />
                     </View>
                     <View className="min-w-0 flex-1">
                       <View className="flex-row items-start justify-between gap-2">

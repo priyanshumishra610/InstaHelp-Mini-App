@@ -4,8 +4,8 @@ import { Text, View } from "react-native";
 export type MiniGameWinTone = "accent" | "violet" | "emerald";
 
 const TONES: Record<MiniGameWinTone, string> = {
-  accent: "#7C3AED",
-  violet: "#7c3aed",
+  accent: "#004aad",
+  violet: "#004aad",
   emerald: "#059669",
 };
 

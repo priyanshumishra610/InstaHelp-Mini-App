@@ -1,3 +1,4 @@
+import { AppAtmosphere } from "@/components/ui/AppAtmosphere";
 import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useAuth } from "@/providers/AuthProvider";
@@ -5,9 +6,7 @@ import { persistProfile } from "@/services/profileService";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useProfileStore } from "@/store/profileStore";
 import type { UserGender, UserProfile } from "@/types/user";
-import {
-  isValidProfileAge,
-} from "@/utils/auth/profileComplete";
+import { isValidProfileAge } from "@/utils/auth/profileComplete";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -17,7 +16,6 @@ import {
 } from "@expo-google-fonts/poppins";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useMemo, useState } from "react";
@@ -40,6 +38,9 @@ const GENDER_OPTIONS: { value: UserGender; label: string }[] = [
   { value: "other", label: "Other" },
   { value: "prefer_not_to_say", label: "Prefer not to say" },
 ];
+
+const INPUT_BG = "#F3F4F6";
+const BORDER = "rgba(0,0,0,0.08)";
 
 function parseAgeInput(raw: string): number | null {
   const digits = raw.replace(/\D/g, "");
@@ -82,6 +83,17 @@ export function ProfileSetupScreen() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
   const canContinue = nameOk && ageOk && emailOk && Boolean(phone);
 
+  const enterApp = useCallback(() => {
+    router.replace("/(tabs)");
+  }, [router]);
+
+  const onSkip = useCallback(() => {
+    if (loading) return;
+    setDeferProfile(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    enterApp();
+  }, [enterApp, loading, setDeferProfile]);
+
   const onContinue = useCallback(async () => {
     if (!canContinue || !phone || loading || parsedAge == null) return;
     setLoading(true);
@@ -106,7 +118,7 @@ export function ProfileSetupScreen() {
       await refreshSession();
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setDeferProfile(false);
-      router.replace("/(tabs)");
+      enterApp();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save profile.");
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -117,6 +129,7 @@ export function ProfileSetupScreen() {
     canContinue,
     city,
     email,
+    enterApp,
     fullName,
     gender,
     loading,
@@ -125,49 +138,70 @@ export function ProfileSetupScreen() {
     phone,
     profile,
     refreshSession,
-    router,
     setDeferProfile,
   ]);
 
   if (!fontsLoaded) {
     return (
       <View style={[styles.root, styles.center]}>
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color={AUTH_PRIMARY} />
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
-      <LinearGradient
-        colors={["#0A0A1A", "#0f1028", "#12122a"]}
-        style={StyleSheet.absoluteFill}
-      />
+      <StatusBar style="dark" />
+      <AppAtmosphere variant="auth" />
+
+      <View
+        style={[
+          styles.topBar,
+          {
+            paddingTop: insets.top + 8,
+            paddingLeft: Math.max(insets.left, 16),
+            paddingRight: Math.max(insets.right, 16),
+          },
+        ]}
+        pointerEvents="box-none"
+      >
+        <Pressable
+          onPress={onSkip}
+          disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel="Skip profile setup"
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.skipButton,
+            pressed && styles.skipButtonPressed,
+          ]}
+        >
+          <Text style={[styles.skipLabel, { fontFamily: AUTH_FONT.semibold }]}>
+            Skip
+          </Text>
+        </Pressable>
+      </View>
 
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
+          style={styles.scroll}
           contentContainerStyle={[
-            styles.scroll,
-            { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 28) },
           ]}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.sheetOuter}>
-            <LinearGradient
-              colors={["rgba(118,67,255,0.22)", "rgba(28,24,44,0.92)"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.sheet}
-            >
+            <View style={styles.sheet}>
               <Text style={[styles.title, { fontFamily: AUTH_FONT.bold }]}>
                 A few details{"\n"}about you
               </Text>
               <Text style={[styles.sub, { fontFamily: AUTH_FONT.regular }]}>
-                Help us personalize InstaHelp — name and age are required.
+                Help us personalize InstaHelp. Name and age are required.
               </Text>
 
               <View style={styles.field}>
@@ -182,16 +216,12 @@ export function ProfileSetupScreen() {
                       setFullName(t);
                     }}
                     placeholder="e.g. Karan Sharma"
-                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    placeholderTextColor="#6B7280"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     autoComplete="name"
                   />
-                  <Ionicons
-                    name="person-outline"
-                    size={18}
-                    color="rgba(255,255,255,0.55)"
-                  />
+                  <Ionicons name="person-outline" size={18} color="#9CA3AF" />
                 </View>
               </View>
 
@@ -207,17 +237,13 @@ export function ProfileSetupScreen() {
                       setAgeText(t.replace(/\D/g, "").slice(0, 3));
                     }}
                     placeholder="e.g. 28"
-                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    placeholderTextColor="#6B7280"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     keyboardType="number-pad"
                     maxLength={3}
                   />
-                  <Ionicons
-                    name="calendar-outline"
-                    size={18}
-                    color="rgba(255,255,255,0.55)"
-                  />
+                  <Ionicons name="calendar-outline" size={18} color="#9CA3AF" />
                 </View>
                 {ageText.length > 0 && !ageOk ? (
                   <Text style={[styles.hint, { fontFamily: AUTH_FONT.regular }]}>
@@ -241,10 +267,7 @@ export function ProfileSetupScreen() {
                           setGender(selected ? null : opt.value);
                         }}
                         disabled={loading}
-                        style={[
-                          styles.chip,
-                          selected && styles.chipSelected,
-                        ]}
+                        style={[styles.chip, selected && styles.chipSelected]}
                       >
                         <Text
                           style={[
@@ -273,16 +296,12 @@ export function ProfileSetupScreen() {
                       setCity(t);
                     }}
                     placeholder="e.g. Bangalore"
-                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    placeholderTextColor="#6B7280"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     autoComplete="postal-address-locality"
                   />
-                  <Ionicons
-                    name="location-outline"
-                    size={18}
-                    color="rgba(255,255,255,0.55)"
-                  />
+                  <Ionicons name="location-outline" size={18} color="#9CA3AF" />
                 </View>
               </View>
 
@@ -298,17 +317,13 @@ export function ProfileSetupScreen() {
                       setEmail(t);
                     }}
                     placeholder="hello@email.com"
-                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    placeholderTextColor="#6B7280"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color="rgba(255,255,255,0.55)"
-                  />
+                  <Ionicons name="mail-outline" size={18} color="#9CA3AF" />
                 </View>
               </View>
 
@@ -321,6 +336,8 @@ export function ProfileSetupScreen() {
               <Pressable
                 onPress={() => void onContinue()}
                 disabled={!canContinue || loading}
+                accessibilityRole="button"
+                accessibilityLabel="Continue to InstaHelp"
                 style={({ pressed }) => [
                   styles.continueBtn,
                   canContinue && styles.continueBtnActive,
@@ -328,7 +345,7 @@ export function ProfileSetupScreen() {
                 ]}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color={canContinue ? "#FFFFFF" : "#9CA3AF"} />
                 ) : (
                   <Text
                     style={[
@@ -341,7 +358,23 @@ export function ProfileSetupScreen() {
                   </Text>
                 )}
               </Pressable>
-            </LinearGradient>
+
+              <Pressable
+                onPress={onSkip}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Skip for now"
+                hitSlop={6}
+                style={({ pressed }) => [
+                  styles.skipLink,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Text style={[styles.skipLinkLabel, { fontFamily: AUTH_FONT.medium }]}>
+                  Skip for now
+                </Text>
+              </Pressable>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -350,13 +383,41 @@ export function ProfileSetupScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#0A0A1A" },
+  root: { flex: 1, backgroundColor: "#F7F6FB" },
   flex: { flex: 1 },
   center: { alignItems: "center", justifyContent: "center" },
-  scroll: {
-    paddingHorizontal: 20,
+  scroll: { flex: 1 },
+  scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+  },
+  topBar: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    zIndex: 20,
+  },
+  skipButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
+  skipButtonPressed: {
+    opacity: 0.88,
+    backgroundColor: "rgba(0,0,0,0.08)",
+  },
+  skipLabel: {
+    fontSize: 16,
+    color: "#374151",
+    letterSpacing: 0.2,
   },
   sheetOuter: {
     width: "100%",
@@ -364,31 +425,37 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   sheet: {
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingTop: 22,
-    paddingBottom: 20,
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    paddingHorizontal: 22,
+    paddingTop: 26,
+    paddingBottom: 22,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-    backgroundColor: "rgba(17,16,26,0.92)",
-    overflow: "hidden",
+    borderColor: BORDER,
+    shadowColor: "#004aad",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
   title: {
     fontSize: 26,
-    color: "#fff",
+    lineHeight: 34,
+    color: "#111827",
     letterSpacing: -0.5,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   sub: {
     fontSize: 13,
     lineHeight: 18,
-    color: "rgba(255,255,255,0.60)",
-    marginBottom: 14,
+    color: "#6B7280",
+    marginBottom: 8,
   },
-  field: { marginTop: 12 },
+  field: { marginTop: 14 },
   label: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.78)",
+    color: "#374151",
     marginBottom: 8,
   },
   inputRow: {
@@ -398,21 +465,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+    borderColor: BORDER,
   },
   input: {
     flex: 1,
     minWidth: 0,
     fontSize: 14,
-    color: "rgba(255,255,255,0.92)",
+    color: "#111827",
     padding: 0,
   },
   hint: {
     marginTop: 6,
     fontSize: 11,
-    color: "rgba(248,113,113,0.9)",
+    color: "#DC2626",
   },
   chipRow: {
     flexDirection: "row",
@@ -423,46 +490,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
+    borderColor: BORDER,
   },
   chipSelected: {
-    backgroundColor: "rgba(118,67,255,0.35)",
+    backgroundColor: "#F5F3FF",
     borderColor: AUTH_PRIMARY,
   },
   chipLabel: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.72)",
+    color: "#4B5563",
   },
   chipLabelSelected: {
-    color: "#fff",
+    color: AUTH_PRIMARY,
   },
   error: {
     fontSize: 12,
-    color: "#f87171",
-    marginBottom: 12,
-    marginTop: 10,
+    color: "#DC2626",
+    marginBottom: 8,
+    marginTop: 12,
+    textAlign: "center",
   },
   continueBtn: {
     alignSelf: "center",
     width: "100%",
     maxWidth: 320,
-    borderRadius: 999,
+    borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 28,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#2F2F3D",
-    marginTop: 28,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "#E5E7EB",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    marginTop: 24,
     minHeight: 54,
-    overflow: "hidden",
   },
   continueBtnActive: {
     backgroundColor: AUTH_PRIMARY,
-    borderColor: "rgba(255,255,255,0.45)",
+    borderColor: AUTH_PRIMARY,
     shadowColor: AUTH_PRIMARY,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
@@ -471,11 +538,22 @@ const styles = StyleSheet.create({
   },
   continueLabel: {
     fontSize: 16,
-    color: "rgba(255,255,255,0.55)",
+    color: "#9CA3AF",
     textAlign: "center",
   },
   continueLabelActive: {
     color: "#FFFFFF",
+    textAlign: "center",
+  },
+  skipLink: {
+    alignSelf: "center",
+    marginTop: 14,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  skipLinkLabel: {
+    fontSize: 13,
+    color: "#6B7280",
     textAlign: "center",
   },
 });

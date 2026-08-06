@@ -22,9 +22,16 @@ function normalizeSdkPath(parts: { sdkPath?: string; brandId?: string }) {
 type HubbleWebViewScreenProps = {
   /** When embedded as the GiftCards tab, exit navigates home instead of popping the stack. */
   isTabRoot?: boolean;
+  /** When embedded inside the merged Shop screen, skip top safe area and use onExit. */
+  embedded?: boolean;
+  onExit?: () => void;
 };
 
-export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenProps) {
+export function HubbleWebViewScreen({
+  isTabRoot = false,
+  embedded = false,
+  onExit,
+}: HubbleWebViewScreenProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{
     sdkPath?: string;
@@ -65,18 +72,23 @@ export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenPr
   const [reloadNonce, setReloadNonce] = useState(0);
 
   const exitStore = useCallback(() => {
+    if (onExit) {
+      onExit();
+      return;
+    }
     if (isTabRoot) {
       router.navigate("/(tabs)");
       return;
     }
     router.back();
-  }, [isTabRoot, router]);
+  }, [isTabRoot, onExit, router]);
 
   const {
     sourceUri,
     webViewRef,
     onMessage,
     onShouldStartLoadWithRequest,
+    onWebViewError,
     setCanGoBack,
     resetSessionFlags,
     sdkReady,
@@ -99,7 +111,10 @@ export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenPr
 
   if (!isConfigured) {
     return (
-      <SafeAreaView className="flex-1 bg-white px-5" edges={["top", "left", "right"]}>
+      <SafeAreaView
+        className="flex-1 bg-white px-5"
+        edges={embedded ? ["left", "right"] : ["top", "left", "right"]}
+      >
         <View className="mt-10 gap-3">
           <Text className="text-2xl font-extrabold text-brand-ink">Gift cards unavailable</Text>
           <Text className="text-sm leading-6 text-gray-600">
@@ -119,9 +134,12 @@ export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenPr
     );
   }
 
-  if (ssoState === "loading") {
+  if (ssoState === "loading" || (ssoState !== "error" && !sourceUri)) {
     return (
-      <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+      <SafeAreaView
+        className="flex-1 bg-white"
+        edges={embedded ? ["left", "right"] : ["top", "left", "right"]}
+      >
         <View className="flex-1 items-center justify-center px-6">
           <ActivityIndicator size="large" color={ACCENT} />
           <Text className="mt-3 text-sm font-semibold text-gray-600">Opening gift store…</Text>
@@ -132,7 +150,10 @@ export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenPr
 
   if (ssoState === "error") {
     return (
-      <SafeAreaView className="flex-1 bg-white px-5" edges={["top", "left", "right"]}>
+      <SafeAreaView
+        className="flex-1 bg-white px-5"
+        edges={embedded ? ["left", "right"] : ["top", "left", "right"]}
+      >
         <View className="mt-10 items-center gap-3">
           <Ionicons name="alert-circle" size={34} color="#b45309" />
           <Text className="text-center text-xl font-extrabold text-brand-ink">
@@ -157,7 +178,10 @@ export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenPr
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+    <SafeAreaView
+      className="flex-1 bg-white"
+      edges={embedded ? ["left", "right"] : ["top", "left", "right"]}
+    >
       <View className="relative flex-1 bg-white">
         <View className="relative flex-1">
         {!sdkReady ? (
@@ -203,6 +227,8 @@ export function HubbleWebViewScreen({ isTabRoot = false }: HubbleWebViewScreenPr
           javaScriptCanOpenWindowsAutomatically
           onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
           onMessage={onMessage}
+          onError={onWebViewError}
+          onHttpError={onWebViewError}
           onNavigationStateChange={(navState) => {
             setCanGoBack(navState.canGoBack);
           }}

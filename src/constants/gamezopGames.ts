@@ -66,7 +66,7 @@ export const GAMEZOP_GAMES: GamezopGame[] = [
     url: `${BASE}/gTD1yQp3R`,
     categories: ["trending", "action", "arcade", "play-earn"],
     rewardCoins: 10,
-    gradient: ["#6366f1", "#8b5cf6", "#a855f7"],
+    gradient: ["#6366f1", "#0066FF", "#a855f7"],
     icon: "skull",
     featured: true,
     playEarn: true,

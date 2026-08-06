@@ -81,7 +81,7 @@ export const GIFT_CARD_HERO_SLIDES: GiftCardHeroSlide[] = [
     title: "Curated gift cards",
     subtitle: "Pick a brand, pay securely, send instantly.",
     cta: "Browse brands",
-    accent: "#7C3AED",
+    accent: "#004aad",
     sdkPath: "search",
   },
   {

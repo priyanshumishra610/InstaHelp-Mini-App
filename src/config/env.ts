@@ -69,39 +69,85 @@ export const FIREBASE_IS_CONFIGURED = Boolean(
   FIREBASE_API_KEY && FIREBASE_PROJECT_ID,
 );
 
-export type ShopCatalogSource = "bundled_csv" | "google_sheet";
+export type ShopCatalogSource = "bundled_csv" | "live";
 
-/** Shop product catalog: bundled_csv (default) | google_sheet (live published CSV). */
+/** Shop product catalog: live (default) | bundled_csv (offline fallback). */
 export function getShopCatalogSource(): ShopCatalogSource {
   const explicit = getPublicEnv("EXPO_PUBLIC_SHOP_CATALOG_SOURCE");
-  if (explicit === "google_sheet") return "google_sheet";
-  return "bundled_csv";
+  if (explicit === "bundled_csv") return "bundled_csv";
+  // Accept legacy alias used in older env files.
+  if (explicit === "google_sheet" || explicit === "live" || !explicit) {
+    return "live";
+  }
+  return "live";
 }
 
 export const SHOP_SHEET_ID = getPublicEnv(
   "EXPO_PUBLIC_SHOP_SHEET_ID",
-  "1oFNlCO_z2rek3FweEGBKqk_2lLi7fWD0QKUg-_l67TE",
+  "1XfPC6fcV_Ct97vDwaRJDVbZ2hJNQRvj2FWj0nddqwR4",
 );
 
 export const SHOP_PRODUCTS_GID = getPublicEnv(
   "EXPO_PUBLIC_SHOP_PRODUCTS_GID",
-  "730196278",
+  "0",
 );
 
-/** Published-to-web ID (`2PACX-...` from the /d/e/.../pubhtml link). */
+/** Optional published CSV id; leave empty to use the shared export URL. */
 export const SHOP_SHEET_PUBLISH_ID = getPublicEnv(
   "EXPO_PUBLIC_SHOP_SHEET_PUBLISH_ID",
-  "2PACX-1vT3Ps-Sjksz6Wr91p5mJm5Hyh6Hyjr7klYBy84S28eEU4SYh6ODWjf09EVaK4jc5IlINoO6nVlCmqF4",
+  "",
+);
+
+export type ExperienceCatalogSource = "bundled_json" | "google_sheet";
+
+/** Experiences catalogs: live CSV (default) | bundled_json (offline fallback only). */
+export function getExperienceCatalogSource(): ExperienceCatalogSource {
+  const explicit = getPublicEnv("EXPO_PUBLIC_EXPERIENCE_CATALOG_SOURCE");
+  if (explicit === "bundled_json") return "bundled_json";
+  return "google_sheet";
+}
+
+export const HOLIDAYS_SHEET_ID = getPublicEnv(
+  "EXPO_PUBLIC_HOLIDAYS_SHEET_ID",
+  "1R8pZjN6QTOgalKDdeGRUBKl1mPG_jWewC1OuYR1mb7Q",
+);
+export const HOLIDAYS_GID = getPublicEnv("EXPO_PUBLIC_HOLIDAYS_GID", "0");
+
+export const RESORTS_SHEET_ID = getPublicEnv(
+  "EXPO_PUBLIC_RESORTS_SHEET_ID",
+  "1vz6jayRkSgbThzDWBclrKMRBXjHvwW4qeq7Cic7VULE",
+);
+export const RESORTS_GID = getPublicEnv(
+  "EXPO_PUBLIC_RESORTS_GID",
+  "531031007",
+);
+
+export const COUNTRIES_SHEET_ID = getPublicEnv(
+  "EXPO_PUBLIC_COUNTRIES_SHEET_ID",
+  "1n-Ryo5nYJbWbQzV3fn0lbOpE6uDSM0ia5MjsNsvP-xE",
+);
+export const COUNTRIES_GID = getPublicEnv(
+  "EXPO_PUBLIC_COUNTRIES_GID",
+  "1349863230",
 );
 
 /** Razorpay Key ID (public) — secret stays in Apps Script Script properties */
 export const RAZORPAY_KEY_ID = getPublicEnv("EXPO_PUBLIC_RAZORPAY_KEY_ID");
 export const RAZORPAY_IS_CONFIGURED = Boolean(RAZORPAY_KEY_ID);
 
-/** Cuelinks publisher API token — request from sales@cuelinks.com */
+/** Cuelinks — channel/publisher id from shop script (`var cId = '284356'`) */
 export const CUELINKS_API_TOKEN = getPublicEnv("EXPO_PUBLIC_CUELINKS_API_TOKEN");
-export const CUELINKS_PUBLISHER_ID = getPublicEnv("EXPO_PUBLIC_CUELINKS_PUBLISHER_ID");
+export const CUELINKS_PUBLISHER_ID = getPublicEnv(
+  "EXPO_PUBLIC_CUELINKS_PUBLISHER_ID",
+  "284356",
+);
+/** Same as web `cId` — used in linksredirect.com affiliate wrapping */
+export const CUELINKS_CHANNEL_ID = getPublicEnv(
+  "EXPO_PUBLIC_CUELINKS_CHANNEL_ID",
+  CUELINKS_PUBLISHER_ID || "284356",
+);
 export const CUELINKS_IS_CONFIGURED = Boolean(CUELINKS_API_TOKEN);
+export const CUELINKS_TRACKING_READY = Boolean(CUELINKS_CHANNEL_ID);
 
 /** InstaHelp CMS content API — dynamic banners, categories, deals, mobile assets */
 export const CMS_API_URL = getPublicEnv("EXPO_PUBLIC_CMS_API_URL");

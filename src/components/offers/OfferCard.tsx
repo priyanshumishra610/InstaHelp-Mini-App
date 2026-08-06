@@ -128,19 +128,6 @@ function OfferCardComponent({
             paddingVertical: 18,
           }}
         >
-          <View
-            pointerEvents="none"
-            className="absolute -right-8 -top-10 h-36 w-36 rounded-full"
-            style={{ backgroundColor: `${ACCENT}12` }}
-          />
-          <View
-            pointerEvents="none"
-            className="absolute bottom-0 right-10 h-24 w-24 rounded-full"
-            style={{
-              backgroundColor: "rgba(15, 23, 42, 0.04)",
-            }}
-          />
-
           <View className="flex-row items-start justify-between">
             <View
               className="flex-1 gap-2"
@@ -182,7 +169,7 @@ function OfferCardComponent({
                 >
                   <Text
                     className="text-[10px] font-extrabold uppercase tracking-wide"
-                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#5B21B6" : ACCENT_DEEP }}
+                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#003780" : ACCENT_DEEP }}
                   >
                     {offer.badge}
                   </Text>

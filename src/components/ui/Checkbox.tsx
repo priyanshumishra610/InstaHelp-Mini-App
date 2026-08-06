@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { MotiView } from "moti";
 import type { ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
 
@@ -26,19 +27,25 @@ export function Checkbox({
       className="flex-row items-start gap-3 active:opacity-80"
       hitSlop={6}
     >
-      <View
-        className={`mt-0.5 h-5 w-5 items-center justify-center rounded-md border ${
-          checked
-            ? "border-neutral-900 bg-neutral-900"
-            : error
-              ? "border-red-400 bg-white"
-              : "border-neutral-300 bg-white"
-        }`}
+      <MotiView
+        animate={{
+          backgroundColor: checked ? "#171717" : "#ffffff",
+          borderColor: checked ? "#171717" : error ? "#f87171" : "#d4d4d4",
+        }}
+        transition={{ type: "timing", duration: 160 }}
+        className="mt-0.5 h-5 w-5 items-center justify-center rounded-md border"
       >
-        {checked ? (
+        <MotiView
+          from={{ scale: 0, opacity: 0 }}
+          animate={{
+            scale: checked ? 1 : 0,
+            opacity: checked ? 1 : 0,
+          }}
+          transition={{ type: "spring", damping: 14, stiffness: 400 }}
+        >
           <Ionicons name="checkmark" size={14} color="#ffffff" />
-        ) : null}
-      </View>
+        </MotiView>
+      </MotiView>
       {typeof label === "string" ? (
         <Text className="flex-1 text-[12px] leading-[18px] text-neutral-600">
           {label}

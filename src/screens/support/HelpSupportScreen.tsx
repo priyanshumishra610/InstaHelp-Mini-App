@@ -4,7 +4,6 @@ import { APP_VERSION, APP_WEB_URL } from "@/constants/appInfo";
 import { ACCENT } from "@/constants/theme";
 import { openWhatsApp } from "@/utils/whatsapp";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useCallback } from "react";
 import {
   Linking,
@@ -79,35 +78,34 @@ export function HelpSupportScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInUp.duration(420).delay(60)} className="mt-6">
-          <LinearGradient
-            colors={["#7C3AED", "#5B21B6", "#5B21B6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            className="overflow-hidden rounded-[28px] p-6"
+          <View
+            className="rounded-[28px] border border-neutral-200 bg-white p-6"
             style={{
-              shadowColor: "#7C3AED",
-              shadowOpacity: 0.25,
-              shadowRadius: 20,
-              shadowOffset: { width: 0, height: 10 },
-              elevation: 8,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 3,
             }}
           >
-            <View
-              pointerEvents="none"
-              className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/10"
-            />
             <View className="flex-row items-start gap-4">
-              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+              <View
+                className="h-12 w-12 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: ACCENT }}
+              >
                 <Ionicons name="headset" size={26} color="#ffffff" />
               </View>
               <View className="min-w-0 flex-1">
-                <Text className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/75">
+                <Text
+                  className="text-[10px] font-bold uppercase tracking-[0.18em]"
+                  style={{ color: ACCENT }}
+                >
                   Concierge
                 </Text>
-                <Text className="mt-1 text-xl font-extrabold text-white">
+                <Text className="mt-1 text-xl font-extrabold text-neutral-950">
                   Chat with us on WhatsApp
                 </Text>
-                <Text className="mt-1 text-sm leading-5 text-white/90">
+                <Text className="mt-1 text-sm leading-5 text-neutral-500">
                   Real humans. Fast replies. Share photos, voice notes, or booking
                   IDs.
                 </Text>
@@ -121,14 +119,15 @@ export function HelpSupportScreen() {
               }
               accessibilityRole="button"
               accessibilityLabel="Open WhatsApp support"
-              className="mt-5 flex-row items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-3.5 active:opacity-92"
+              className="mt-5 flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-92"
+              style={{ backgroundColor: "#FFD600" }}
             >
-              <Ionicons name="logo-whatsapp" size={20} color="#ffffff" />
-              <Text className="text-[15px] font-extrabold text-white">
+              <Ionicons name="logo-whatsapp" size={20} color="#0A0A0A" />
+              <Text className="text-[15px] font-extrabold text-neutral-950">
                 Message InstaHelp
               </Text>
             </Pressable>
-          </LinearGradient>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.duration(420).delay(120)} className="mt-8">

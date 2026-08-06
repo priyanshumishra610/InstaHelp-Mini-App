@@ -25,7 +25,7 @@ export function RecommendedSection({ onOpenPersonalized }: Props) {
         }}
       >
         <LinearGradient
-          colors={["#7C3AED", "#0b1220"]}
+          colors={["#004aad", "#0b1220"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={{ padding: 18 }}

@@ -1,4 +1,6 @@
+import { AnimatedPressable } from "@/components/ui/AnimatedPressable";
 import { Ionicons } from "@expo/vector-icons";
+import { MotiView } from "moti";
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 
@@ -35,11 +37,12 @@ export function SelectField<T extends string = string>({
 
   return (
     <>
-      <Pressable
+      <AnimatedPressable
         onPress={() => !disabled && setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={pickerTitle ?? placeholder}
         accessibilityState={{ disabled: !!disabled }}
+        scaleTo={0.98}
         className={`flex-row items-center justify-between rounded-2xl border bg-white px-4 py-3.5 ${
           error ? "border-red-400" : "border-neutral-200"
         } ${disabled ? "opacity-50" : ""}`}
@@ -52,12 +55,17 @@ export function SelectField<T extends string = string>({
         >
           {selected ? selected.label : placeholder}
         </Text>
-        <Ionicons
-          name="chevron-down"
-          size={18}
-          color={error ? "#dc2626" : "#737373"}
-        />
-      </Pressable>
+        <MotiView
+          animate={{ rotate: open ? "180deg" : "0deg" }}
+          transition={{ type: "timing", duration: 200 }}
+        >
+          <Ionicons
+            name="chevron-down"
+            size={18}
+            color={error ? "#dc2626" : "#737373"}
+          />
+        </MotiView>
+      </AnimatedPressable>
 
       <Modal
         transparent
@@ -69,6 +77,11 @@ export function SelectField<T extends string = string>({
           onPress={close}
           className="flex-1 items-center justify-end bg-black/40"
         >
+          <MotiView
+            from={{ translateY: 40, opacity: 0 }}
+            animate={{ translateY: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 22, stiffness: 260 }}
+          >
           <Pressable
             onPress={() => {}}
             className="w-full rounded-t-3xl bg-white pb-6 pt-5"
@@ -96,17 +109,25 @@ export function SelectField<T extends string = string>({
                       active ? "bg-neutral-50" : ""
                     } active:bg-neutral-100`}
                   >
-                    <View
-                      className={`h-5 w-5 items-center justify-center rounded-full border ${
-                        active
-                          ? "border-neutral-900 bg-neutral-900"
-                          : "border-neutral-300 bg-white"
-                      }`}
+                    <MotiView
+                      animate={{
+                        backgroundColor: active ? "#171717" : "#ffffff",
+                        borderColor: active ? "#171717" : "#d4d4d4",
+                      }}
+                      transition={{ type: "timing", duration: 160 }}
+                      className="h-5 w-5 items-center justify-center rounded-full border"
                     >
-                      {active ? (
+                      <MotiView
+                        from={{ scale: 0, opacity: 0 }}
+                        animate={{
+                          scale: active ? 1 : 0,
+                          opacity: active ? 1 : 0,
+                        }}
+                        transition={{ type: "spring", damping: 14, stiffness: 400 }}
+                      >
                         <Ionicons name="checkmark" size={12} color="#ffffff" />
-                      ) : null}
-                    </View>
+                      </MotiView>
+                    </MotiView>
                     <View className="flex-1">
                       <Text
                         className={`text-[15px] ${
@@ -128,6 +149,7 @@ export function SelectField<T extends string = string>({
               })}
             </ScrollView>
           </Pressable>
+          </MotiView>
         </Pressable>
       </Modal>
     </>

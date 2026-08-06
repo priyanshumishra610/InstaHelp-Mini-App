@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchWeeklyOffers } from "./homeContentService";
-import { fetchCmsCategories } from "./categoriesContentService";
-import { fetchCmsShopContent } from "./shopContentService";
-import { fetchSplashConfig, fetchMobileAssets } from "./mobileAssetsService";
-import { CMS_IS_CONFIGURED } from "./cmsClient";
+import { fetchWeeklyOffers } from "@/services/content/homeContentService";
+import { fetchCmsCategories } from "@/services/content/categoriesContentService";
+import { fetchCmsShopContent } from "@/services/content/shopContentService";
+import {
+  fetchSplashConfig,
+  fetchMobileAssets,
+} from "@/services/content/mobileAssetsService";
+import { CMS_IS_CONFIGURED } from "@/services/content/cmsClient";
 
 const STALE_TIME = 5 * 60 * 1000;
 

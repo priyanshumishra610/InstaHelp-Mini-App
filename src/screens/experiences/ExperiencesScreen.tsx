@@ -1,11 +1,15 @@
+import { ExperienceHero } from "@/components/experiences/ExperienceHero";
+import { ExperienceSearchBar } from "@/components/experiences/ExperienceSearchBar";
+import { FilterChipRow } from "@/components/experiences/FilterChipRow";
 import { ResortCard } from "@/components/experiences/ResortCard";
 import { Screen } from "@/components/ui/Screen";
-import { ACCENT } from "@/constants/theme";
+import { EXP } from "@/constants/experienceTheme";
 import {
-  filterResorts,
-  getAllResorts,
-  getResortCatalogMeta,
-} from "@/services/resorts/getResortCatalog";
+  useAllResorts,
+  useResortMeta,
+  useResorts,
+} from "@/hooks/useExperienceCatalog";
+import { useExperienceSyncStatus } from "@/providers/ExperienceSyncProvider";
 import type { ResortRecord } from "@/types/resortExperience";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,9 +18,7 @@ import { useMemo, useState } from "react";
 import {
   FlatList,
   Pressable,
-  ScrollView,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -68,10 +70,15 @@ function includesQuery(resort: ResortRecord, query: string) {
   return haystack.includes(query);
 }
 
-function scoreResort(resort: ResortRecord, query: string, priceFilter: string | null) {
+function scoreResort(
+  resort: ResortRecord,
+  query: string,
+  priceFilter: string | null,
+) {
   const rankScore =
     resort.rank != null && resort.rank > 0 ? Math.max(0, 120 - resort.rank) : 10;
-  const ratingScore = resort.tripadvisorRating != null ? resort.tripadvisorRating * 10 : 0;
+  const ratingScore =
+    resort.tripadvisorRating != null ? resort.tripadvisorRating * 10 : 0;
   const imageScore = Math.min(resort.imageUrls.length, 3) * 4;
   const priceScore = priceFilter && resort.priceTier === priceFilter ? 25 : 0;
   const queryScore = query && includesQuery(resort, query) ? 20 : 0;
@@ -90,7 +97,9 @@ function buildTripPlan(
   });
 
   const source =
-    narrowed.length >= 3 ? narrowed : resorts.filter((resort) => includesQuery(resort, query));
+    narrowed.length >= 3
+      ? narrowed
+      : resorts.filter((resort) => includesQuery(resort, query));
   const ranked = source
     .map((resort) => ({
       resort,
@@ -120,7 +129,7 @@ function buildTripPlan(
   const destinationLabel = filters.state ?? picked[0]?.state ?? "India";
   return {
     title: `${Math.min(picked.length, TRIP_DAY_TITLES.length)}-day ${destinationLabel} plan`,
-    subtitle: `AI-style itinerary generated from ${source.length} matching stays across the full catalog.`,
+    subtitle: `Built from ${source.length} matching stays in the live catalog.`,
     sourceCount: source.length,
     days: picked.map((resort, index) => ({
       day: index + 1,
@@ -129,34 +138,47 @@ function buildTripPlan(
       note:
         resort.experienceTypes.length > 0
           ? resort.experienceTypes.slice(0, 3).join(" · ")
-          : resort.category ?? "Curated stay",
+          : (resort.category ?? "Curated stay"),
     })),
   };
 }
 
-export function ExperiencesScreen() {
+export function ExperiencesScreen({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const meta = useMemo(() => getResortCatalogMeta(), []);
-  const allResorts = useMemo(() => getAllResorts(), []);
+  const meta = useResortMeta();
+  const allResorts = useAllResorts();
+  const { isSyncing, fetchFailed } = useExperienceSyncStatus();
   const [query, setQuery] = useState("");
   const [stateFilter, setStateFilter] = useState<string | null>(null);
   const [priceFilter, setPriceFilter] = useState<string | null>(null);
+  const [tripOpen, setTripOpen] = useState(false);
   const [generatedTrip, setGeneratedTrip] = useState<GeneratedTrip | null>(null);
 
-  const resorts = useMemo(
-    () =>
-      filterResorts({
-        query,
-        state: stateFilter,
-        priceTier: priceFilter,
-      }),
+  const filters = useMemo(
+    () => ({
+      query,
+      state: stateFilter,
+      priceTier: priceFilter,
+    }),
     [query, stateFilter, priceFilter],
   );
-
+  const resorts = useResorts(filters);
   const topStates = meta.states.slice(0, 12);
 
+  const stateChips = useMemo(
+    () => [
+      { id: null, label: "All India" },
+      ...topStates.map(({ state, count }) => ({
+        id: state,
+        label: `${state} (${count})`,
+      })),
+    ],
+    [topStates],
+  );
+
   const generateTrip = () => {
+    setTripOpen(true);
     setGeneratedTrip(
       buildTripPlan(allResorts, {
         query,
@@ -166,219 +188,226 @@ export function ExperiencesScreen() {
     );
   };
 
+  const statusNote = isSyncing
+    ? "Syncing catalog…"
+    : fetchFailed
+      ? "Showing offline catalog"
+      : `${meta.total} properties live`;
+
   return (
-    <Screen className="bg-[#eef2fb]">
+    <Screen className="bg-[#F4F6FB]" inset={!embedded}>
       <FlatList
         data={resorts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
           paddingHorizontal: 16,
-          paddingBottom: 24 + insets.bottom,
+          paddingTop: embedded ? 12 : 8,
+          paddingBottom: 28 + insets.bottom,
         }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
-            <Animated.View entering={FadeInDown.duration(400)}>
+            <ExperienceHero
+              tone="resorts"
+              eyebrow="InstaHelp Experiences"
+              title="Resorts"
+              subtitle="Handpicked stays across India — book through WhatsApp concierge."
+              meta={statusNote}
+            />
+
+            <ExperienceSearchBar
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search resort, city, or vibe…"
+              accent={EXP.resorts.to}
+            />
+
+            <FilterChipRow
+              label="Where"
+              chips={stateChips}
+              selected={stateFilter}
+              onSelect={setStateFilter}
+              activeColor={EXP.resorts.to}
+            />
+
+            <FilterChipRow
+              label="Budget"
+              chips={[...PRICE_FILTERS]}
+              selected={priceFilter}
+              onSelect={setPriceFilter}
+              activeColor={EXP.resorts.mid}
+            />
+
+            <Animated.View
+              entering={FadeInDown.delay(80).duration(360)}
+              style={{ marginTop: 18, marginBottom: 18 }}
+            >
               <LinearGradient
-                colors={["#5B21B6", "#7C3AED", "#8B5CF6"]}
+                colors={[EXP.resorts.from, EXP.resorts.mid]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                className="mt-2 overflow-hidden rounded-3xl px-5 py-5"
+                style={{ borderRadius: 22, padding: 16 }}
               >
-                <View className="flex-row items-start justify-between">
-                  <View className="max-w-[82%] gap-1">
-                    <Text className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-white/75">
-                      InstaHelp Experiences
-                    </Text>
-                    <Text className="text-2xl font-extrabold text-white">
-                      Resorts & stays
-                    </Text>
-                    <Text className="text-sm leading-5 text-white/85">
-                      {meta.total} curated properties · book via WhatsApp concierge
-                    </Text>
-                  </View>
-                  <View className="rounded-2xl bg-white/15 p-2.5">
-                    <Ionicons name="sunny" size={26} color="#ffd500" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </Animated.View>
-
-            <View className="mt-4 flex-row items-center rounded-2xl border border-white bg-white px-3 py-2.5 shadow-sm">
-              <Ionicons name="search" size={20} color={ACCENT} />
-              <TextInput
-                value={query}
-                onChangeText={setQuery}
-                placeholder="Search resort, location, experience…"
-                placeholderTextColor="#9ca3af"
-                className="ml-2 flex-1 text-[15px] text-neutral-900"
-                autoCapitalize="none"
-                autoCorrect={false}
-                clearButtonMode="while-editing"
-              />
-              {query.length > 0 ? (
-                <Pressable onPress={() => setQuery("")} hitSlop={8}>
-                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
-                </Pressable>
-              ) : null}
-            </View>
-
-            <Text className="mb-2 mt-5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-neutral-500">
-              State
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingRight: 8 }}
-            >
-              <Pressable
-                onPress={() => setStateFilter(null)}
-                className={`rounded-full px-4 py-2 ${!stateFilter ? "bg-accent" : "border border-neutral-200 bg-white"}`}
-              >
-                <Text
-                  className={`text-[12px] font-bold ${!stateFilter ? "text-white" : "text-neutral-700"}`}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
                 >
-                  All India
-                </Text>
-              </Pressable>
-              {topStates.map(({ state }) => {
-                const on = stateFilter === state;
-                return (
-                  <Pressable
-                    key={state}
-                    onPress={() => setStateFilter(on ? null : state)}
-                    className={`rounded-full px-4 py-2 ${on ? "bg-accent" : "border border-neutral-200 bg-white"}`}
-                  >
+                  <View style={{ flex: 1 }}>
                     <Text
-                      className={`text-[12px] font-bold ${on ? "text-white" : "text-neutral-700"}`}
+                      style={{
+                        color: "rgba(255,255,255,0.7)",
+                        fontSize: 11,
+                        fontWeight: "800",
+                        letterSpacing: 1.2,
+                        textTransform: "uppercase",
+                      }}
                     >
-                      {state}
+                      AI trip planner
+                    </Text>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 17,
+                        fontWeight: "800",
+                        marginTop: 4,
+                      }}
+                    >
+                      Build a stay itinerary
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={generateTrip}
+                    style={{
+                      backgroundColor: "#fff",
+                      borderRadius: 14,
+                      paddingHorizontal: 14,
+                      paddingVertical: 11,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <Ionicons name="sparkles" size={16} color={EXP.resorts.mid} />
+                    <Text
+                      style={{
+                        color: EXP.resorts.mid,
+                        fontSize: 13,
+                        fontWeight: "800",
+                      }}
+                    >
+                      Generate
                     </Text>
                   </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <Text className="mb-2 mt-4 text-[11px] font-extrabold uppercase tracking-[0.16em] text-neutral-500">
-              Budget
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingRight: 8 }}
-            >
-              {PRICE_FILTERS.map((p) => {
-                const on = priceFilter === p.id;
-                return (
-                  <Pressable
-                    key={p.label}
-                    onPress={() => setPriceFilter(p.id)}
-                    className={`rounded-full px-4 py-2 ${on ? "bg-accent-deep" : "border border-neutral-200 bg-white"}`}
-                  >
-                    <Text
-                      className={`text-[12px] font-bold ${on ? "text-white" : "text-neutral-700"}`}
-                    >
-                      {p.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <Text className="mb-3 mt-5 text-[13px] font-semibold text-neutral-500">
-              {resorts.length} {resorts.length === 1 ? "resort" : "resorts"}
-              {stateFilter ? ` in ${stateFilter}` : ""}
-            </Text>
-
-            <View className="mb-5 overflow-hidden rounded-3xl border border-white bg-white shadow-sm">
-              <LinearGradient
-                colors={["#111827", "#312e81", "#7C3AED"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                className="px-4 py-4"
-              >
-                <View className="flex-row items-start justify-between gap-3">
-                  <View className="flex-1">
-                    <Text className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-white/65">
-                      AI trip generator
-                    </Text>
-                    <Text className="mt-1 text-xl font-extrabold text-white">
-                      Build from all itineraries
-                    </Text>
-                    <Text className="mt-1 text-[13px] leading-5 text-white/80">
-                      Scans the full {allResorts.length}-stay catalog, then adapts the plan
-                      to your search and filters.
-                    </Text>
-                  </View>
-                  <View className="rounded-2xl bg-white/15 p-2.5">
-                    <Ionicons name="sparkles" size={24} color="#fff" />
-                  </View>
                 </View>
-                <Pressable
-                  onPress={generateTrip}
-                  accessibilityRole="button"
-                  accessibilityLabel="Generate AI trip itinerary"
-                  className="mt-4 flex-row items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 active:opacity-90"
-                >
-                  <Ionicons name="map" size={18} color={ACCENT} />
-                  <Text className="text-[14px] font-extrabold text-accent-deep">
-                    Generate itinerary
-                  </Text>
-                </Pressable>
-              </LinearGradient>
 
-              {generatedTrip ? (
-                <View className="gap-3 px-4 py-4">
-                  <View>
-                    <Text className="text-base font-extrabold text-neutral-900">
+                {tripOpen && generatedTrip ? (
+                  <View style={{ marginTop: 14, gap: 10 }}>
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 15,
+                        fontWeight: "800",
+                      }}
+                    >
                       {generatedTrip.title}
                     </Text>
-                    <Text className="mt-1 text-[12px] leading-5 text-neutral-500">
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.75)",
+                        fontSize: 12,
+                        lineHeight: 18,
+                      }}
+                    >
                       {generatedTrip.subtitle}
                     </Text>
-                    <Text className="mt-1 text-[11px] font-extrabold uppercase tracking-wider text-neutral-400">
-                      {generatedTrip.sourceCount} stays considered
-                    </Text>
-                  </View>
-                  {generatedTrip.days.map((day) => (
-                    <Pressable
-                      key={`${day.day}-${day.resort.id}`}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(tabs)/experiences/[id]",
-                          params: { id: day.resort.id },
-                        })
-                      }
-                      className="rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-3 active:opacity-90"
-                    >
-                      <View className="flex-row items-start gap-3">
-                        <View className="h-9 w-9 items-center justify-center rounded-2xl bg-accent-soft">
-                          <Text className="text-[12px] font-extrabold text-accent-deep">
+                    {generatedTrip.days.map((day) => (
+                      <Pressable
+                        key={`${day.day}-${day.resort.id}`}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(tabs)/experiences/[id]",
+                            params: { id: day.resort.id },
+                          })
+                        }
+                        style={{
+                          backgroundColor: "rgba(255,255,255,0.1)",
+                          borderRadius: 16,
+                          padding: 12,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <View
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 12,
+                            backgroundColor: "rgba(255,255,255,0.16)",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: "#fff",
+                              fontSize: 12,
+                              fontWeight: "800",
+                            }}
+                          >
                             D{day.day}
                           </Text>
                         </View>
-                        <View className="flex-1">
-                          <Text className="text-[12px] font-extrabold uppercase tracking-wider text-neutral-400">
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              color: "rgba(255,255,255,0.65)",
+                              fontSize: 11,
+                              fontWeight: "700",
+                            }}
+                          >
                             {day.title}
                           </Text>
-                          <Text className="mt-0.5 text-[14px] font-extrabold text-neutral-900">
+                          <Text
+                            numberOfLines={1}
+                            style={{
+                              color: "#fff",
+                              fontSize: 14,
+                              fontWeight: "800",
+                              marginTop: 2,
+                            }}
+                          >
                             {day.resort.name}
                           </Text>
-                          <Text className="mt-0.5 text-[12px] text-neutral-500">
-                            {day.resort.location}
-                            {day.resort.region ? ` · ${day.resort.region}` : ""} · {day.resort.state}
-                          </Text>
-                          <Text className="mt-1 text-[12px] font-semibold text-accent-deep">
-                            {day.note}
-                          </Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
-                      </View>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-            </View>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={16}
+                          color="rgba(255,255,255,0.7)"
+                        />
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </LinearGradient>
+            </Animated.View>
+
+            <Text
+              style={{
+                marginBottom: 12,
+                fontSize: 13,
+                fontWeight: "700",
+                color: EXP.muted,
+              }}
+            >
+              {resorts.length} {resorts.length === 1 ? "resort" : "resorts"}
+              {stateFilter ? ` in ${stateFilter}` : ""}
+            </Text>
           </>
         }
         renderItem={({ item }) => (
@@ -393,12 +422,37 @@ export function ExperiencesScreen() {
           />
         )}
         ListEmptyComponent={
-          <View className="items-center rounded-3xl border border-dashed border-neutral-300 bg-white/80 px-6 py-12">
-            <Ionicons name="bed-outline" size={36} color="#9ca3af" />
-            <Text className="mt-3 text-center text-base font-bold text-neutral-800">
+          <View
+            style={{
+              alignItems: "center",
+              borderRadius: 24,
+              borderWidth: 1,
+              borderStyle: "dashed",
+              borderColor: EXP.line,
+              backgroundColor: EXP.white,
+              paddingHorizontal: 24,
+              paddingVertical: 40,
+            }}
+          >
+            <Ionicons name="bed-outline" size={36} color="#94A3B8" />
+            <Text
+              style={{
+                marginTop: 12,
+                fontSize: 16,
+                fontWeight: "800",
+                color: EXP.ink,
+              }}
+            >
               No resorts match
             </Text>
-            <Text className="mt-1 text-center text-sm text-neutral-500">
+            <Text
+              style={{
+                marginTop: 6,
+                fontSize: 13,
+                color: EXP.muted,
+                textAlign: "center",
+              }}
+            >
               Try another state or clear your search.
             </Text>
           </View>

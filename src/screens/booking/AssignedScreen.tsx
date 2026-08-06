@@ -61,10 +61,6 @@ export function AssignedScreen() {
         contentContainerStyle={{ paddingBottom: 60 }}
       >
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
-          />
           <View className="flex-row items-center gap-2">
             <View className="h-9 w-9 items-center justify-center rounded-full bg-white/15">
               <Ionicons name="person-add" size={18} color="#ffffff" />
@@ -175,7 +171,7 @@ export function AssignedScreen() {
                 Change the preferred time before they roll out.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+            <Ionicons name="chevron-forward" size={18} color="#004aad" />
           </Pressable>
 
           <Pressable

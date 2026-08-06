@@ -162,10 +162,6 @@ export function BookingDetailScreen() {
         contentContainerStyle={{ paddingBottom: 60 }}
       >
         <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
-          <View
-            pointerEvents="none"
-            className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
-          />
           <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
             Booking
           </Text>
@@ -194,14 +190,14 @@ export function BookingDetailScreen() {
             {booking.description}
           </Text>
           <View className="mt-4 flex-row items-center gap-2">
-            <Ionicons name="time-outline" size={14} color="#7C3AED" />
+            <Ionicons name="time-outline" size={14} color="#004aad" />
             <Text className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
               Preferred time · {booking.preferredTime || "Flexible"}
             </Text>
           </View>
           {booking.notes ? (
             <View className="mt-2 flex-row items-start gap-2">
-              <Ionicons name="document-text-outline" size={14} color="#7C3AED" />
+              <Ionicons name="document-text-outline" size={14} color="#004aad" />
               <Text className="flex-1 text-xs font-medium text-neutral-600 dark:text-neutral-300">
                 Notes · {booking.notes}
               </Text>
@@ -260,7 +256,7 @@ export function BookingDetailScreen() {
                   {phaseCard.subtitle}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+              <Ionicons name="chevron-forward" size={18} color="#004aad" />
             </Pressable>
           ) : null}
           {actions.map((a) => (
@@ -290,7 +286,7 @@ export function BookingDetailScreen() {
                   {a.subtitle}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#7C3AED" />
+              <Ionicons name="chevron-forward" size={18} color="#004aad" />
             </Pressable>
           ))}
         </View>

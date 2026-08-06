@@ -48,10 +48,10 @@ type AuthContextValue = {
   firebaseUser: User | null;
   /** Always null when Firebase auth is disabled. */
   firestoreUser: FirestoreUser | null;
-  /** Sign in with 10-digit mobile; stores phone + row in Google Sheet. */
+  /** Sign in with 10-digit mobile; stores phone + row in the backend. */
   signInWithPhone: (digits10: string) => Promise<void>;
   signOut: () => Promise<void>;
-  /** Re-read profile from sheet and update auth status. */
+  /** Re-read profile from the backend and update auth status. */
   refreshSession: () => Promise<void>;
   /** Legacy stubs (Firebase auth disabled). */
   sendOtp: (_digits10: string, _verifier: unknown) => Promise<void>;
@@ -154,8 +154,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         phone,
       });
 
+      // Fresh login: show profile setup once when incomplete; Skip persists via defer.
       const complete = isSheetProfileComplete(res.data);
-      if (complete) useOnboardingStore.getState().setDeferProfile(false);
+      useOnboardingStore.getState().setDeferProfile(false);
       setStatus(complete ? "authenticated" : "needs-profile");
     },
     [],
@@ -170,7 +171,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const disabledFirebase = useCallback(async () => {
-    throw new Error("Firebase auth is disabled. Use phone sign-in with Google Sheet backend.");
+    throw new Error("Firebase auth is disabled. Use phone sign-in with the backend.");
   }, []);
 
   const value = useMemo<AuthContextValue>(

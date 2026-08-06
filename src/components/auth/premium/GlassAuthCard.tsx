@@ -1,7 +1,6 @@
 import { AUTH_ACCENT_TEAL, AUTH_CARD_RADIUS_LG, AUTH_PRIMARY } from "@/constants/authPremium";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect } from "react";
 import {
   Platform,
   StyleSheet,
@@ -9,20 +8,13 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
 import type { PropsWithChildren } from "react";
 
 type Props = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   elevated?: boolean;
   accentEdge?: boolean;
+  /** Kept for API compatibility */
   glowPulse?: boolean;
 }>;
 
@@ -31,32 +23,9 @@ export function GlassAuthCard({
   style,
   elevated,
   accentEdge,
-  glowPulse,
 }: Props) {
-  const breathe = useSharedValue(0);
-
-  useEffect(() => {
-    if (!glowPulse && !elevated) return;
-    breathe.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2800, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 2800, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-      false,
-    );
-  }, [breathe, elevated, glowPulse]);
-
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: 0.35 + breathe.value * 0.35,
-    transform: [{ scale: 1 + breathe.value * 0.02 }],
-  }));
-
   return (
     <View style={[styles.outer, elevated && styles.outerElevated, style]}>
-      {elevated ? (
-        <Animated.View pointerEvents="none" style={[styles.glowHalo, glowStyle]} />
-      ) : null}
       <View style={[styles.card, elevated && styles.cardElevated]}>
         {Platform.OS !== "web" ? (
           <BlurView
@@ -84,7 +53,6 @@ export function GlassAuthCard({
           }
           style={StyleSheet.absoluteFill}
         />
-        <View pointerEvents="none" style={styles.shine} />
         <View pointerEvents="none" style={styles.innerRim} />
         <View style={styles.content}>{children}</View>
       </View>
@@ -102,12 +70,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.45,
     shadowRadius: 40,
     elevation: 22,
-  },
-  glowHalo: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: AUTH_CARD_RADIUS_LG + 8,
-    margin: -8,
-    backgroundColor: "rgba(79,209,197,0.22)",
   },
   card: {
     borderRadius: AUTH_CARD_RADIUS_LG,
@@ -138,15 +100,6 @@ const styles = StyleSheet.create({
     height: 3,
     zIndex: 2,
     opacity: 0.9,
-  },
-  shine: {
-    position: "absolute",
-    top: -52,
-    right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: "rgba(37,99,235,0.08)",
   },
   innerRim: {
     ...StyleSheet.absoluteFillObject,

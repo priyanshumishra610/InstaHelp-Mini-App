@@ -1,11 +1,12 @@
 import { SaveVendorButton } from "@/components/vendors/SaveVendorButton";
+import { GlowButton } from "@/components/ui/GlowButton";
+import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
 import { useSavedVendorsStore } from "@/store/savedVendorsStore";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import type { VendorRecord } from "@/types/vendorMarketplace";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   vendors: VendorRecord[];
@@ -28,67 +29,112 @@ export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
   if (savedIds.length === 0) return null;
 
   return (
-    <View className="px-4 pb-2 pt-1">
-      <View className="flex-row items-center justify-between">
+    <View style={styles.block}>
+      <View style={styles.headerRow}>
         <View>
-          <Text className="text-[14px] font-extrabold text-neutral-900">
-            Saved vendors
+          <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
+            SAVED
           </Text>
-          <Text className="text-[11px] font-semibold text-neutral-500">
+          <Text style={[styles.count, { fontFamily: AUTH_FONT.bold }]}>
             {savedIds.length}
-            {savedLimit != null ? ` / ${savedLimit} on Free` : " · unlimited on Pro"}
+            {savedLimit != null ? ` / ${savedLimit}` : ""} vendors
           </Text>
         </View>
         {!isPro ? (
-          <Pressable
+          <GlowButton
+            label="Pro · unlimited"
             onPress={() => router.push("/(tabs)/vendors/plans")}
-            className="rounded-full bg-accent-soft px-3 py-1.5"
-          >
-            <Text className="text-[10px] font-extrabold text-accent-deep">
-              Save unlimited · Pro
-            </Text>
-          </Pressable>
+            variant="soft"
+          />
         ) : null}
       </View>
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="mt-3"
-        contentContainerStyle={{ gap: 10, paddingRight: 8 }}
+        contentContainerStyle={styles.scrollContent}
       >
         {savedVendors.map((vendor) => (
           <Pressable
             key={vendor.id}
             onPress={() => router.push(`/(tabs)/vendors/${vendor.id}`)}
-            className="w-[168px] overflow-hidden rounded-2xl border border-neutral-200 bg-white active:opacity-90"
+            style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
           >
-            <View className="flex-row items-start justify-between p-3">
-              <View className="flex-1 pr-2">
-                <Text
-                  className="text-[13px] font-extrabold text-neutral-900"
-                  numberOfLines={2}
-                >
-                  {vendorDisplayName(vendor)}
-                </Text>
-                <Text className="mt-1 text-[10px] font-semibold text-neutral-500">
-                  {vendor.city} · {vendor.category}
-                </Text>
-              </View>
-              <SaveVendorButton vendorId={vendor.id} size={16} />
+            <View style={styles.chipInner}>
+              <Text
+                style={[styles.chipTitle, { fontFamily: AUTH_FONT.semibold }]}
+                numberOfLines={1}
+              >
+                {vendorDisplayName(vendor)}
+              </Text>
+              <SaveVendorButton vendorId={vendor.id} size={14} />
             </View>
+            <Text style={[styles.chipMeta, { fontFamily: AUTH_FONT.regular }]}>
+              {vendor.city} · {vendor.category}
+            </Text>
           </Pressable>
         ))}
-
-        {savedVendors.length < savedIds.length ? (
-          <View className="w-[140px] items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-50 px-3">
-            <Ionicons name="search-outline" size={18} color="#94a3b8" />
-            <Text className="mt-2 text-center text-[11px] font-semibold text-neutral-500">
-              {savedIds.length - savedVendors.length} saved outside current filters
-            </Text>
-          </View>
-        ) : null}
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  block: {
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,74,173,0.08)",
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    gap: 12,
+  },
+  eyebrow: {
+    fontSize: 10,
+    letterSpacing: 1.3,
+    color: AUTH_PRIMARY,
+  },
+  count: {
+    marginTop: 2,
+    fontSize: 16,
+    color: "#111827",
+    letterSpacing: -0.2,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  chip: {
+    width: 160,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.65)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,74,173,0.1)",
+  },
+  chipPressed: {
+    opacity: 0.88,
+  },
+  chipInner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+  chipTitle: {
+    flex: 1,
+    fontSize: 13,
+    color: "#111827",
+  },
+  chipMeta: {
+    marginTop: 4,
+    fontSize: 10,
+    color: "#9CA3AF",
+  },
+});

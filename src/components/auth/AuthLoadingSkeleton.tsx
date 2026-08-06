@@ -1,9 +1,10 @@
+import { AUTH_PRIMARY } from "@/constants/authPremium";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export function AuthLoadingSkeleton() {
   return (
     <View style={styles.root}>
-      <ActivityIndicator color="#fff" size="large" />
+      <ActivityIndicator color={AUTH_PRIMARY} size="large" />
     </View>
   );
 }
@@ -13,6 +14,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0A0A1A",
+    backgroundColor: "#F7F6FB",
   },
 });

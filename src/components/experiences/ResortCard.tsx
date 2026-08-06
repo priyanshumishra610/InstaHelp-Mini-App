@@ -1,31 +1,82 @@
+import { AnimatedPressable } from "@/components/ui/AnimatedPressable";
 import { ResortImage } from "@/components/experiences/ResortImage";
+import { GLASS, claySurface } from "@/constants/designSystem";
+import { EXP } from "@/constants/experienceTheme";
 import type { ResortRecord } from "@/types/resortExperience";
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import type { ReactNode } from "react";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   resort: ResortRecord;
   onPress: () => void;
 };
 
-function TierPill({ label, tone }: { label: string; tone?: "gold" | "muted" }) {
+function Pill({
+  label,
+  tone = "muted",
+}: {
+  label: string;
+  tone?: "gold" | "muted" | "violet";
+}) {
+  const bg =
+    tone === "gold"
+      ? EXP.goldSoft
+      : tone === "violet"
+        ? EXP.resorts.soft
+        : "rgba(241,245,249,0.85)";
+  const color =
+    tone === "gold" ? "#92400E" : tone === "violet" ? EXP.resorts.mid : EXP.muted;
   return (
     <View
-      className={
-        tone === "gold"
-          ? "rounded-full bg-amber-50 px-2 py-0.5"
-          : "rounded-full bg-neutral-100 px-2 py-0.5"
-      }
+      style={{
+        borderRadius: 999,
+        backgroundColor: bg,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.65)",
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+      }}
     >
-      <Text
-        className={
-          tone === "gold"
-            ? "text-[10px] font-bold text-amber-800"
-            : "text-[10px] font-semibold text-neutral-600"
-        }
+      <Text style={{ fontSize: 11, fontWeight: "700", color }}>{label}</Text>
+    </View>
+  );
+}
+
+function GlassChip({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: object;
+}) {
+  return (
+    <View style={[{ borderRadius: 999, overflow: "hidden" }, style]}>
+      {Platform.OS !== "web" ? (
+        <BlurView intensity={36} tint="light" style={StyleSheet.absoluteFill} />
+      ) : null}
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: "rgba(255,255,255,0.55)" },
+        ]}
+      />
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 4,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: GLASS.border,
+          borderRadius: 999,
+        }}
       >
-        {label}
-      </Text>
+        {children}
+      </View>
     </View>
   );
 }
@@ -38,60 +89,135 @@ export function ResortCard({ resort, onPress }: Props) {
       : null;
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      haptic
+      scaleTo={0.97}
       accessibilityRole="button"
       accessibilityLabel={`${resort.name}, ${resort.location}`}
-      className="mb-4 overflow-hidden rounded-[22px] border border-neutral-100 bg-white active:opacity-95"
       style={{
-        shadowColor: "#0f172a",
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 18,
-        elevation: 4,
+        marginBottom: 16,
+        overflow: "hidden",
+        ...claySurface(24),
       }}
     >
-      <View className="relative">
-        <ResortImage uri={thumb} height={168} />
+      <View style={{ position: "relative" }}>
+        <ResortImage uri={thumb} height={178} />
+        <LinearGradient
+          colors={["rgba(15,23,42,0.05)", "transparent", "rgba(15,23,42,0.55)"]}
+          locations={[0, 0.45, 1]}
+          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+        />
         {resort.rank != null && resort.rank <= 10 ? (
-          <View className="absolute left-3 top-3 flex-row items-center gap-1 rounded-full bg-black/55 px-2.5 py-1">
-            <Ionicons name="trophy" size={12} color="#ffd500" />
-            <Text className="text-[11px] font-extrabold text-white">Top {resort.rank}</Text>
+          <View style={{ position: "absolute", left: 12, top: 12 }}>
+            <GlassChip>
+              <Ionicons name="trophy" size={12} color={EXP.gold} />
+              <Text style={{ color: EXP.ink, fontSize: 11, fontWeight: "800" }}>
+                Top {resort.rank}
+              </Text>
+            </GlassChip>
           </View>
         ) : null}
         {rating ? (
-          <View className="absolute right-3 top-3 flex-row items-center gap-1 rounded-full bg-white/95 px-2 py-1">
-            <Ionicons name="star" size={12} color="#f59e0b" />
-            <Text className="text-[11px] font-extrabold text-neutral-900">{rating}</Text>
+          <View style={{ position: "absolute", right: 12, top: 12 }}>
+            <GlassChip>
+              <Ionicons name="star" size={12} color="#F59E0B" />
+              <Text style={{ color: EXP.ink, fontSize: 11, fontWeight: "800" }}>
+                {rating}
+              </Text>
+            </GlassChip>
+          </View>
+        ) : null}
+        {resort.estimatedPriceLabel ? (
+          <View style={{ position: "absolute", left: 12, bottom: 12, maxWidth: "70%" }}>
+            <View
+              style={{
+                borderRadius: 14,
+                overflow: "hidden",
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: GLASS.border,
+              }}
+            >
+              {Platform.OS !== "web" ? (
+                <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
+              ) : null}
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  { backgroundColor: "rgba(255,255,255,0.62)" },
+                ]}
+              />
+              <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+                <Text style={{ color: EXP.muted, fontSize: 10, fontWeight: "700" }}>
+                  EST. / NIGHT
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color: EXP.resorts.mid,
+                    fontSize: 14,
+                    fontWeight: "800",
+                    marginTop: 1,
+                  }}
+                >
+                  {/₹|rs\.?/i.test(resort.estimatedPriceLabel)
+                    ? resort.estimatedPriceLabel
+                    : `₹${resort.estimatedPriceLabel}`}
+                </Text>
+              </View>
+            </View>
           </View>
         ) : null}
       </View>
 
-      <View className="gap-2 p-4">
-        <Text className="text-[17px] font-extrabold leading-[22px] text-neutral-900" numberOfLines={2}>
+      <View style={{ padding: 14, gap: 8 }}>
+        <Text
+          numberOfLines={2}
+          style={{
+            color: EXP.ink,
+            fontSize: 17,
+            fontWeight: "800",
+            lineHeight: 22,
+          }}
+        >
           {resort.name}
         </Text>
-        <View className="flex-row items-center gap-1">
-          <Ionicons name="location-outline" size={14} color="#6b7280" />
-          <Text className="flex-1 text-[12px] font-semibold text-neutral-500" numberOfLines={1}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Ionicons name="location-outline" size={14} color={EXP.muted} />
+          <Text
+            numberOfLines={1}
+            style={{
+              flex: 1,
+              color: EXP.muted,
+              fontSize: 12,
+              fontWeight: "600",
+            }}
+          >
             {resort.location}
             {resort.region ? ` · ${resort.region}` : ""} · {resort.state}
           </Text>
         </View>
-        {resort.estimatedPriceLabel ? (
-          <Text className="text-[14px] font-extrabold text-accent-deep">
-            {resort.estimatedPriceLabel}
-            <Text className="text-[11px] font-semibold text-neutral-500"> / night est.</Text>
-          </Text>
-        ) : null}
-        <View className="mt-1 flex-row flex-wrap gap-1.5">
-          {resort.priceTier ? <TierPill label={resort.priceTier} tone="gold" /> : null}
-          {resort.category ? <TierPill label={resort.category} /> : null}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          {resort.priceTier ? (
+            <Pill
+              label={
+                resort.priceTier === "High"
+                  ? "Premium"
+                  : resort.priceTier === "Mid"
+                    ? "Mid-range"
+                    : resort.priceTier === "Low"
+                      ? "Budget"
+                      : resort.priceTier
+              }
+              tone="gold"
+            />
+          ) : null}
+          {resort.category ? <Pill label={resort.category} tone="violet" /> : null}
           {resort.experienceTypes.slice(0, 2).map((t) => (
-            <TierPill key={t} label={t} />
+            <Pill key={t} label={t} />
           ))}
         </View>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 }

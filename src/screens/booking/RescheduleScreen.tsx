@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/Button";
-import { DateTimePickerField } from "@/components/ui/DateTimePickerField";
+import { DateTimeSlotPicker } from "@/components/ui/DateTimeSlotPicker";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
@@ -12,18 +12,10 @@ import { useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   View,
 } from "react-native";
-
-const PRESETS = [
-  "Today, ASAP",
-  "Today evening",
-  "Tomorrow morning",
-  "This weekend",
-];
 
 export function RescheduleScreen() {
   const router = useRouter();
@@ -83,10 +75,6 @@ export function RescheduleScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="mt-2 overflow-hidden rounded-3xl bg-accent p-5">
-            <View
-              pointerEvents="none"
-              className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-brand-blue"
-            />
             <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/80">
               Reschedule
             </Text>
@@ -107,7 +95,7 @@ export function RescheduleScreen() {
 
           {cannotReschedule ? (
             <View className="mt-5 flex-row items-center gap-3 rounded-2xl border border-accent-tint bg-accent-soft p-4">
-              <Ionicons name="information-circle" size={18} color="#5B21B6" />
+              <Ionicons name="information-circle" size={18} color="#003780" />
               <Text className="flex-1 text-xs font-medium text-accent-deep">
                 This booking is completed, you can save updated notes but the
                 time will not be honoured.
@@ -117,44 +105,7 @@ export function RescheduleScreen() {
 
           <View className="mt-5 gap-5">
             <FormField label="New preferred time">
-              <Input
-                placeholder="e.g. Tomorrow 10 to 11 am"
-                value={time}
-                onChangeText={setTime}
-              />
-              <View className="mt-2 flex-row flex-wrap gap-2">
-                {PRESETS.map((p) => {
-                  const on = time === p;
-                  return (
-                    <Pressable
-                      key={p}
-                      onPress={() => setTime(p)}
-                      className={`rounded-full px-3 py-1.5 ${
-                        on
-                          ? "bg-accent"
-                          : "border border-brand-line bg-white dark:border-brand-lineDark dark:bg-brand-cardDark"
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-bold ${
-                          on
-                            ? "text-accent-foreground"
-                            : "text-neutral-700 dark:text-neutral-200"
-                        }`}
-                      >
-                        {p}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <View className="mt-3">
-                <DateTimePickerField
-                  label="Pick exact time"
-                  value={time && !PRESETS.includes(time) ? time : undefined}
-                  onPick={(formatted) => setTime(formatted)}
-                />
-              </View>
+              <DateTimeSlotPicker value={time} onChange={setTime} />
             </FormField>
 
             <FormField

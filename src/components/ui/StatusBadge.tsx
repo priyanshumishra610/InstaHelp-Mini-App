@@ -1,7 +1,10 @@
 import { BOOKING_STATUS_LABEL } from "@/types/booking";
 import type { BookingStatus } from "@/types/booking";
 import { cn } from "@/utils/cn";
+import { MotiView } from "moti";
 import { Text, View } from "react-native";
+
+const LIVE_STATUSES: BookingStatus[] = ["pending", "assigned", "on_the_way"];
 
 const STYLES: Record<BookingStatus, { dot: string; bg: string; text: string }> = {
   pending: {
@@ -34,6 +37,7 @@ export function StatusBadge({
   className?: string;
 }) {
   const s = STYLES[status];
+  const isLive = LIVE_STATUSES.includes(status);
   return (
     <View
       className={cn(
@@ -42,6 +46,18 @@ export function StatusBadge({
         className,
       )}
     >
+      {isLive ? (
+        <MotiView
+          from={{ scale: 0.85, opacity: 0.6 }}
+          animate={{ scale: 1.3, opacity: 0 }}
+          transition={{
+            type: "timing",
+            duration: 1100,
+            loop: true,
+          }}
+          className={cn("absolute h-1.5 w-1.5 rounded-full", s.dot)}
+        />
+      ) : null}
       <View className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
       <Text
         className={cn(

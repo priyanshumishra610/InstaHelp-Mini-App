@@ -43,9 +43,7 @@ export async function fetchShopProductsCsv(): Promise<string> {
   return fetchText(shopProductsCsvUrl(), true);
 }
 
-/**
- * Checks DASHBOARD!A2 when published; otherwise compares CSV fingerprint.
- */
+/** Pulls the latest shop catalog into local cache. */
 export async function syncShopCatalog(options?: {
   force?: boolean;
 }): Promise<{ updated: boolean }> {

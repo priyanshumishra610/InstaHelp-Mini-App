@@ -36,6 +36,7 @@ export type HubbleWebViewController = {
   webViewRef: RefObject<ComponentRef<typeof WebView> | null>;
   onMessage: (e: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (e: ShouldStartLoadEvent) => boolean;
+  onWebViewError: () => void;
   resetSessionFlags: () => void;
 };
 
@@ -61,7 +62,10 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
   const [sdkReady, setSdkReady] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [ssoToken, setSsoToken] = useState<string | null>(null);
-  const [ssoState, setSsoState] = useState<HubbleSsoState>("idle");
+  const [ssoState, setSsoState] = useState<HubbleSsoState>(() => {
+    if (!HUBBLE_IS_CONFIGURED) return "idle";
+    return phone ? "loading" : "ready";
+  });
   const [ssoError, setSsoError] = useState<string | null>(null);
 
   const onHardwareBackExitRef = useRef(input.onHardwareBackExit);
@@ -184,6 +188,11 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
     return false;
   }, []);
 
+  const onWebViewError = useCallback(() => {
+    setLoadError(true);
+    setSdkReady(true);
+  }, []);
+
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       if (canGoBack && webViewRef.current) {
@@ -213,6 +222,7 @@ export function useHubble(input: UseHubbleInput): HubbleWebViewController {
     webViewRef,
     onMessage,
     onShouldStartLoadWithRequest,
+    onWebViewError,
     resetSessionFlags,
   };
 }

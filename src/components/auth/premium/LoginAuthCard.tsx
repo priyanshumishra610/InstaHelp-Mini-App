@@ -4,11 +4,10 @@ import { OtpInputRow } from "@/components/auth/premium/OtpInputRow";
 import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
 import { SocialAuthButton } from "@/components/auth/premium/SocialAuthButton";
 import {
+  AUTH_ACCENT_YELLOW,
   AUTH_ACCENT_TEAL,
   AUTH_FONT,
   AUTH_PRIMARY,
-  AUTH_PRIMARY_DEEP,
-  AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -104,7 +103,7 @@ export function LoginAuthCard({
         <LinearGradient
           colors={
             phoneReady
-              ? [AUTH_PRIMARY_LIGHT, AUTH_PRIMARY, AUTH_PRIMARY_DEEP]
+              ? [AUTH_ACCENT_YELLOW, "#E6C000", "#D4AF00"]
               : ["#94a3b8", "#64748b", "#475569"]
           }
           locations={[0, 0.45, 1]}
@@ -113,13 +112,13 @@ export function LoginAuthCard({
           style={[styles.primaryBtn, loading && { opacity: 0.82 }]}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#0A0A0A" />
           ) : (
             <View style={styles.ctaInner}>
               <Text style={[styles.primaryLabel, { fontFamily: AUTH_FONT.bold }]}>
                 Continue
               </Text>
-              <Ionicons name="arrow-forward" size={18} color="#fff" />
+              <Ionicons name="arrow-forward" size={18} color="#0A0A0A" />
             </View>
           )}
         </LinearGradient>
@@ -211,9 +210,9 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: AUTH_PRIMARY_DEEP,
+    shadowColor: "#E6C000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 18,
     elevation: 8,
   },
@@ -222,7 +221,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  primaryLabel: { color: "#fff", fontSize: 16, letterSpacing: 0.2 },
+  primaryLabel: { color: "#0A0A0A", fontSize: 16, letterSpacing: 0.2 },
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",

@@ -56,6 +56,6 @@ export const HUB_COLORS = {
   cardBorder: "rgba(255,255,255,0.1)",
   textPrimary: "#ffffff",
   textSecondary: "#9ca3af",
-  accentBlue: "#8B5CF6",
+  accentBlue: "#0066FF",
   adBadge: "rgba(0,0,0,0.45)",
 } as const;

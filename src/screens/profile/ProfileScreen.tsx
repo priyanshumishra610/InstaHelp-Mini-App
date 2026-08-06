@@ -3,8 +3,13 @@ import {
   LEGAL_PRIVACY_URL,
   LEGAL_TERMS_URL,
 } from "@/constants/appInfo";
+import {
+  ProfileHeroSection,
+  ProfileStatsRow,
+} from "@/components/profile/ProfileSections";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
+import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useMergedBookings } from "@/hooks/useMergedBookings";
@@ -27,13 +32,11 @@ import { pickOptionalImage } from "@/utils/pickOptionalImage";
 import { apiRegisterVendor } from "@/api/appsScriptClient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -47,18 +50,16 @@ import {
 import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
-
 const PLACEHOLDER_ADDRESS = "Add your home address in Profile";
 
-const FAVORITES: { id: string; label: string; icon: IoniconName }[] = [
-  { id: "cleaner", label: "Cleaner", icon: "sparkles" },
-  { id: "driver", label: "Driver", icon: "car" },
-  { id: "plumber", label: "Plumber", icon: "water" },
-  { id: "electrician", label: "Electrician", icon: "flash" },
-  { id: "handyman", label: "Handyman", icon: "construct" },
-  { id: "salon", label: "Salon", icon: "color-wand" },
-  { id: "pest_control", label: "Pest control", icon: "bug-outline" },
+const FAVORITES: { id: string; label: string }[] = [
+  { id: "cleaner", label: "Cleaner" },
+  { id: "driver", label: "Driver" },
+  { id: "plumber", label: "Plumber" },
+  { id: "electrician", label: "Electrician" },
+  { id: "handyman", label: "Handyman" },
+  { id: "salon", label: "Salon" },
+  { id: "pest_control", label: "Pest control" },
 ];
 
 function memberSince(bookings: Booking[]): string {
@@ -366,153 +367,33 @@ export function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInUp.duration(380)} className="pt-2">
-          <Text className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-deep">
-            Account
-          </Text>
-          <Text className="mt-1 text-[32px] font-extrabold tracking-tight text-neutral-900">
-            Profile
-          </Text>
-          <Text className="mt-1.5 text-sm leading-5 text-neutral-500">
-            Manage your account, booking activity, and how InstaHelp reaches you.
-          </Text>
-        </Animated.View>
-
-        {/* HERO */}
-        <Animated.View
-          entering={FadeInUp.duration(420).delay(60)}
-          className="mt-6 overflow-hidden rounded-[28px] border border-white/10 shadow-lg"
-        >
-          <LinearGradient
-            colors={["#6D28D9", "#7C3AED", "#8B5CF6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{ padding: 24 }}
-          >
-          <View className="absolute left-6 top-0 h-1 w-12 rounded-full bg-brand-gold" />
-
-          <View className="flex-row items-start justify-between gap-3">
-            <View className="flex-row items-center gap-4">
-              <Pressable
-                onPress={openAvatarActions}
-                disabled={savingAvatar}
-                accessibilityRole="button"
-                accessibilityLabel="Profile photo"
-                hitSlop={4}
-                className="relative"
-              >
-                <View className="h-[72px] w-[72px] overflow-hidden rounded-full border-2 border-white/35 bg-white/10">
-                  {profile?.avatarUri ? (
-                    <Image
-                      source={{ uri: profile.avatarUri }}
-                      className="h-full w-full"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <Image
-                      source={{ uri: fallbackAvatarUri }}
-                      className="h-full w-full"
-                      resizeMode="cover"
-                    />
-                  )}
-                  {savingAvatar ? (
-                    <View className="absolute inset-0 items-center justify-center bg-black/40">
-                      <ActivityIndicator color="#ffffff" size="small" />
-                    </View>
-                  ) : null}
-                </View>
-                <View className="absolute -bottom-0.5 -right-0.5 rounded-full border border-white/50 bg-white p-1.5 shadow-sm">
-                  <Ionicons name="camera" size={14} color="#7C3AED" />
-                </View>
-              </Pressable>
-              <View className="flex-1">
-                <Text className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">
-                  Signed in
-                </Text>
-                <Text
-                  className="mt-1 text-xl font-extrabold text-accent-foreground"
-                  numberOfLines={1}
-                >
-                  {displayName}
-                </Text>
-                <Pressable
-                  onLongPress={copyPhone}
-                  delayLongPress={400}
-                  accessibilityRole="button"
-                  accessibilityLabel="Phone number, long press to copy"
-                  hitSlop={{ top: 4, bottom: 4, left: 0, right: 0 }}
-                >
-                  <Text
-                    className="mt-0.5 text-xs text-white/85"
-                    numberOfLines={1}
-                  >
-                    {phone ?? "—"}
-                  </Text>
-                  <Text className="mt-0.5 text-[10px] font-semibold text-white/55">
-                    Long-press to copy
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-            <Pressable
-              onPress={() => setDetailsOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Edit profile details"
-              className="rounded-full bg-white/15 px-3 py-1.5 active:opacity-80"
-              hitSlop={6}
-            >
-              <View className="flex-row items-center gap-1">
-                <Ionicons name="create-outline" size={12} color="#ffffff" />
-                <Text className="text-[11px] font-bold text-white">Edit</Text>
-              </View>
-            </Pressable>
-          </View>
-
-          {profile?.email?.trim() ? (
-            <View className="mt-3 flex-row items-center gap-2">
-              <Ionicons name="mail-outline" size={13} color="rgba(255,255,255,0.75)" />
-              <Text className="text-xs text-white/85" numberOfLines={1}>
-                {profile.email.trim()}
-              </Text>
-            </View>
-          ) : null}
-
-          <View className="mt-4 flex-row items-center gap-2">
-            <Ionicons name="ribbon" size={12} color="#ffd500" />
-            <Text className="text-[11px] font-semibold text-white/90">
-              {memberLine}
-            </Text>
-            <Text className="text-white/40">·</Text>
-            <Text className="text-[11px] font-semibold text-white/75">
-              {roleLabel} account
-            </Text>
-          </View>
-          </LinearGradient>
-        </Animated.View>
-
-        <Animated.View
-          entering={FadeInUp.duration(400).delay(100)}
-          className="mt-6 flex-row gap-2.5"
-        >
-          <PremiumStatCard
-            label="Bookings"
-            value={bookingStats.total}
-            icon="calendar"
-            accent="blue"
-          />
-          <PremiumStatCard
-            label="Completed"
-            value={bookingStats.completed}
-            icon="checkmark-done"
-            accent="green"
-          />
-          <PremiumStatCard
-            label="Addresses"
-            value={addressCount}
-            icon="location"
-            accent="gold"
+        <Animated.View entering={FadeInUp.duration(380)}>
+          <SectionHeader
+            eyebrow="Account"
+            title="Profile"
+            subtitle="Your details and preferences."
           />
         </Animated.View>
+
+        <ProfileHeroSection
+          displayName={displayName}
+          phone={phone}
+          email={profile?.email}
+          memberLine={memberLine}
+          roleLabel={`${roleLabel} account`}
+          avatarUri={profile?.avatarUri}
+          fallbackAvatarUri={fallbackAvatarUri}
+          savingAvatar={savingAvatar}
+          onAvatarPress={openAvatarActions}
+          onEditPress={() => setDetailsOpen(true)}
+          onCopyPhone={copyPhone}
+        />
+
+        <ProfileStatsRow
+          bookings={bookingStats.total}
+          completed={bookingStats.completed}
+          addresses={addressCount}
+        />
 
         <Animated.View
           entering={FadeInUp.duration(400).delay(140)}
@@ -531,9 +412,20 @@ export function ProfileScreen() {
               <Text className="text-xs font-bold text-accent">Edit all</Text>
             </Pressable>
           </View>
-          <View className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm">
+          <View
+            className="overflow-hidden rounded-3xl border border-neutral-100 bg-white"
+            style={
+              Platform.OS === "ios"
+                ? {
+                    shadowColor: "#0F172A",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 20,
+                  }
+                : { elevation: 4 }
+            }
+          >
             <InfoRow
-              icon="person-outline"
               label="Full name"
               value={displayValue(profile?.name, "Add your name")}
               muted={!profile?.name?.trim()}
@@ -541,16 +433,13 @@ export function ProfileScreen() {
             />
             <InfoHairline />
             <InfoRow
-              icon="call-outline"
               label="Mobile"
               value={phone ?? "—"}
-              hint="Long-press to copy"
               onPress={copyPhone}
               onLongPress={copyPhone}
             />
             <InfoHairline />
             <InfoRow
-              icon="mail-outline"
               label="Email"
               value={displayValue(profile?.email)}
               muted={!profile?.email?.trim()}
@@ -558,7 +447,6 @@ export function ProfileScreen() {
             />
             <InfoHairline />
             <InfoRow
-              icon="gift-outline"
               label="Birthday"
               value={displayValue(profile?.birthday)}
               muted={!profile?.birthday?.trim()}
@@ -566,7 +454,6 @@ export function ProfileScreen() {
             />
             <InfoHairline />
             <InfoRow
-              icon="heart-outline"
               label="Anniversary"
               value={displayValue(profile?.anniversary)}
               muted={!profile?.anniversary?.trim()}
@@ -574,7 +461,6 @@ export function ProfileScreen() {
             />
             <InfoHairline />
             <InfoRow
-              icon="chatbubble-ellipses-outline"
               label="Preferred contact"
               value={contactLabel}
               last
@@ -599,23 +485,25 @@ export function ProfileScreen() {
           <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
             Account & preferences
           </Text>
-          <View className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+          <View
+            className="overflow-hidden rounded-3xl border border-neutral-100 bg-white"
+            style={
+              Platform.OS === "ios"
+                ? {
+                    shadowColor: "#0F172A",
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.06,
+                    shadowRadius: 20,
+                  }
+                : { elevation: 4 }
+            }
+          >
             <View className="px-4 pb-4 pt-4">
-              <View className="flex-row items-center gap-2">
-                <View className="h-9 w-9 items-center justify-center rounded-full bg-accent-soft">
-                  <Ionicons name="person-circle-outline" size={18} color="#7C3AED" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-sm font-extrabold text-neutral-900">
-                    How you use InstaHelp
-                  </Text>
-                  <Text className="mt-0.5 text-[11px] leading-4 text-neutral-500">
-                    Personal vs business changes the kind of suggestions you see.
-                  </Text>
-                </View>
-              </View>
+              <Text className="text-sm font-semibold text-neutral-900">
+                Account type
+              </Text>
 
-              <View className="mt-4 flex-row overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-1">
+              <View className="mt-3 flex-row overflow-hidden rounded-xl border border-neutral-100 bg-neutral-50 p-1">
               {(
                 [
                   { id: "consumer" as const, label: "Personal" },
@@ -652,32 +540,21 @@ export function ProfileScreen() {
                 );
               })}
             </View>
-              <Text className="mt-2 text-[11px] leading-4 text-neutral-500">
-                Business gets occasional local opportunity-style alerts tuned for vendors.
-              </Text>
             </View>
 
             <View className="h-px bg-neutral-100" />
 
             <View className="px-4 pb-4 pt-4">
-              <View className="flex-row items-center gap-2">
-                <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
-                  <Ionicons name="chatbubble-ellipses-outline" size={16} color="#0f172a" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-sm font-extrabold text-neutral-900">Reach me on</Text>
-                  <Text className="mt-0.5 text-[11px] leading-4 text-neutral-500">
-                    Saved on this device so your concierge follows up the way you prefer.
-                  </Text>
-                </View>
-              </View>
+              <Text className="text-sm font-semibold text-neutral-900">
+                Preferred contact
+              </Text>
 
-              <View className="mt-4 flex-row flex-wrap gap-2">
+              <View className="mt-3 flex-row flex-wrap gap-2">
                 {(
                   [
-                    { id: "whatsapp" as const, label: "WhatsApp", icon: "logo-whatsapp" },
-                    { id: "call" as const, label: "Phone call", icon: "call-outline" },
-                    { id: "either" as const, label: "Either", icon: "shuffle-outline" },
+                    { id: "whatsapp" as const, label: "WhatsApp" },
+                    { id: "call" as const, label: "Phone call" },
+                    { id: "either" as const, label: "Either" },
                   ] as const
                 ).map((opt) => {
                   const on = preferredContact === opt.id;
@@ -685,16 +562,17 @@ export function ProfileScreen() {
                     <Pressable
                       key={opt.id}
                       onPress={() => void updatePreferredContact(opt.id)}
-                      className={`flex-row items-center gap-2 rounded-full px-4 py-2 active:opacity-90 ${
-                        on ? "border border-accent/30 bg-accent-soft" : "border border-neutral-200 bg-white"
+                      className={`rounded-full px-4 py-2 active:opacity-90 ${
+                        on ? "bg-accent" : "border border-neutral-200 bg-white"
                       }`}
                     >
-                      <Ionicons
-                        name={opt.icon}
-                        size={14}
-                        color={opt.id === "whatsapp" ? "#128C7E" : "#334155"}
-                      />
-                      <Text className="text-xs font-bold text-neutral-800">{opt.label}</Text>
+                      <Text
+                        className={`text-xs font-semibold ${
+                          on ? "text-accent-foreground" : "text-neutral-700"
+                        }`}
+                      >
+                        {opt.label}
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -711,68 +589,64 @@ export function ProfileScreen() {
           <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
             Quick actions
           </Text>
-          <View className="overflow-hidden rounded-2xl bg-neutral-50">
+          <View
+            className="overflow-hidden rounded-3xl border border-neutral-100 bg-white"
+            style={
+              Platform.OS === "ios"
+                ? {
+                    shadowColor: "#0F172A",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 16,
+                  }
+                : { elevation: 3 }
+            }
+          >
             <ActionRow
-              icon="calendar-outline"
               title="Book a service"
-              subtitle="Home screen & discovery"
               onPress={() => router.push("/(tabs)")}
             />
             <RowHairline />
             <ActionRow
-              icon="gift-outline"
               title="Gift cards"
-              subtitle="Brands, wallet, Hubble checkout"
-              onPress={() => router.push("/(tabs)/giftcards")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/shop",
+                  params: { section: "giftcards" },
+                })
+              }
             />
             <RowHairline />
             <ActionRow
-              icon="briefcase-outline"
               title="Register as vendor"
-              subtitle="Share business details for onboarding"
               onPress={() => setVendorOpen(true)}
             />
             <RowHairline />
             <ActionRow
-              icon="time"
               title="Booking history"
-              subtitle={`${bookingStats.total} request${bookingStats.total === 1 ? "" : "s"} on this device`}
+              subtitle={
+                bookingStats.total > 0
+                  ? `${bookingStats.total} request${bookingStats.total === 1 ? "" : "s"}`
+                  : undefined
+              }
               onPress={() => router.push("/(tabs)/bookings")}
             />
             <RowHairline />
             <ActionRow
-              icon="help-circle"
               title="Help & support"
-              subtitle="FAQ, WhatsApp, website, app info"
               onPress={() => router.push("/support")}
             />
             <RowHairline />
             <ActionRow
-              icon="logo-whatsapp"
-              title="Concierge"
-              subtitle="WhatsApp support"
-              iconTone="whatsapp"
-              onPress={() => openWhatsApp()}
-            />
-            <RowHairline />
-            <ActionRow
-              icon="navigate"
               title="Add location"
               subtitle={
-                detecting || savingLocation
-                  ? "Detecting…"
-                  : "Save where you are now"
+                detecting || savingLocation ? "Detecting…" : undefined
               }
               loading={detecting || savingLocation}
               onPress={addCurrentLocation}
             />
             <RowHairline />
-            <ActionRow
-              icon="share-social"
-              title="Refer a friend"
-              subtitle="Share InstaHelp"
-              onPress={shareApp}
-            />
+            <ActionRow title="Refer a friend" onPress={shareApp} />
           </View>
         </Animated.View>
 
@@ -789,46 +663,45 @@ export function ProfileScreen() {
               {(profile?.addresses ?? []).length} saved
             </Text>
           </View>
-          <View className="overflow-hidden rounded-2xl bg-neutral-50">
+          <View
+            className="overflow-hidden rounded-3xl border border-neutral-100 bg-white"
+            style={
+              Platform.OS === "ios"
+                ? {
+                    shadowColor: "#0F172A",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 16,
+                  }
+                : { elevation: 3 }
+            }
+          >
             {(profile?.addresses ?? []).length === 0 ? (
-              <View className="items-center px-5 py-8">
-                <View className="h-11 w-11 items-center justify-center rounded-full bg-accent-soft">
-                  <Ionicons
-                    name="location-outline"
-                    size={20}
-                    color="#7C3AED"
-                  />
-                </View>
-                <Text className="mt-3 text-center text-sm font-semibold text-neutral-800">
-                  No addresses yet
-                </Text>
-                <Text className="mt-1 max-w-[260px] text-center text-xs leading-5 text-neutral-500">
-                  Use Add location in Quick actions to save your current spot.
+              <View className="px-5 py-6">
+                <Text className="text-sm text-neutral-500">
+                  No saved addresses. Use Add location above to save your current spot.
                 </Text>
               </View>
             ) : (
               (profile?.addresses ?? []).map((a, i, arr) => (
                 <View key={a.id}>
                   <View className="flex-row items-start gap-3 px-4 py-4">
-                    <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-full bg-accent-soft">
-                      <Ionicons name="location" size={16} color="#7C3AED" />
-                    </View>
                     <View className="min-w-0 flex-1">
                       <View className="flex-row flex-wrap items-center gap-2">
                         <Text
-                          className="text-sm font-bold text-neutral-900"
+                          className="text-sm font-semibold text-neutral-900"
                           numberOfLines={1}
                         >
                           {a.label}
                         </Text>
                         {i === 0 ? (
-                          <Text className="text-[10px] font-bold uppercase tracking-wider text-accent">
+                          <Text className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">
                             Default
                           </Text>
                         ) : null}
                       </View>
                       <Text
-                        className="mt-1 text-sm leading-5 text-neutral-600"
+                        className="mt-1 text-sm leading-5 text-neutral-500"
                         numberOfLines={3}
                       >
                         {a.line}
@@ -839,17 +712,15 @@ export function ProfileScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`Remove ${a.label}`}
                       hitSlop={8}
-                      className="mt-0.5 rounded-full p-2 active:bg-neutral-200/60"
+                      className="py-1 active:opacity-60"
                     >
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color="#a3a3a3"
-                      />
+                      <Text className="text-xs font-medium text-neutral-400">
+                        Remove
+                      </Text>
                     </Pressable>
                   </View>
                   {i < arr.length - 1 ? (
-                    <View className="ml-[52px] mr-4 h-px bg-neutral-200/90" />
+                    <View className="mx-4 h-px bg-neutral-100" />
                   ) : null}
                 </View>
               ))
@@ -870,8 +741,8 @@ export function ProfileScreen() {
               {favoriteCount} selected
             </Text>
           </View>
-          <Text className="mb-3 text-xs leading-5 text-neutral-500">
-            We use these for smarter local alerts and quicker re-booking.
+          <Text className="mb-3 text-xs text-neutral-500">
+            Tap to select services you book most often.
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {FAVORITES.map((f) => {
@@ -880,19 +751,14 @@ export function ProfileScreen() {
                 <Pressable
                   key={f.id}
                   onPress={() => toggleFavorite(f.id)}
-                  className={`flex-row items-center gap-2 rounded-full px-4 py-2.5 active:opacity-90 ${
+                  className={`rounded-full px-4 py-2 active:opacity-90 ${
                     on
-                      ? "bg-accent shadow-sm"
-                      : "bg-neutral-100"
+                      ? "bg-accent"
+                      : "border border-neutral-200 bg-white"
                   }`}
                 >
-                  <Ionicons
-                    name={f.icon}
-                    size={14}
-                    color={on ? "#ffffff" : "#525252"}
-                  />
                   <Text
-                    className={`text-xs font-bold ${
+                    className={`text-xs font-medium ${
                       on ? "text-accent-foreground" : "text-neutral-600"
                     }`}
                   >
@@ -912,21 +778,30 @@ export function ProfileScreen() {
           <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
             Settings
           </Text>
-          <View className="overflow-hidden rounded-2xl bg-neutral-50">
+          <View
+            className="overflow-hidden rounded-3xl border border-neutral-100 bg-white"
+            style={
+              Platform.OS === "ios"
+                ? {
+                    shadowColor: "#0F172A",
+                    shadowOffset: { width: 0, height: 6 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 16,
+                  }
+                : { elevation: 3 }
+            }
+          >
             <SettingsRow
-              icon="document-text-outline"
               label="Privacy policy"
               onPress={() => openLegal(LEGAL_PRIVACY_URL)}
             />
             <SettingsHairline />
             <SettingsRow
-              icon="reader-outline"
               label="Terms of use"
               onPress={() => openLegal(LEGAL_TERMS_URL)}
             />
             <SettingsHairline />
             <SettingsRow
-              icon="notifications-outline"
               label="Notifications"
               value="System"
               onPress={() => {
@@ -935,7 +810,6 @@ export function ProfileScreen() {
             />
             <SettingsHairline />
             <SettingsRow
-              icon="chatbox-ellipses-outline"
               label="Send feedback"
               onPress={() =>
                 openWhatsApp(
@@ -945,8 +819,7 @@ export function ProfileScreen() {
             />
             <SettingsHairline />
             <SettingsRow
-              icon="information-circle-outline"
-              label="About & help center"
+              label="About & help"
               value={`v${APP_VERSION}`}
               onPress={() => router.push("/support")}
               last
@@ -964,10 +837,9 @@ export function ProfileScreen() {
             accessibilityRole="button"
             accessibilityLabel="Sign out"
             hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
-            className="flex-row items-center gap-2 py-2 active:opacity-70"
+            className="py-2 active:opacity-70"
           >
-            <Ionicons name="log-out-outline" size={18} color="#b91c1c" />
-            <Text className="text-sm font-semibold text-red-700">Sign out</Text>
+            <Text className="text-sm font-medium text-red-600">Sign out</Text>
           </Pressable>
           <Text className="mt-2 text-center text-[11px] text-neutral-400">
             Signed in as {phone ?? "—"}
@@ -1005,23 +877,19 @@ export function ProfileScreen() {
 }
 
 function InfoHairline() {
-  return <View className="ml-14 mr-4 h-px bg-neutral-100" />;
+  return <View className="mx-4 h-px bg-neutral-100" />;
 }
 
 function InfoRow({
-  icon,
   label,
   value,
-  hint,
   muted,
   onPress,
   onLongPress,
   last,
 }: {
-  icon: IoniconName;
   label: string;
   value: string;
-  hint?: string;
   muted?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
@@ -1035,81 +903,25 @@ function InfoRow({
       disabled={!interactive}
       accessibilityRole={interactive ? "button" : "text"}
       accessibilityLabel={`${label}, ${value}`}
-      className={`flex-row items-center gap-3 px-4 py-3.5 ${
+      className={`flex-row items-center justify-between px-4 py-3.5 ${
         interactive ? "active:bg-neutral-50" : ""
       } ${last ? "" : ""}`}
     >
-      <View className="h-9 w-9 items-center justify-center rounded-full bg-neutral-100">
-        <Ionicons name={icon} size={17} color="#525252" />
-      </View>
       <View className="min-w-0 flex-1">
-        <Text className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">
-          {label}
-        </Text>
+        <Text className="text-xs text-neutral-400">{label}</Text>
         <Text
-          className={`mt-0.5 text-[15px] font-semibold ${
+          className={`mt-0.5 text-[15px] font-medium ${
             muted ? "text-neutral-400" : "text-neutral-900"
           }`}
           numberOfLines={2}
         >
           {value}
         </Text>
-        {hint ? (
-          <Text className="mt-0.5 text-[10px] text-neutral-400">{hint}</Text>
-        ) : null}
       </View>
       {interactive ? (
-        <Ionicons name="chevron-forward" size={18} color="#c4c4c4" />
+        <Ionicons name="chevron-forward" size={16} color="#d4d4d4" />
       ) : null}
     </Pressable>
-  );
-}
-
-function PremiumStatCard({
-  label,
-  value,
-  icon,
-  accent,
-}: {
-  label: string;
-  value: number;
-  icon: IoniconName;
-  accent: "blue" | "gold" | "green";
-}) {
-  const tones = {
-    blue: {
-      bg: "bg-accent-soft",
-      icon: "#7C3AED",
-      ring: "border-accent-tint/60",
-    },
-    gold: {
-      bg: "bg-brand-gold/15",
-      icon: "#b8860b",
-      ring: "border-brand-gold/30",
-    },
-    green: {
-      bg: "bg-emerald-50",
-      icon: "#059669",
-      ring: "border-emerald-200/80",
-    },
-  }[accent];
-
-  return (
-    <View
-      className={`min-w-0 flex-1 rounded-2xl border bg-white px-3 py-3.5 shadow-sm ${tones.ring}`}
-    >
-      <View
-        className={`h-8 w-8 items-center justify-center rounded-xl ${tones.bg}`}
-      >
-        <Ionicons name={icon} size={16} color={tones.icon} />
-      </View>
-      <Text className="mt-2.5 text-2xl font-extrabold tabular-nums text-neutral-900">
-        {value}
-      </Text>
-      <Text className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-500">
-        {label}
-      </Text>
-    </View>
   );
 }
 
@@ -1118,67 +930,51 @@ function RowHairline() {
 }
 
 function ActionRow({
-  icon,
   title,
   subtitle,
   onPress,
-  iconTone = "default",
   loading,
 }: {
-  icon: IoniconName;
   title: string;
-  subtitle: string;
+  subtitle?: string;
   onPress: () => void;
-  iconTone?: "default" | "whatsapp";
   loading?: boolean;
 }) {
-  const isWhatsApp = iconTone === "whatsapp";
   return (
     <Pressable
       onPress={onPress}
       disabled={loading}
       accessibilityRole="button"
       accessibilityLabel={title}
-      className={`flex-row items-center gap-3.5 px-4 py-3.5 active:bg-neutral-200/40 ${
+      className={`flex-row items-center justify-between px-4 py-3.5 active:bg-neutral-50 ${
         loading ? "opacity-70" : ""
       }`}
     >
-      <View
-        className={`h-10 w-10 items-center justify-center rounded-full ${
-          isWhatsApp ? "bg-[#25D366]/12" : "bg-accent-soft"
-        }`}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="#7C3AED" />
-        ) : (
-          <Ionicons
-            name={icon}
-            size={18}
-            color={isWhatsApp ? "#128C7E" : "#7C3AED"}
-          />
-        )}
-      </View>
       <View className="min-w-0 flex-1">
-        <Text className="text-[15px] font-semibold text-neutral-900" numberOfLines={1}>
+        <Text className="text-[15px] font-medium text-neutral-900" numberOfLines={1}>
           {title}
         </Text>
-        <Text className="mt-0.5 text-xs text-neutral-500" numberOfLines={1}>
-          {subtitle}
-        </Text>
+        {subtitle ? (
+          <Text className="mt-0.5 text-xs text-neutral-400" numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#c4c4c4" />
+      {loading ? (
+        <ActivityIndicator size="small" color="#a3a3a3" />
+      ) : (
+        <Ionicons name="chevron-forward" size={16} color="#d4d4d4" />
+      )}
     </Pressable>
   );
 }
 
 function SettingsRow({
-  icon,
   label,
   value,
   onPress,
   last,
 }: {
-  icon: IoniconName;
   label: string;
   value?: string;
   onPress?: () => void;
@@ -1189,24 +985,23 @@ function SettingsRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={`flex-row items-center gap-3 px-4 py-3.5 active:bg-neutral-200/40 ${
+      className={`flex-row items-center justify-between px-4 py-3.5 active:bg-neutral-50 ${
         last ? "" : ""
       }`}
     >
-      <Ionicons name={icon} size={20} color="#737373" />
-      <Text className="flex-1 text-[15px] font-semibold text-neutral-900">
-        {label}
-      </Text>
-      {value ? (
-        <Text className="text-xs font-medium text-neutral-500">{value}</Text>
-      ) : null}
-      <Ionicons name="chevron-forward" size={18} color="#c4c4c4" />
+      <Text className="text-[15px] font-medium text-neutral-900">{label}</Text>
+      <View className="flex-row items-center gap-2">
+        {value ? (
+          <Text className="text-xs text-neutral-400">{value}</Text>
+        ) : null}
+        <Ionicons name="chevron-forward" size={16} color="#d4d4d4" />
+      </View>
     </Pressable>
   );
 }
 
 function SettingsHairline() {
-  return <View className="ml-12 mr-4 h-px bg-neutral-200/90" />;
+  return <View className="mx-4 h-px bg-neutral-100" />;
 }
 
 type ProfileDetailsPatch = Pick<

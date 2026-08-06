@@ -74,7 +74,7 @@ export function VendorDetailScreen() {
         vendor != null
           ? () => (
               <View className="mr-2 flex-row items-center gap-1 rounded-lg bg-white px-2.5 py-1.5">
-                <Ionicons name="diamond-outline" size={14} color="#7C3AED" />
+                <Ionicons name="diamond-outline" size={14} color="#004aad" />
                 <Text className="text-[13px] font-semibold text-neutral-800">
                   {credits}
                 </Text>
@@ -141,7 +141,7 @@ export function VendorDetailScreen() {
     return (
       <Screen className="bg-[#eef2fb]">
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#7C3AED" />
+          <ActivityIndicator size="large" color="#004aad" />
           <Text className="mt-3 text-[13px] text-neutral-500">
             Loading vendor…
           </Text>
@@ -244,7 +244,7 @@ export function VendorDetailScreen() {
             </Text>
             {vendor.isVerified ? (
               <View className="flex-row items-center gap-1">
-                <Ionicons name="shield-checkmark" size={14} color="#7C3AED" />
+                <Ionicons name="shield-checkmark" size={14} color="#004aad" />
                 <Text className="text-[13px] text-accent">Verified</Text>
               </View>
             ) : null}
