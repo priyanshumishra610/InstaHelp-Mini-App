@@ -2,8 +2,8 @@ import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
 import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
 import { ServiceIllustration } from "@/components/auth/premium/ServiceIllustration";
 import {
-  AUTH_ACCENT_YELLOW,
   AUTH_FONT,
+  AUTH_GRADIENT,
   AUTH_PRIMARY,
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,7 +38,7 @@ export function WelcomeAuthCard({ onLogin, onRegister, compact }: Props) {
       <View style={styles.actions}>
         <PremiumPressable onPress={onLogin} glow accessibilityRole="button">
           <LinearGradient
-            colors={[AUTH_ACCENT_YELLOW, "#E6C000", "#D4AF00"]}
+            colors={[...AUTH_GRADIENT]}
             locations={[0, 0.5, 1]}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
@@ -47,7 +47,7 @@ export function WelcomeAuthCard({ onLogin, onRegister, compact }: Props) {
             <Text style={[styles.primaryLabel, { fontFamily: AUTH_FONT.bold }]}>
               Login
             </Text>
-            <Ionicons name="arrow-forward" size={16} color="#0A0A0A" />
+            <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
           </LinearGradient>
         </PremiumPressable>
         <PremiumPressable
@@ -99,19 +99,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: "#E6C000",
+    shadowColor: "#171717",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.32,
     shadowRadius: 14,
     elevation: 6,
   },
-  primaryLabel: { color: "#0A0A0A", fontSize: 15 },
+  primaryLabel: { color: "#FFFFFF", fontSize: 15 },
   secondaryBtn: {
     borderRadius: 16,
     paddingVertical: 13,
     alignItems: "center",
     borderWidth: 1.5,
-    borderColor: "rgba(37,99,235,0.28)",
+    borderColor: "rgba(23,23,23,0.18)",
     backgroundColor: "rgba(255,255,255,0.85)",
   },
   secondaryLabel: { color: AUTH_PRIMARY, fontSize: 14 },

@@ -145,7 +145,7 @@ export function GiftCardsScreen() {
             end={{ x: 1, y: 1 }}
             className="rounded-3xl border border-accent-tint/70 p-4"
             style={{
-              shadowColor: "#004aad",
+              shadowColor: "#171717",
               shadowOpacity: 0.08,
               shadowRadius: 18,
               shadowOffset: { width: 0, height: 10 },

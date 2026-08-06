@@ -56,7 +56,7 @@ export function VendorHomeCard({ vendor, distanceKm, onPress, index = 0 }: Props
           <View className="absolute inset-0 bg-black/5" />
           {vendor.isVerified ? (
             <View className="absolute right-2.5 top-2.5 flex-row items-center gap-1 rounded-full border border-white/70 bg-white/80 px-2 py-1">
-              <AppIcon name="shield" size={10} color="#004aad" />
+              <AppIcon name="shield" size={10} color="#171717" />
               <Text className="text-[9px] font-extrabold text-accent-deep">
                 Verified
               </Text>

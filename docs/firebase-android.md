@@ -4,7 +4,7 @@
 
 1. In [Firebase Console](https://console.firebase.google.com/) → Project settings → Your apps → Android, download **`google-services.json`**.
 2. Place it at the **repo root**: `google-services.json` (same folder as `app.config.js`).
-3. It must **match** `app.json` → `expo.android.package` (`com.priyanshum567.instahelp`).
+3. It must **match** `app.json` → `expo.android.package` (`in.instahelp.app`).
 
 Real files are **gitignored**. Use **`google-services.example.json`** as a shape reference only.
 

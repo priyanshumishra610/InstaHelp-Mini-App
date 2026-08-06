@@ -26,7 +26,7 @@ export function buildRazorpayCheckoutHtml(input: BuildCheckoutHtmlInput): string
       contact: input.prefillContact ?? "",
       name: input.prefillName ?? "",
     },
-    theme: { color: "#004aad" },
+    theme: { color: "#171717" },
   });
 
   return `<!DOCTYPE html>

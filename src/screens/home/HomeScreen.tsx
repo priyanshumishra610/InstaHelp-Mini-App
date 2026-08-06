@@ -1,4 +1,5 @@
 import { RequestFormSheet } from "@/components/home/RequestFormSheet";
+import { RequestFormFab } from "@/components/home/RequestFormFab";
 import { HomeHubSheet } from "@/components/home/HomeHubSheet";
 import { Screen } from "@/components/ui/Screen";
 import { CreditHistoryModal } from "@/components/vendors/CreditHistoryModal";
@@ -72,7 +73,7 @@ export function HomeScreen() {
   }, []);
 
   return (
-    <Screen atmosphere="hero">
+    <Screen surface="white" atmosphere={false}>
       <View className="flex-1">
         {catalog.toast ? (
           <MarketplaceToast message={catalog.toast} key={catalog.toast} />
@@ -97,6 +98,8 @@ export function HomeScreen() {
           initialSource={sourceParam}
           onBrowseExplore={handleBrowseExploreSuggestion}
         />
+
+        <RequestFormFab onPress={() => setFormOpen(true)} />
 
         <ExploreVendorList catalog={catalog} greeting={greeting} />
       </View>

@@ -6,10 +6,10 @@ export default function ArcadeLayout() {
       screenOptions={{
         headerShown: true,
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: "#eef2fb" },
+        headerStyle: { backgroundColor: "#FFFFFF" },
         headerTintColor: "#171717",
         headerTitleStyle: { fontWeight: "800", fontSize: 17 },
-        contentStyle: { backgroundColor: "#eef2fb" },
+        contentStyle: { backgroundColor: "#FFFFFF" },
       }}
     >
       <Stack.Screen

@@ -44,7 +44,7 @@ export const MinimalPhoneField = forwardRef<TextInput, Props>(
         error
           ? "rgba(239,68,68,0.55)"
           : glow.value > 0.5
-            ? "rgba(37,99,235,0.55)"
+            ? "rgba(23,23,23,0.55)"
             : "rgba(148,163,184,0.28)",
       shadowOpacity: glow.value * 0.18,
     }));
@@ -125,14 +125,14 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     borderRadius: 14,
-    backgroundColor: "rgba(37,99,235,0.08)",
+    backgroundColor: "rgba(23,23,23,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(37,99,235,0.12)",
+    borderColor: "rgba(23,23,23,0.12)",
     justifyContent: "center",
   },
   prefixPillActive: {
-    backgroundColor: "rgba(37,99,235,0.12)",
-    borderColor: "rgba(37,99,235,0.28)",
+    backgroundColor: "rgba(23,23,23,0.12)",
+    borderColor: "rgba(23,23,23,0.28)",
   },
   prefixPillError: {
     borderColor: "rgba(248,113,113,0.6)",

@@ -240,7 +240,7 @@ export function DateTimeSlotPicker({
         }`}
       >
         <View className="h-8 w-8 items-center justify-center rounded-xl bg-accent-soft">
-          <Ionicons name="calendar-outline" size={16} color="#004aad" />
+          <Ionicons name="calendar-outline" size={16} color="#171717" />
         </View>
         <View className="flex-1">
           <Text className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">

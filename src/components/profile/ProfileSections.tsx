@@ -101,7 +101,7 @@ export function ProfileHeroSection({
           accessibilityLabel="Edit profile details"
           className="rounded-full px-3 py-1.5 active:opacity-70"
         >
-          <Text className="text-sm font-semibold text-accent">Edit</Text>
+          <Text className="text-sm font-semibold text-neutral-900">Edit</Text>
         </Pressable>
       </View>
     </MotiView>

@@ -89,7 +89,7 @@ const CARD_SHADOW_IOS = {
   shadowRadius: 28,
 };
 const SOFT_SHADOW_IOS = {
-  shadowColor: "#004aad",
+  shadowColor: "#171717",
   shadowOffset: { width: 0, height: 8 },
   shadowOpacity: 0.08,
   shadowRadius: 20,
@@ -202,14 +202,14 @@ export function CreditMiniGameScreen() {
       return {
         icon: "hand-left-outline" as const,
         label: "Your turn",
-        tint: "#004aad",
+        tint: "#171717",
       };
     }
     if (phase === "user_won") {
       return {
         icon: "trophy-outline" as const,
         label: "You won!",
-        tint: claimedToday ? "#059669" : "#004aad",
+        tint: claimedToday ? "#059669" : "#171717",
       };
     }
     if (phase === "ai_won") {
@@ -227,7 +227,7 @@ export function CreditMiniGameScreen() {
   }, [phase, claimedToday]);
 
   return (
-    <Screen className="bg-[#eef2fb]">
+    <Screen className="bg-[#FFFFFF]">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 36 }}
@@ -247,7 +247,7 @@ export function CreditMiniGameScreen() {
             >
               <View className="overflow-hidden rounded-[27px]">
                 <LinearGradient
-                  colors={["#004aad", "#0066FF", "#0066FF"]}
+                  colors={["#171717", "#292524", "#292524"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   className="px-5 pb-10 pt-5"
@@ -274,7 +274,7 @@ export function CreditMiniGameScreen() {
                 >
                   <View className="flex-row flex-wrap gap-2">
                     <View className="min-w-[46%] flex-1 flex-row items-center gap-2 rounded-2xl border border-neutral-100 bg-neutral-50/80 px-3 py-2">
-                      <Ionicons name="wallet-outline" size={18} color="#004aad" />
+                      <Ionicons name="wallet-outline" size={18} color="#171717" />
                       <Text className="text-[14px] font-extrabold text-neutral-800">
                         {credits} cr
                       </Text>
@@ -286,7 +286,7 @@ export function CreditMiniGameScreen() {
                       <Ionicons
                         name={claimedToday ? "checkmark-done" : "gift-outline"}
                         size={18}
-                        color={claimedToday ? "#059669" : "#b88a00"}
+                        color={claimedToday ? "#059669" : "#171717"}
                       />
                       <Text
                         className={`flex-1 text-[12px] font-extrabold ${claimedToday ? "text-emerald-800" : "text-brand-goldDeep"}`}
@@ -372,7 +372,7 @@ export function CreditMiniGameScreen() {
                               fontSize: Math.min(42, Math.floor(cellSize * 0.52)),
                               lineHeight:
                                 Math.min(42, Math.floor(cellSize * 0.52)) + 2,
-                              textShadowColor: "rgba(0,74,173,0.22)",
+                              textShadowColor: "rgba(23,23,23,0.22)",
                               textShadowOffset: { width: 0, height: 2 },
                               textShadowRadius: 6,
                             }}
@@ -428,12 +428,12 @@ export function CreditMiniGameScreen() {
             </View>
 
             <LinearGradient
-              colors={["#004aad", "#003780"]}
+              colors={["#171717", "#0C0A09"]}
               className="mt-8 overflow-hidden rounded-full"
               style={
                 Platform.OS === "ios"
                   ? {
-                      shadowColor: "#004aad",
+                      shadowColor: "#171717",
                       shadowOffset: { width: 0, height: 10 },
                       shadowOpacity: 0.35,
                       shadowRadius: 16,
@@ -459,7 +459,7 @@ export function CreditMiniGameScreen() {
                 Platform.OS === "ios" ? SOFT_SHADOW_IOS : { elevation: 2 }
               }
             >
-              <Ionicons name="arrow-back" size={18} color="#004aad" />
+              <Ionicons name="arrow-back" size={18} color="#171717" />
               <Text className="text-[13px] font-extrabold text-accent-deep">
                 Arcade
               </Text>

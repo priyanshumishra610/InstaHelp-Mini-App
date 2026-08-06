@@ -2,8 +2,8 @@ import { GlowButton } from "@/components/ui/GlowButton";
 import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
 import { MarketplaceChip } from "@/components/vendors/MarketplaceChip";
 import {
-  AUTH_ACCENT_YELLOW,
   AUTH_FONT,
+  AUTH_GRADIENT,
   AUTH_PRIMARY,
   AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
@@ -95,9 +95,11 @@ export function HomeHubSheet({
     ? "Hi InstaHelp Pro+ — I need priority assistance with Explore / vendor discovery."
     : "Hi InstaHelp, I need assistance with my request.";
 
+  if (!visible) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible
       animationType="slide"
       transparent
       onRequestClose={onClose}
@@ -105,7 +107,7 @@ export function HomeHubSheet({
       <View style={styles.overlay}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close hub" />
         <LinearGradient
-          colors={[HERO_LAVENDER_MIST, AUTH_PRIMARY, AUTH_PRIMARY_LIGHT, AUTH_ACCENT_YELLOW]}
+          colors={[...AUTH_GRADIENT]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.sheetRim, { paddingBottom: Math.max(insets.bottom, 16) }]}
@@ -400,7 +402,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     backgroundColor: HERO_LAVENDER,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(139,92,246,0.12)",
+    borderColor: "rgba(23,23,23,0.12)",
   },
   closeLabel: {
     fontSize: 12,
@@ -422,7 +424,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: HERO_LAVENDER,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(139,92,246,0.1)",
+    borderColor: "rgba(23,23,23,0.1)",
   },
   conciergeCopy: {
     flex: 1,
@@ -443,7 +445,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,74,173,0.1)",
+    backgroundColor: "rgba(23,23,23,0.1)",
     marginVertical: 16,
   },
   chipRail: {
@@ -497,7 +499,7 @@ const styles = StyleSheet.create({
   resetPill: {
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(139,92,246,0.14)",
+    borderColor: "rgba(23,23,23,0.14)",
     backgroundColor: HERO_LAVENDER,
     paddingVertical: 14,
     paddingHorizontal: 16,

@@ -75,7 +75,7 @@ export function SelectField<T extends string = string>({
       >
         <Pressable
           onPress={close}
-          className="flex-1 items-center justify-end bg-black/40"
+          className="flex-1 items-center justify-end"
         >
           <MotiView
             from={{ translateY: 40, opacity: 0 }}

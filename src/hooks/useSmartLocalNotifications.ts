@@ -67,6 +67,8 @@ export function useSmartLocalNotifications(
   }, [favoriteServiceIds, firstName, persona]);
 
   useEffect(() => {
+    let subscription: { remove: () => void } | null = null;
+
     const handleResponse = (response: Notifications.NotificationResponse | null) => {
       const data = getDemandNotificationData(response);
       if (!data || !response) return;
@@ -93,16 +95,24 @@ export function useSmartLocalNotifications(
       router.push(serviceFormHref(data.serviceId));
     };
 
-    void Notifications.getLastNotificationResponseAsync()
-      .then(handleResponse)
-      .catch(() => {});
+    try {
+      void Notifications.getLastNotificationResponseAsync()
+        .then(handleResponse)
+        .catch(() => {});
 
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      handleResponse,
-    );
+      subscription = Notifications.addNotificationResponseReceivedListener(
+        handleResponse,
+      );
+    } catch {
+      // Expo Go / SDK builds without full notification support.
+    }
 
     return () => {
-      subscription.remove();
+      try {
+        subscription?.remove();
+      } catch {
+        // ignore
+      }
     };
   }, [router]);
 }

@@ -2,7 +2,7 @@ import { AppIcon } from "@/components/ui/AppIcon";
 import { BorderTrail } from "@/components/motion/BorderTrail";
 import { SPRING } from "@/constants/designSystem";
 import { GLASS } from "@/constants/designSystem";
-import { ACCENT, BRAND_GOLD, INK } from "@/constants/theme";
+import { ACCENT, INK } from "@/constants/theme";
 import type { AppIconKey } from "@/constants/icons";
 import { MotiView } from "moti";
 import { memo } from "react";
@@ -39,7 +39,7 @@ function isLightAccent(hex: string) {
 
 /**
  * Soft pill + Motion-Primitives Border Trail when active.
- * Active chips use shop yellow by default (dark label), matching instahelp.in/shop.
+ * Active chips use brand ink by default (white label on dark fill).
  */
 function FilterPillInner({
   label,
@@ -47,7 +47,7 @@ function FilterPillInner({
   icon,
   onPress,
   compact = false,
-  activeColor = BRAND_GOLD,
+  activeColor = ACCENT,
   minimal = false,
 }: FilterPillProps) {
   const scale = useSharedValue(1);

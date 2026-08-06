@@ -17,7 +17,7 @@ const VENDORS: Vendor[] = [
     role: "Senior pro",
     rating: 4.9,
     jobs: 312,
-    color: "#004aad",
+    color: "#171717",
   },
   {
     name: "Anita Patel",
@@ -25,7 +25,7 @@ const VENDORS: Vendor[] = [
     role: "Verified pro",
     rating: 4.8,
     jobs: 178,
-    color: "#0066FF",
+    color: "#292524",
   },
   {
     name: "Vikram Singh",
@@ -33,7 +33,7 @@ const VENDORS: Vendor[] = [
     role: "Top rated",
     rating: 5.0,
     jobs: 421,
-    color: "#003780",
+    color: "#0C0A09",
   },
   {
     name: "Priya Verma",
@@ -49,7 +49,7 @@ const VENDORS: Vendor[] = [
     role: "Senior pro",
     rating: 4.9,
     jobs: 256,
-    color: "#004aad",
+    color: "#171717",
   },
   {
     name: "Sneha Kapoor",
@@ -111,7 +111,7 @@ export function VendorCard({ vendor, onCall, onMessage, caption }: Props) {
             </Text>
             <View className="h-1 w-1 rounded-full bg-neutral-300" />
             <View className="flex-row items-center gap-1">
-              <Ionicons name="shield-checkmark" size={12} color="#004aad" />
+              <Ionicons name="shield-checkmark" size={12} color="#171717" />
               <Text className="text-xs font-bold text-accent-deep">
                 Verified
               </Text>
@@ -150,7 +150,7 @@ export function VendorCard({ vendor, onCall, onMessage, caption }: Props) {
               accessibilityLabel="Message pro"
               className="flex-1 flex-row items-center justify-center gap-2 rounded-2xl border border-brand-line bg-white py-3 active:bg-neutral-100"
             >
-              <Ionicons name="chatbubble-ellipses" size={16} color="#004aad" />
+              <Ionicons name="chatbubble-ellipses" size={16} color="#171717" />
               <Text className="text-sm font-bold text-neutral-800">
                 Message
               </Text>

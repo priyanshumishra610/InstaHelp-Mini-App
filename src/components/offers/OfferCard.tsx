@@ -169,7 +169,7 @@ function OfferCardComponent({
                 >
                   <Text
                     className="text-[10px] font-extrabold uppercase tracking-wide"
-                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#003780" : ACCENT_DEEP }}
+                    style={{ color: offer.image ? "#f8fafc" : isWeekOffer ? "#0C0A09" : ACCENT_DEEP }}
                   >
                     {offer.badge}
                   </Text>

@@ -72,7 +72,7 @@ export function ArcadeHubScreen() {
             accessibilityLabel={`${credits} vendor credits`}
           >
             <LinearGradient
-              colors={["#004aad", "#0066FF"]}
+              colors={["#171717", "#292524"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.creditsGradient}
@@ -148,7 +148,6 @@ const styles = StyleSheet.create({
   },
   backBtnPressed: {
     opacity: 0.88,
-    backgroundColor: "rgba(255,255,255,0.16)",
   },
   scroll: {
     flex: 1,

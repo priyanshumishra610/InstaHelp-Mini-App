@@ -51,7 +51,7 @@ export function TrendingServicesRow() {
                     <Ionicons
                       name={(svc.icon as ComponentProps<typeof Ionicons>["name"]) ?? "construct-outline"}
                       size={22}
-                      color="#004aad"
+                      color="#171717"
                     />
                   </View>
                   <Text

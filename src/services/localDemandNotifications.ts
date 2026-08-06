@@ -671,15 +671,19 @@ const META_TEMPLATES: MetaTemplate[] = [
   },
 ];
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    priority: Notifications.AndroidNotificationPriority.DEFAULT,
-  }),
-});
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      priority: Notifications.AndroidNotificationPriority.DEFAULT,
+    }),
+  });
+} catch {
+  // Expo Go may lack full notification support on some platforms.
+}
 
 function rotate<T>(items: T[], offset: number) {
   if (items.length === 0) return items;
@@ -740,7 +744,7 @@ async function ensureAndroidChannel() {
     name: "Nearby demand signals",
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 180, 120, 180],
-    lightColor: "#004aad",
+    lightColor: "#171717",
     sound: null,
     description:
       "Calm, hyperlocal InstaHelp® signals — not promotions.",

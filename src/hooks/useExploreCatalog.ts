@@ -11,6 +11,7 @@ import {
 } from "@/constants/marketplaceCatalog";
 import { resolveExploreCatalogFilters } from "@/services/vendors/resolveExploreFilters";
 import { tryExploreReveal, exploreRevealCostLabel } from "@/services/explore/exploreRevealService";
+import { alertInsufficientCredits } from "@/services/ads/alertInsufficientCredits";
 import { canViewVendorCategory } from "@/services/explore/exploreEntitlements";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useExploreSubscription } from "@/hooks/useExploreSubscription";
@@ -225,8 +226,27 @@ export function useExploreCatalog(initial?: InitialParams) {
     }
     return Array.from(map.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([title, data]) => ({ title, data }));
+      .map(([title, data]) => {
+        const rated = data.filter((v) => v.rating > 0);
+        const avgRating =
+          rated.length > 0
+            ? rated.reduce((sum, v) => sum + v.rating, 0) / rated.length
+            : null;
+        const verifiedCount = data.filter((v) => v.isVerified).length;
+        return {
+          title,
+          data,
+          avgRating,
+          verifiedCount,
+        };
+      });
   }, [filtered, entitlements.canAccessEarlyCategories]);
+
+  const resultSummary = useMemo(() => {
+    const vendorCount = filtered.length;
+    const categoryCount = sections.length;
+    return { vendorCount, categoryCount };
+  }, [filtered.length, sections.length]);
 
   const explorePlanLabel =
     subscription?.status === "active"
@@ -261,17 +281,11 @@ export function useExploreCatalog(initial?: InitialParams) {
           );
           return;
         }
-        Alert.alert(
-          "Not enough credits",
-          `You need ${VENDOR_REVEAL_CREDIT_COST} credits to reveal a vendor.`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "View plans",
-              onPress: () => router.push("/(tabs)/vendors/plans"),
-            },
-          ],
-        );
+        alertInsufficientCredits({
+          needCredits: VENDOR_REVEAL_CREDIT_COST,
+          onOpenPlans: () => router.push("/(tabs)/vendors/plans"),
+          onOpenCredits: () => setHistoryOpen(true),
+        });
         return;
       }
       if (!res.alreadyUnlocked) {
@@ -368,6 +382,7 @@ export function useExploreCatalog(initial?: InitialParams) {
     filtered,
     activeFilterCount,
     sections,
+    resultSummary,
     handleReveal,
     toggleSortMode,
     clearFilters,

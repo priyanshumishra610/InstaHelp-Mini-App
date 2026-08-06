@@ -224,22 +224,22 @@ export function ExploreListHeader(props: ExploreListHeaderProps) {
 const styles = StyleSheet.create({
   creditsGlass: {
     minWidth: 88,
-    borderColor: "rgba(0,74,173,0.14)",
+    borderColor: "rgba(23,23,23,0.14)",
   },
   planPill: {
     backgroundColor: ACCENT_TINT,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.15)",
+    borderColor: "rgba(23,23,23,0.15)",
   },
   searchGlass: {
     overflow: "hidden",
   },
   searchGlassFocused: {
-    borderColor: "rgba(0,74,173,0.35)",
+    borderColor: "rgba(23,23,23,0.35)",
   },
   filterBtn: {
     minWidth: 72,
-    borderColor: "rgba(0,74,173,0.18)",
+    borderColor: "rgba(23,23,23,0.18)",
   },
   filterBadge: {
     position: "absolute",
@@ -256,6 +256,6 @@ const styles = StyleSheet.create({
   clearPill: {
     backgroundColor: ACCENT_TINT,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.12)",
+    borderColor: "rgba(23,23,23,0.12)",
   },
 });

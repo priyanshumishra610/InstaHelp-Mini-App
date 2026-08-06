@@ -120,7 +120,7 @@ export function HelpSupportScreen() {
               accessibilityRole="button"
               accessibilityLabel="Open WhatsApp support"
               className="mt-5 flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-92"
-              style={{ backgroundColor: "#FFD600" }}
+              style={{ backgroundColor: "#171717" }}
             >
               <Ionicons name="logo-whatsapp" size={20} color="#0A0A0A" />
               <Text className="text-[15px] font-extrabold text-neutral-950">

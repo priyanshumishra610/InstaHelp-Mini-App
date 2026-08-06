@@ -7,17 +7,19 @@ import {
   ProfileHeroSection,
   ProfileStatsRow,
 } from "@/components/profile/ProfileSections";
+import { AppearanceSettingsModal } from "@/components/profile/AppearanceSettingsModal";
 import { Input } from "@/components/ui/Input";
 import { Screen } from "@/components/ui/Screen";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 import { useDeviceAddress } from "@/hooks/useDeviceAddress";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useMergedBookings } from "@/hooks/useMergedBookings";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { persistProfile } from "@/services/profileService";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSignOut } from "@/hooks/auth/useSignOut";
 import { useProfileStore } from "@/store/profileStore";
+import { useTutorialStore } from "@/store/tutorialStore";
 import type { Booking } from "@/types/booking";
 import type {
   ProfilePreferredContact,
@@ -96,8 +98,10 @@ export function ProfileScreen() {
   const upsertAddress = useProfileStore((s) => s.upsertAddress);
   const removeAddress = useProfileStore((s) => s.removeAddress);
   const setProfileLocal = useProfileStore((s) => s.setProfile);
+  const { schemeLabel, accentLabel, colors, isDark } = useAppTheme();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [vendorOpen, setVendorOpen] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -197,7 +201,7 @@ export function ProfileScreen() {
       "instahelp";
     return `https://api.dicebear.com/7.x/fun-emoji/png?seed=${encodeURIComponent(
       seed,
-    )}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+    )}&backgroundColor=f5f5f4,e7e5e4,d6d3d1`;
   }, [phone, profile?.avatarSeed]);
 
   const addCurrentLocation = async () => {
@@ -368,11 +372,17 @@ export function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInUp.duration(380)}>
-          <SectionHeader
-            eyebrow="Account"
-            title="Profile"
-            subtitle="Your details and preferences."
-          />
+          <View className="mb-3">
+            <Text className="text-[11px] font-medium uppercase tracking-[0.16em] text-neutral-400">
+              Account
+            </Text>
+            <Text className="mt-1 text-xl font-bold tracking-tight text-neutral-900">
+              Profile
+            </Text>
+            <Text className="mt-1 text-sm text-neutral-500">
+              Your details and preferences.
+            </Text>
+          </View>
         </Animated.View>
 
         <ProfileHeroSection
@@ -409,7 +419,7 @@ export function ProfileScreen() {
               accessibilityRole="button"
               accessibilityLabel="Edit your information"
             >
-              <Text className="text-xs font-bold text-accent">Edit all</Text>
+              <Text className="text-xs font-semibold text-neutral-900">Edit all</Text>
             </Pressable>
           </View>
           <View
@@ -563,12 +573,12 @@ export function ProfileScreen() {
                       key={opt.id}
                       onPress={() => void updatePreferredContact(opt.id)}
                       className={`rounded-full px-4 py-2 active:opacity-90 ${
-                        on ? "bg-accent" : "border border-neutral-200 bg-white"
+                        on ? "bg-neutral-900" : "border border-neutral-200 bg-white"
                       }`}
                     >
                       <Text
                         className={`text-xs font-semibold ${
-                          on ? "text-accent-foreground" : "text-neutral-700"
+                          on ? "text-white" : "text-neutral-700"
                         }`}
                       >
                         {opt.label}
@@ -746,20 +756,20 @@ export function ProfileScreen() {
           </Text>
           <View className="flex-row flex-wrap gap-2">
             {FAVORITES.map((f) => {
-              const on = profile?.favorites.includes(f.id);
+              const on = Boolean(profile?.favorites?.includes(f.id));
               return (
                 <Pressable
                   key={f.id}
                   onPress={() => toggleFavorite(f.id)}
                   className={`rounded-full px-4 py-2 active:opacity-90 ${
                     on
-                      ? "bg-accent"
+                      ? "bg-neutral-900"
                       : "border border-neutral-200 bg-white"
                   }`}
                 >
                   <Text
                     className={`text-xs font-medium ${
-                      on ? "text-accent-foreground" : "text-neutral-600"
+                      on ? "text-white" : "text-neutral-600"
                     }`}
                   >
                     {f.label}
@@ -775,52 +785,88 @@ export function ProfileScreen() {
           entering={FadeInUp.duration(420).delay(360)}
           className="mt-8"
         >
-          <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+          <Text
+            className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em]"
+            style={{ color: colors.inkMuted }}
+          >
             Settings
           </Text>
           <View
-            className="overflow-hidden rounded-3xl border border-neutral-100 bg-white"
-            style={
-              Platform.OS === "ios"
+            className="overflow-hidden rounded-3xl border"
+            style={{
+              backgroundColor: colors.surface,
+              borderColor: colors.line,
+              ...(Platform.OS === "ios"
                 ? {
                     shadowColor: "#0F172A",
                     shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.05,
+                    shadowOpacity: isDark ? 0.22 : 0.05,
                     shadowRadius: 16,
                   }
-                : { elevation: 3 }
-            }
+                : { elevation: 3 }),
+            }}
           >
             <SettingsRow
+              label="App tutorial"
+              value="Interactive tour"
+              ink={colors.ink}
+              muted={colors.inkMuted}
+              onPress={() => {
+                router.replace("/(tabs)");
+                setTimeout(() => {
+                  useTutorialStore.getState().startTutorial();
+                }, 400);
+              }}
+            />
+            <SettingsHairline color={colors.lineLight} />
+            <SettingsRow
+              label="Appearance"
+              value={`${schemeLabel} · ${accentLabel}`}
+              ink={colors.ink}
+              muted={colors.inkMuted}
+              onPress={() => setAppearanceOpen(true)}
+            />
+            <SettingsHairline color={colors.lineLight} />
+            <SettingsRow
               label="Privacy policy"
+              ink={colors.ink}
+              muted={colors.inkMuted}
               onPress={() => openLegal(LEGAL_PRIVACY_URL)}
             />
-            <SettingsHairline />
+            <SettingsHairline color={colors.lineLight} />
             <SettingsRow
               label="Terms of use"
+              ink={colors.ink}
+              muted={colors.inkMuted}
               onPress={() => openLegal(LEGAL_TERMS_URL)}
             />
-            <SettingsHairline />
+            <SettingsHairline color={colors.lineLight} />
             <SettingsRow
               label="Notifications"
               value="System"
+              ink={colors.ink}
+              muted={colors.inkMuted}
               onPress={() => {
                 Linking.openSettings().catch(() => {});
               }}
             />
-            <SettingsHairline />
+            <SettingsHairline color={colors.lineLight} />
             <SettingsRow
               label="Send feedback"
+              ink={colors.ink}
+              muted={colors.inkMuted}
               onPress={() =>
                 openWhatsApp(
                   `InstaHelp app feedback (v${APP_VERSION}, ${Platform.OS}): `,
                 )
               }
             />
-            <SettingsHairline />
+            <SettingsHairline color={colors.lineLight} />
             <SettingsRow
               label="About & help"
               value={`v${APP_VERSION}`}
+              ink={colors.ink}
+              muted={colors.inkMuted}
               onPress={() => router.push("/support")}
               last
             />
@@ -839,7 +885,7 @@ export function ProfileScreen() {
             hitSlop={{ top: 12, bottom: 12, left: 24, right: 24 }}
             className="py-2 active:opacity-70"
           >
-            <Text className="text-sm font-medium text-red-600">Sign out</Text>
+            <Text className="text-sm font-medium text-neutral-900">Sign out</Text>
           </Pressable>
           <Text className="mt-2 text-center text-[11px] text-neutral-400">
             Signed in as {phone ?? "—"}
@@ -857,6 +903,11 @@ export function ProfileScreen() {
           await refreshSession();
           setDetailsOpen(false);
         }}
+      />
+
+      <AppearanceSettingsModal
+        open={appearanceOpen}
+        onClose={() => setAppearanceOpen(false)}
       />
 
       <VendorRegistrationModal
@@ -974,34 +1025,42 @@ function SettingsRow({
   value,
   onPress,
   last,
+  ink = "#1C1917",
+  muted = "#A8A29E",
 }: {
   label: string;
   value?: string;
   onPress?: () => void;
   last?: boolean;
+  ink?: string;
+  muted?: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className={`flex-row items-center justify-between px-4 py-3.5 active:bg-neutral-50 ${
+      className={`flex-row items-center justify-between px-4 py-3.5 active:opacity-80 ${
         last ? "" : ""
       }`}
     >
-      <Text className="text-[15px] font-medium text-neutral-900">{label}</Text>
+      <Text className="text-[15px] font-medium" style={{ color: ink }}>
+        {label}
+      </Text>
       <View className="flex-row items-center gap-2">
         {value ? (
-          <Text className="text-xs text-neutral-400">{value}</Text>
+          <Text className="text-xs" style={{ color: muted }}>
+            {value}
+          </Text>
         ) : null}
-        <Ionicons name="chevron-forward" size={16} color="#d4d4d4" />
+        <Ionicons name="chevron-forward" size={16} color={muted} />
       </View>
     </Pressable>
   );
 }
 
-function SettingsHairline() {
-  return <View className="mx-4 h-px bg-neutral-100" />;
+function SettingsHairline({ color = "#F5F5F4" }: { color?: string }) {
+  return <View className="mx-4 h-px" style={{ backgroundColor: color }} />;
 }
 
 type ProfileDetailsPatch = Pick<
@@ -1076,7 +1135,7 @@ function EditProfileDetailsModal({
     >
       <Pressable
         onPress={onClose}
-        className="flex-1 items-center justify-end bg-black/40"
+        className="flex-1 items-center justify-end"
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -1169,14 +1228,14 @@ function EditProfileDetailsModal({
                 disabled={saving}
                 accessibilityRole="button"
                 accessibilityLabel="Save profile details"
-                className={`flex-1 rounded-2xl bg-accent py-3.5 active:opacity-90 ${
+                className={`flex-1 rounded-2xl bg-neutral-900 py-3.5 active:opacity-90 ${
                   saving ? "opacity-70" : ""
                 }`}
               >
                 {saving ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text className="text-center text-sm font-bold text-accent-foreground">
+                  <Text className="text-center text-sm font-bold text-white">
                     Save changes
                   </Text>
                 )}
@@ -1305,7 +1364,7 @@ function VendorRegistrationModal({
     >
       <Pressable
         onPress={onClose}
-        className="flex-1 items-center justify-end bg-black/40"
+        className="flex-1 items-center justify-end"
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -1349,7 +1408,7 @@ function VendorRegistrationModal({
                         }}
                         className={`rounded-full px-4 py-2 active:opacity-90 ${
                           on
-                            ? "border border-accent/30 bg-accent-soft"
+                            ? "border border-neutral-900 bg-neutral-50"
                             : "border border-neutral-200 bg-white"
                         }`}
                       >
@@ -1403,13 +1462,13 @@ function VendorRegistrationModal({
                         }}
                         className={`rounded-full px-4 py-2 active:opacity-90 ${
                           on
-                            ? "bg-accent"
+                            ? "bg-neutral-900"
                             : "border border-neutral-200 bg-neutral-50"
                         }`}
                       >
                         <Text
                           className={`text-xs font-bold ${
-                            on ? "text-accent-foreground" : "text-neutral-700"
+                            on ? "text-white" : "text-neutral-700"
                           }`}
                         >
                           {opt.label}
@@ -1444,14 +1503,14 @@ function VendorRegistrationModal({
                 disabled={saving}
                 accessibilityRole="button"
                 accessibilityLabel="Submit vendor registration"
-                className={`flex-1 rounded-2xl bg-accent py-3.5 active:opacity-90 ${
+                className={`flex-1 rounded-2xl bg-neutral-900 py-3.5 active:opacity-90 ${
                   saving ? "opacity-70" : ""
                 }`}
               >
                 {saving ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <Text className="text-center text-sm font-bold text-accent-foreground">
+                  <Text className="text-center text-sm font-bold text-white">
                     Submit
                   </Text>
                 )}

@@ -1,10 +1,13 @@
 import { SaveVendorButton } from "@/components/vendors/SaveVendorButton";
 import { GlowButton } from "@/components/ui/GlowButton";
+import { glassCardStyle } from "@/components/ui/GlassSurface";
 import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import { RADIUS } from "@/constants/designSystem";
 import { useSavedVendorsStore } from "@/store/savedVendorsStore";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { useRouter } from "expo-router";
+import { MotiView } from "moti";
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -29,7 +32,12 @@ export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
   if (savedIds.length === 0) return null;
 
   return (
-    <View style={styles.block}>
+    <MotiView
+      from={{ opacity: 0, translateY: 10 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{ type: "spring", damping: 20, stiffness: 280 }}
+      style={styles.block}
+    >
       <View style={styles.headerRow}>
         <View>
           <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
@@ -54,12 +62,21 @@ export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {savedVendors.map((vendor) => (
-          <Pressable
+        {savedVendors.map((vendor, index) => (
+          <MotiView
             key={vendor.id}
-            onPress={() => router.push(`/(tabs)/vendors/${vendor.id}`)}
-            style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+            from={{ opacity: 0, translateX: 16 }}
+            animate={{ opacity: 1, translateX: 0 }}
+            transition={{ type: "spring", damping: 18, delay: index * 50 }}
           >
+            <Pressable
+              onPress={() => router.push(`/(tabs)/vendors/${vendor.id}`)}
+              style={({ pressed }) => [
+                styles.chip,
+                glassCardStyle(RADIUS.md),
+                pressed && styles.chipPressed,
+              ]}
+            >
             <View style={styles.chipInner}>
               <Text
                 style={[styles.chipTitle, { fontFamily: AUTH_FONT.semibold }]}
@@ -72,10 +89,11 @@ export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
             <Text style={[styles.chipMeta, { fontFamily: AUTH_FONT.regular }]}>
               {vendor.city} · {vendor.category}
             </Text>
-          </Pressable>
+            </Pressable>
+          </MotiView>
         ))}
       </ScrollView>
-    </View>
+    </MotiView>
   );
 }
 
@@ -83,8 +101,6 @@ const styles = StyleSheet.create({
   block: {
     paddingTop: 12,
     paddingBottom: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.08)",
   },
   headerRow: {
     flexDirection: "row",
@@ -113,10 +129,6 @@ const styles = StyleSheet.create({
     width: 160,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.65)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.1)",
   },
   chipPressed: {
     opacity: 0.88,

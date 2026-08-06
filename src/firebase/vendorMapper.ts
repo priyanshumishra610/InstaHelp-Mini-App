@@ -217,9 +217,10 @@ export function vendorRecordToFirestoreDoc(
       .forEach((url) => images.push(url));
   }
 
-  const name = record.businessName.trim() || record.vendorName.trim();
+  const name =
+    (record.businessName ?? "").trim() || (record.vendorName ?? "").trim();
   const tags = extra?.tags ?? [];
-  const description = record.servicesText;
+  const description = record.servicesText ?? "";
 
   return {
     id: record.id,

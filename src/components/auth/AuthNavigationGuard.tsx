@@ -21,6 +21,8 @@ export function AuthNavigationGuard() {
     const root = segments[0];
     if (!root) return;
 
+    if (root === "(auth)" && segments.includes("tutorial")) return;
+
     const isProtected = PROTECTED_ROOTS.has(root);
     const isAuthGroup = root === "(auth)";
 

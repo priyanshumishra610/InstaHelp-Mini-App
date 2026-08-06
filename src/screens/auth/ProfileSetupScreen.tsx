@@ -1,5 +1,11 @@
 import { AppAtmosphere } from "@/components/ui/AppAtmosphere";
-import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import {
+  AUTH_ACCENT_CORAL,
+  AUTH_ACCENT_ROSE,
+  AUTH_ACCENT_TEAL,
+  AUTH_FONT,
+  AUTH_PRIMARY,
+} from "@/constants/authPremium";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useAuth } from "@/providers/AuthProvider";
 import { persistProfile } from "@/services/profileService";
@@ -7,6 +13,7 @@ import { useOnboardingStore } from "@/store/onboardingStore";
 import { useProfileStore } from "@/store/profileStore";
 import type { UserGender, UserProfile } from "@/types/user";
 import { isValidProfileAge } from "@/utils/auth/profileComplete";
+import { GreatVibes_400Regular } from "@expo-google-fonts/great-vibes";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -32,14 +39,24 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const GENDER_OPTIONS: { value: UserGender; label: string }[] = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-  { value: "other", label: "Other" },
-  { value: "prefer_not_to_say", label: "Prefer not to say" },
+const GENDER_OPTIONS: {
+  value: UserGender;
+  label: string;
+  tint: string;
+  soft: string;
+}[] = [
+  { value: "male", label: "Male", tint: "#3B82F6", soft: "rgba(59,130,246,0.12)" },
+  { value: "female", label: "Female", tint: AUTH_ACCENT_ROSE, soft: "rgba(196,92,122,0.12)" },
+  { value: "other", label: "Other", tint: AUTH_ACCENT_TEAL, soft: "rgba(79,209,197,0.16)" },
+  {
+    value: "prefer_not_to_say",
+    label: "Prefer not to say",
+    tint: "#78716C",
+    soft: "rgba(120,113,108,0.12)",
+  },
 ];
 
-const INPUT_BG = "#F3F4F6";
+const INPUT_BG = "#F7F5F2";
 const BORDER = "rgba(0,0,0,0.08)";
 
 function parseAgeInput(raw: string): number | null {
@@ -68,6 +85,7 @@ export function ProfileSetupScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const [fontsLoaded] = useFonts({
+    GreatVibes_400Regular,
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_600SemiBold,
@@ -84,6 +102,9 @@ export function ProfileSetupScreen() {
   const canContinue = nameOk && ageOk && emailOk && Boolean(phone);
 
   const enterApp = useCallback(() => {
+    if (!useOnboardingStore.getState().appTutorialCompleted) {
+      useOnboardingStore.getState().setPendingInAppTutorial(true);
+    }
     router.replace("/(tabs)");
   }, [router]);
 
@@ -197,18 +218,61 @@ export function ProfileSetupScreen() {
         >
           <View style={styles.sheetOuter}>
             <View style={styles.sheet}>
-              <Text style={[styles.title, { fontFamily: AUTH_FONT.bold }]}>
-                A few details{"\n"}about you
+              <Text style={[styles.wordmark, { fontFamily: AUTH_FONT.bold }]}>
+                InstaHelp
               </Text>
-              <Text style={[styles.sub, { fontFamily: AUTH_FONT.regular }]}>
-                Help us personalize InstaHelp. Name and age are required.
+              <Text style={[styles.tagline, { fontFamily: AUTH_FONT.medium }]}>
+                We&apos;ll get it done
               </Text>
+              <Text style={[styles.valueProp, { fontFamily: AUTH_FONT.regular }]}>
+                Everything you need, one tap away. Trusted local help for cleaning,
+                repairs, errands, and more.
+              </Text>
+
+              <View style={styles.trustRow}>
+                <View style={[styles.trustChip, styles.trustChipSecure]}>
+                  <Ionicons name="shield-checkmark" size={12} color="#0D9488" />
+                  <Text style={[styles.trustText, styles.trustTextSecure, { fontFamily: AUTH_FONT.medium }]}>
+                    Secure
+                  </Text>
+                </View>
+                <View style={[styles.trustChip, styles.trustChipFast]}>
+                  <Ionicons name="flash" size={12} color="#D97706" />
+                  <Text style={[styles.trustText, styles.trustTextFast, { fontFamily: AUTH_FONT.medium }]}>
+                    Fast
+                  </Text>
+                </View>
+                <View style={[styles.trustChip, styles.trustChipLocal]}>
+                  <Ionicons name="sparkles" size={12} color={AUTH_ACCENT_ROSE} />
+                  <Text style={[styles.trustText, styles.trustTextLocal, { fontFamily: AUTH_FONT.medium }]}>
+                    Local help
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.aboutBlock}>
+                <View style={styles.aboutGlow} />
+                <Text style={[styles.titleCursive, { fontFamily: AUTH_FONT.cursive }]}>
+                  A little about you
+                </Text>
+                <View style={styles.titleAccentRow}>
+                  <View style={[styles.titleAccentDot, { backgroundColor: AUTH_ACCENT_CORAL }]} />
+                  <View style={[styles.titleAccentLine, { backgroundColor: AUTH_ACCENT_TEAL }]} />
+                  <View style={[styles.titleAccentDot, { backgroundColor: AUTH_ACCENT_ROSE }]} />
+                </View>
+                <Text style={[styles.sub, { fontFamily: AUTH_FONT.regular }]}>
+                  Name and age unlock your space. City and email help us find help that
+                  feels local, fast, and made for you.
+                </Text>
+              </View>
 
               <View style={styles.field}>
                 <Text style={[styles.label, { fontFamily: AUTH_FONT.medium }]}>
-                  Full name *
+                  Your name <Text style={styles.requiredMark}>*</Text>
                 </Text>
-                <View style={styles.inputRow}>
+                <View style={[styles.inputRow, styles.inputRowName]}>
                   <TextInput
                     value={fullName}
                     onChangeText={(t) => {
@@ -216,20 +280,20 @@ export function ProfileSetupScreen() {
                       setFullName(t);
                     }}
                     placeholder="e.g. Karan Sharma"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#9CA3AF"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     autoComplete="name"
                   />
-                  <Ionicons name="person-outline" size={18} color="#9CA3AF" />
+                  <Ionicons name="person-outline" size={18} color={AUTH_ACCENT_CORAL} />
                 </View>
               </View>
 
               <View style={styles.field}>
                 <Text style={[styles.label, { fontFamily: AUTH_FONT.medium }]}>
-                  Age *
+                  How old are you <Text style={styles.requiredMark}>*</Text>
                 </Text>
-                <View style={styles.inputRow}>
+                <View style={[styles.inputRow, styles.inputRowAge]}>
                   <TextInput
                     value={ageText}
                     onChangeText={(t) => {
@@ -237,24 +301,24 @@ export function ProfileSetupScreen() {
                       setAgeText(t.replace(/\D/g, "").slice(0, 3));
                     }}
                     placeholder="e.g. 28"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#9CA3AF"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     keyboardType="number-pad"
                     maxLength={3}
                   />
-                  <Ionicons name="calendar-outline" size={18} color="#9CA3AF" />
+                  <Ionicons name="calendar-outline" size={18} color={AUTH_ACCENT_TEAL} />
                 </View>
                 {ageText.length > 0 && !ageOk ? (
                   <Text style={[styles.hint, { fontFamily: AUTH_FONT.regular }]}>
-                    Enter an age between 13 and 120
+                    Pick an age between 13 and 120
                   </Text>
                 ) : null}
               </View>
 
               <View style={styles.field}>
                 <Text style={[styles.label, { fontFamily: AUTH_FONT.medium }]}>
-                  Gender
+                  How do you identify
                 </Text>
                 <View style={styles.chipRow}>
                   {GENDER_OPTIONS.map((opt) => {
@@ -267,13 +331,19 @@ export function ProfileSetupScreen() {
                           setGender(selected ? null : opt.value);
                         }}
                         disabled={loading}
-                        style={[styles.chip, selected && styles.chipSelected]}
+                        style={[
+                          styles.chip,
+                          selected && {
+                            backgroundColor: opt.soft,
+                            borderColor: opt.tint,
+                          },
+                        ]}
                       >
                         <Text
                           style={[
                             styles.chipLabel,
                             { fontFamily: AUTH_FONT.medium },
-                            selected && styles.chipLabelSelected,
+                            selected && { color: opt.tint },
                           ]}
                         >
                           {opt.label}
@@ -286,9 +356,9 @@ export function ProfileSetupScreen() {
 
               <View style={styles.field}>
                 <Text style={[styles.label, { fontFamily: AUTH_FONT.medium }]}>
-                  City
+                  Where you call home
                 </Text>
-                <View style={styles.inputRow}>
+                <View style={[styles.inputRow, styles.inputRowCity]}>
                   <TextInput
                     value={city}
                     onChangeText={(t) => {
@@ -296,20 +366,21 @@ export function ProfileSetupScreen() {
                       setCity(t);
                     }}
                     placeholder="e.g. Bangalore"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#9CA3AF"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     autoComplete="postal-address-locality"
                   />
-                  <Ionicons name="location-outline" size={18} color="#9CA3AF" />
+                  <Ionicons name="location-outline" size={18} color="#F59E0B" />
                 </View>
               </View>
 
               <View style={styles.field}>
                 <Text style={[styles.label, { fontFamily: AUTH_FONT.medium }]}>
-                  Email (optional)
+                  A note to reach you{" "}
+                  <Text style={styles.optionalMark}>(optional)</Text>
                 </Text>
-                <View style={styles.inputRow}>
+                <View style={[styles.inputRow, styles.inputRowEmail]}>
                   <TextInput
                     value={email}
                     onChangeText={(t) => {
@@ -317,13 +388,13 @@ export function ProfileSetupScreen() {
                       setEmail(t);
                     }}
                     placeholder="hello@email.com"
-                    placeholderTextColor="#6B7280"
+                    placeholderTextColor="#9CA3AF"
                     style={[styles.input, { fontFamily: AUTH_FONT.medium }]}
                     editable={!loading}
                     keyboardType="email-address"
                     autoCapitalize="none"
                   />
-                  <Ionicons name="mail-outline" size={18} color="#9CA3AF" />
+                  <Ionicons name="mail-outline" size={18} color={AUTH_ACCENT_ROSE} />
                 </View>
               </View>
 
@@ -433,30 +504,136 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     borderWidth: 1,
     borderColor: BORDER,
-    shadowColor: "#004aad",
+    shadowColor: "#171717",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 4,
   },
-  title: {
-    fontSize: 26,
-    lineHeight: 34,
-    color: "#111827",
+  wordmark: {
+    fontSize: 24,
+    color: AUTH_PRIMARY,
     letterSpacing: -0.5,
+    textAlign: "center",
+  },
+  tagline: {
+    marginTop: 4,
+    fontSize: 13,
+    color: AUTH_ACCENT_TEAL,
+    textAlign: "center",
+  },
+  valueProp: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#6B7280",
+    textAlign: "center",
+  },
+  trustRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 16,
+  },
+  trustChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  trustChipSecure: {
+    backgroundColor: "rgba(13,148,136,0.1)",
+  },
+  trustChipFast: {
+    backgroundColor: "rgba(217,119,6,0.1)",
+  },
+  trustChipLocal: {
+    backgroundColor: "rgba(196,92,122,0.1)",
+  },
+  trustText: {
+    fontSize: 11,
+  },
+  trustTextSecure: {
+    color: "#0F766E",
+  },
+  trustTextFast: {
+    color: "#B45309",
+  },
+  trustTextLocal: {
+    color: AUTH_ACCENT_ROSE,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: BORDER,
+    marginTop: 20,
+    marginBottom: 4,
+  },
+  aboutBlock: {
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    borderRadius: 18,
+    backgroundColor: "rgba(79,209,197,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(79,209,197,0.22)",
+    overflow: "hidden",
+  },
+  aboutGlow: {
+    position: "absolute",
+    top: -28,
+    right: -20,
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "rgba(224,122,95,0.14)",
+  },
+  titleCursive: {
+    fontSize: 36,
+    lineHeight: 44,
+    color: AUTH_ACCENT_ROSE,
+    textAlign: "center",
     marginBottom: 8,
+  },
+  titleAccentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  titleAccentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  titleAccentLine: {
+    width: 42,
+    height: 2,
+    borderRadius: 2,
   },
   sub: {
     fontSize: 13,
-    lineHeight: 18,
-    color: "#6B7280",
-    marginBottom: 8,
+    lineHeight: 19,
+    color: "#57534E",
+    textAlign: "center",
   },
   field: { marginTop: 14 },
   label: {
     fontSize: 13,
-    color: "#374151",
+    color: "#44403C",
     marginBottom: 8,
+  },
+  requiredMark: {
+    color: AUTH_ACCENT_CORAL,
+    fontSize: 14,
+  },
+  optionalMark: {
+    color: "#A8A29E",
+    fontSize: 12,
   },
   inputRow: {
     flexDirection: "row",
@@ -468,6 +645,22 @@ const styles = StyleSheet.create({
     backgroundColor: INPUT_BG,
     borderWidth: 1,
     borderColor: BORDER,
+  },
+  inputRowName: {
+    borderColor: "rgba(224,122,95,0.28)",
+    backgroundColor: "rgba(224,122,95,0.06)",
+  },
+  inputRowAge: {
+    borderColor: "rgba(79,209,197,0.32)",
+    backgroundColor: "rgba(79,209,197,0.07)",
+  },
+  inputRowCity: {
+    borderColor: "rgba(245,158,11,0.28)",
+    backgroundColor: "rgba(245,158,11,0.06)",
+  },
+  inputRowEmail: {
+    borderColor: "rgba(196,92,122,0.28)",
+    backgroundColor: "rgba(196,92,122,0.06)",
   },
   input: {
     flex: 1,
@@ -494,16 +687,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: BORDER,
   },
-  chipSelected: {
-    backgroundColor: "#F5F3FF",
-    borderColor: AUTH_PRIMARY,
-  },
   chipLabel: {
     fontSize: 12,
-    color: "#4B5563",
-  },
-  chipLabelSelected: {
-    color: AUTH_PRIMARY,
+    color: "#57534E",
   },
   error: {
     fontSize: 12,

@@ -1,0 +1,407 @@
+{
+  "total": 424,
+  "countries": [
+    {
+      "country": "Vietnam",
+      "count": 18
+    },
+    {
+      "country": "Indonesia",
+      "count": 16
+    },
+    {
+      "country": "Thailand",
+      "count": 15
+    },
+    {
+      "country": "France",
+      "count": 11
+    },
+    {
+      "country": "Mauritius",
+      "count": 11
+    },
+    {
+      "country": "Spain",
+      "count": 11
+    },
+    {
+      "country": "Germany",
+      "count": 10
+    },
+    {
+      "country": "Japan",
+      "count": 10
+    },
+    {
+      "country": "Sri Lanka",
+      "count": 10
+    },
+    {
+      "country": "Switzerland",
+      "count": 10
+    },
+    {
+      "country": "Austria",
+      "count": 9
+    },
+    {
+      "country": "Greece",
+      "count": 9
+    },
+    {
+      "country": "Singapore",
+      "count": 9
+    },
+    {
+      "country": "Belgium",
+      "count": 8
+    },
+    {
+      "country": "Italy",
+      "count": 8
+    },
+    {
+      "country": "Denmark",
+      "count": 7
+    },
+    {
+      "country": "Finland",
+      "count": 7
+    },
+    {
+      "country": "Georgia",
+      "count": 7
+    },
+    {
+      "country": "Hungary",
+      "count": 7
+    },
+    {
+      "country": "Iceland",
+      "count": 7
+    },
+    {
+      "country": "Norway",
+      "count": 7
+    },
+    {
+      "country": "Sweden",
+      "count": 7
+    },
+    {
+      "country": "United Kingdom",
+      "count": 7
+    },
+    {
+      "country": "Azerbaijan",
+      "count": 6
+    },
+    {
+      "country": "Poland",
+      "count": 6
+    },
+    {
+      "country": "Russia",
+      "count": 6
+    },
+    {
+      "country": "Serbia",
+      "count": 6
+    },
+    {
+      "country": "Seychelles",
+      "count": 6
+    },
+    {
+      "country": "Slovakia",
+      "count": 6
+    },
+    {
+      "country": "Turkey",
+      "count": 6
+    },
+    {
+      "country": "UAE",
+      "count": 6
+    },
+    {
+      "country": "Antarctica",
+      "count": 5
+    },
+    {
+      "country": "Australia",
+      "count": 5
+    },
+    {
+      "country": "Bhutan",
+      "count": 5
+    },
+    {
+      "country": "Canada",
+      "count": 5
+    },
+    {
+      "country": "Egypt",
+      "count": 5
+    },
+    {
+      "country": "Kazakhstan",
+      "count": 5
+    },
+    {
+      "country": "Kenya",
+      "count": 5
+    },
+    {
+      "country": "Malaysia",
+      "count": 5
+    },
+    {
+      "country": "Maldives",
+      "count": 5
+    },
+    {
+      "country": "Morocco",
+      "count": 5
+    },
+    {
+      "country": "Nepal",
+      "count": 5
+    },
+    {
+      "country": "New Zealand",
+      "count": 5
+    },
+    {
+      "country": "Oman",
+      "count": 5
+    },
+    {
+      "country": "Philippines",
+      "count": 5
+    },
+    {
+      "country": "South Africa",
+      "count": 5
+    },
+    {
+      "country": "South Korea",
+      "count": 5
+    },
+    {
+      "country": "United Arab Emirates",
+      "count": 5
+    },
+    {
+      "country": "United States",
+      "count": 5
+    },
+    {
+      "country": "Uzbekistan",
+      "count": 5
+    },
+    {
+      "country": "Croatia",
+      "count": 4
+    },
+    {
+      "country": "Netherlands",
+      "count": 4
+    },
+    {
+      "country": "China",
+      "count": 3
+    },
+    {
+      "country": "Ireland",
+      "count": 3
+    },
+    {
+      "country": "Portugal",
+      "count": 3
+    },
+    {
+      "country": "Czech Republic",
+      "count": 2
+    },
+    {
+      "country": "A Journey Beyond Dreams – Europe",
+      "count": 1
+    },
+    {
+      "country": "Albania",
+      "count": 1
+    },
+    {
+      "country": "Andorra",
+      "count": 1
+    },
+    {
+      "country": "Armenia",
+      "count": 1
+    },
+    {
+      "country": "Australia, New Zealand",
+      "count": 1
+    },
+    {
+      "country": "Bosnia, Herzegovina",
+      "count": 1
+    },
+    {
+      "country": "Bulgaria",
+      "count": 1
+    },
+    {
+      "country": "Croatia, Bosnia, Herzegovina, Slovenia",
+      "count": 1
+    },
+    {
+      "country": "Cyprus",
+      "count": 1
+    },
+    {
+      "country": "Denmark · Norway · Sweden",
+      "count": 1
+    },
+    {
+      "country": "Estonia",
+      "count": 1
+    },
+    {
+      "country": "France,  Netherlands, Switzerland",
+      "count": 1
+    },
+    {
+      "country": "France, Monaco",
+      "count": 1
+    },
+    {
+      "country": "French Polynesia",
+      "count": 1
+    },
+    {
+      "country": "Germany, Czech Republic, Slovakia, Hungary, Austria",
+      "count": 1
+    },
+    {
+      "country": "Hong Kong, Macau",
+      "count": 1
+    },
+    {
+      "country": "Kazakhstan & Georgia",
+      "count": 1
+    },
+    {
+      "country": "Latvia",
+      "count": 1
+    },
+    {
+      "country": "Liechtenstein",
+      "count": 1
+    },
+    {
+      "country": "Lithuania",
+      "count": 1
+    },
+    {
+      "country": "Luxembourg",
+      "count": 1
+    },
+    {
+      "country": "Malaysia, Singapore",
+      "count": 1
+    },
+    {
+      "country": "Malta",
+      "count": 1
+    },
+    {
+      "country": "Montenegro",
+      "count": 1
+    },
+    {
+      "country": "Netherlands & Belgium",
+      "count": 1
+    },
+    {
+      "country": "North Macedonia",
+      "count": 1
+    },
+    {
+      "country": "Peru & Brazil",
+      "count": 1
+    },
+    {
+      "country": "Portugal , Spain",
+      "count": 1
+    },
+    {
+      "country": "Romania",
+      "count": 1
+    },
+    {
+      "country": "Romania, Hungary, Croatia, Czech Republic",
+      "count": 1
+    },
+    {
+      "country": "San Marino",
+      "count": 1
+    },
+    {
+      "country": "Singapore & Indonesia",
+      "count": 1
+    },
+    {
+      "country": "Singapore & Malaysia",
+      "count": 1
+    },
+    {
+      "country": "Singapore, Indonesia",
+      "count": 1
+    },
+    {
+      "country": "Singapore, Thailand",
+      "count": 1
+    },
+    {
+      "country": "Slovenia",
+      "count": 1
+    },
+    {
+      "country": "Slovenia · Croatia · Montenegro",
+      "count": 1
+    },
+    {
+      "country": "Spain , France , Switzerland",
+      "count": 1
+    },
+    {
+      "country": "United Kingdom, Ireland",
+      "count": 1
+    },
+    {
+      "country": "Uzbekistan,            Tajikistan",
+      "count": 1
+    },
+    {
+      "country": "Vietnam & Thailand",
+      "count": 1
+    }
+  ],
+  "tiers": [
+    {
+      "tier": "Premium",
+      "count": 207
+    },
+    {
+      "tier": "Luxury",
+      "count": 167
+    },
+    {
+      "tier": "Comfort",
+      "count": 50
+    }
+  ]
+}

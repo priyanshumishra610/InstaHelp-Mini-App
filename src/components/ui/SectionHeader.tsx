@@ -28,7 +28,7 @@ export function SectionHeader({
       <View className="flex-row items-end justify-between gap-3">
         <View className="min-w-0 flex-1">
           {eyebrow ? (
-            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-deep">
+            <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-neutral-500">
               {eyebrow}
             </Text>
           ) : null}
@@ -48,9 +48,9 @@ export function SectionHeader({
             onPress={onAction}
             hitSlop={8}
             accessibilityRole="button"
-            className="rounded-full bg-accent-soft px-3 py-1.5 active:opacity-80"
+            className="rounded-full bg-neutral-100 px-3 py-1.5 active:opacity-80"
           >
-            <Text className="text-xs font-bold text-accent">{actionLabel}</Text>
+            <Text className="text-xs font-bold text-neutral-900">{actionLabel}</Text>
           </Pressable>
         ) : null}
       </View>

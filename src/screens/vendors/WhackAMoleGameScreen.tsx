@@ -256,17 +256,17 @@ export function WhackAMoleGameScreen() {
   };
 
   return (
-    <Screen className="bg-[#eef2fb]">
+    <Screen className="bg-[#FFFFFF]">
       <View className="flex-1 px-5 pb-10 pt-4">
         <LinearGradient
-          colors={["#065f46", "#059669", "#14b8a6"]}
+          colors={["#0C0A09", "#171717", "#292524"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           className="rounded-[26px]"
           style={
             Platform.OS === "ios"
               ? {
-                  shadowColor: "#022c22",
+                  shadowColor: "#171717",
                   shadowOffset: { width: 0, height: 12 },
                   shadowOpacity: 0.35,
                   shadowRadius: 20,
@@ -422,11 +422,11 @@ export function WhackAMoleGameScreen() {
         <View className="mt-7">
           {phase === "pick" ? (
             <LinearGradient
-              colors={["#059669", "#047857"]}
+              colors={["#171717", "#0C0A09"]}
               style={
                 Platform.OS === "ios"
                   ? {
-                      shadowColor: "#047857",
+                      shadowColor: "#171717",
                       shadowOffset: { width: 0, height: 10 },
                       shadowOpacity: 0.35,
                       shadowRadius: 14,
@@ -459,7 +459,7 @@ export function WhackAMoleGameScreen() {
                 </View>
               ) : null}
               <LinearGradient
-                colors={["#059669", "#047857"]}
+                colors={["#171717", "#0C0A09"]}
                 className="overflow-hidden rounded-full"
               >
                 <Pressable

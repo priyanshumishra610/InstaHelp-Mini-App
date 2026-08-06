@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "rgba(37,99,235,0.18)",
+    borderColor: "rgba(23,23,23,0.18)",
   },
   avatar: {
     width: 58,
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "rgba(255,255,255,0.96)",
     borderWidth: 1,
-    borderColor: "rgba(37,99,235,0.14)",
+    borderColor: "rgba(23,23,23,0.14)",
     shadowColor: AUTH_PRIMARY,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
@@ -156,6 +156,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 9,
-    color: "#003780",
+    color: "#0C0A09",
   },
 });

@@ -32,7 +32,7 @@ export function NearbyVendorsRow({ userLocation }: Props) {
           className="flex-row items-center gap-1 rounded-full border border-accent/15 bg-white px-3 py-1.5"
         >
           <Text className="text-[11px] font-bold text-accent-deep">Explore</Text>
-          <Ionicons name="navigate-outline" size={14} color="#004aad" />
+          <Ionicons name="navigate-outline" size={14} color="#171717" />
         </Pressable>
       </View>
 

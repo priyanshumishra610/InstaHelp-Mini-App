@@ -1,9 +1,9 @@
 import { GLASS, RADIUS } from "@/constants/designSystem";
-import { LAVENDER_GLOW } from "@/constants/theme";
 import {
   glassPill,
   setGlassTabBarOrigin,
 } from "@/components/navigation/glassTabPillShared";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +20,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
  * Floating liquid-glass capsule — high transparency, live blur, soft rim.
  */
 export function GlassTabBarBackground() {
+  const { isDark } = useAppTheme();
   const [reduceTransparency, setReduceTransparency] = useState(false);
   const shellRef = useRef<RNView>(null);
 
@@ -67,7 +68,13 @@ export function GlassTabBarBackground() {
             <BlurView
               intensity={Platform.OS === "ios" ? 72 : GLASS.blurTab}
               tint={
-                Platform.OS === "ios" ? "systemUltraThinMaterialLight" : "default"
+                Platform.OS === "ios"
+                  ? isDark
+                    ? "systemUltraThinMaterialDark"
+                    : "systemUltraThinMaterialLight"
+                  : isDark
+                    ? "dark"
+                    : "default"
               }
               experimentalBlurMethod={
                 Platform.OS === "android" ? "dimezisBlurView" : undefined
@@ -78,9 +85,13 @@ export function GlassTabBarBackground() {
           {/* Minimal wash — blur does the glass work */}
           <LinearGradient
             colors={
-              useLiveBlur
-                ? ["rgba(255,255,255,0.14)", "rgba(255,255,255,0.04)"]
-                : ["rgba(255,255,255,0.82)", "rgba(255,255,255,0.76)"]
+              isDark
+                ? useLiveBlur
+                  ? ["rgba(28,25,23,0.35)", "rgba(28,25,23,0.12)"]
+                  : ["rgba(28,25,23,0.92)", "rgba(28,25,23,0.88)"]
+                : useLiveBlur
+                  ? ["rgba(255,255,255,0.14)", "rgba(255,255,255,0.04)"]
+                  : ["rgba(255,255,255,0.82)", "rgba(255,255,255,0.76)"]
             }
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -89,20 +100,59 @@ export function GlassTabBarBackground() {
           {/* Soft glass edge light */}
           <LinearGradient
             pointerEvents="none"
-            colors={["rgba(255,255,255,0.5)", "rgba(255,255,255,0)"]}
+            colors={
+              isDark
+                ? ["rgba(255,255,255,0.12)", "rgba(255,255,255,0)"]
+                : ["rgba(255,255,255,0.5)", "rgba(255,255,255,0)"]
+            }
             style={styles.specular}
           />
           {/* Bottom refraction tint */}
           <LinearGradient
             pointerEvents="none"
-            colors={["rgba(255,255,255,0)", "rgba(237,233,254,0.22)"]}
+            colors={
+              isDark
+                ? ["rgba(255,255,255,0)", "rgba(255,255,255,0.06)"]
+                : ["rgba(255,255,255,0)", "rgba(237,233,254,0.22)"]
+            }
             style={styles.refraction}
           />
-          <View style={styles.rim} />
-          <View style={styles.innerGlow} />
+          <View
+            style={[
+              styles.rim,
+              {
+                borderColor: isDark
+                  ? "rgba(255,255,255,0.12)"
+                  : "rgba(255,255,255,0.28)",
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.innerGlow,
+              {
+                borderColor: isDark
+                  ? "rgba(255,255,255,0.08)"
+                  : "rgba(255,255,255,0.18)",
+              },
+            ]}
+          />
         </View>
       </View>
-      <Animated.View style={[styles.slidingPill, pillStyle]} />
+      <Animated.View
+        style={[
+          styles.slidingPill,
+          pillStyle,
+          {
+            backgroundColor: isDark
+              ? "rgba(255,255,255,0.1)"
+              : "rgba(255,255,255,0.22)",
+            borderColor: isDark
+              ? "rgba(255,255,255,0.16)"
+              : "rgba(255,255,255,0.4)",
+          },
+        ]}
+      />
     </View>
   );
 }
@@ -115,7 +165,7 @@ const styles = StyleSheet.create({
   shadowHost: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: RADIUS.pill,
-    shadowColor: LAVENDER_GLOW,
+    shadowColor: "#0C0A09",
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.14,
     shadowRadius: 32,

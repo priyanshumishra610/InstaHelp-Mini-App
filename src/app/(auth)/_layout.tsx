@@ -13,6 +13,9 @@ export default function AuthLayout() {
   useEffect(() => {
     if (!isReady || !destination) return;
 
+    const leaf = segments[segments.length - 1];
+    if (leaf === "tutorial") return;
+
     if (destination === "/(tabs)") {
       router.replace("/(tabs)");
       return;
@@ -23,7 +26,6 @@ export default function AuthLayout() {
     // Group-only segments (e.g. ["(auth)"]) — stack mounts default `phone`; don't replace in a loop.
     if (segments.length < 2) return;
 
-    const leaf = segments[segments.length - 1];
     const targetLeaf = destination.replace("/(auth)/", "");
     if (leaf && leaf !== targetLeaf) {
       router.replace(destination);
@@ -41,6 +43,7 @@ export default function AuthLayout() {
         contentStyle: { backgroundColor: "#F7F6FB" },
       }}
     >
+      <Stack.Screen name="tutorial" options={{ animation: "fade" }} />
       <Stack.Screen name="phone" />
       <Stack.Screen name="otp" />
       <Stack.Screen name="profile" />

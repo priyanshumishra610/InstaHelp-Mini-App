@@ -28,13 +28,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,74,173,0.06)",
+    borderBottomColor: "rgba(23,23,23,0.06)",
   },
   avatar: {
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: "rgba(0,74,173,0.06)",
+    backgroundColor: "rgba(23,23,23,0.06)",
   },
   lines: {
     flex: 1,
@@ -44,11 +44,11 @@ const styles = StyleSheet.create({
   line: {
     height: 14,
     borderRadius: 7,
-    backgroundColor: "rgba(0,74,173,0.08)",
+    backgroundColor: "rgba(23,23,23,0.08)",
   },
   lineSm: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: "rgba(0,74,173,0.05)",
+    backgroundColor: "rgba(23,23,23,0.05)",
   },
 });

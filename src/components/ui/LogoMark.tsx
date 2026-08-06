@@ -26,9 +26,9 @@ export function LogoMark({
 
   const icon = (
     <View
-      className={`${s.box} items-center justify-center rounded-2xl bg-accent`}
+      className={`${s.box} items-center justify-center rounded-2xl bg-neutral-900`}
       style={{
-        shadowColor: "#004aad",
+        shadowColor: "#171717",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.25,
         shadowRadius: 12,
@@ -42,7 +42,7 @@ export function LogoMark({
   );
 
   const wordmark = (
-    <Text className={`${s.wordmark} font-extrabold tracking-tight text-accent`}>
+    <Text className={`${s.wordmark} font-extrabold tracking-tight text-neutral-900`}>
       InstaHelp
     </Text>
   );

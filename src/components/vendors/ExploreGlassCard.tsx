@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   blueWash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,74,173,0.035)",
+    backgroundColor: "rgba(23,23,23,0.035)",
   },
   lavenderWash: {
     ...StyleSheet.absoluteFillObject,

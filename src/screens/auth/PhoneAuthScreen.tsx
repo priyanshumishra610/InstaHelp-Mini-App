@@ -2,18 +2,14 @@ import { LoginHeroVisual } from "@/components/auth/LoginHeroVisual";
 import { AppAtmosphere } from "@/components/ui/AppAtmosphere";
 import { LEGAL_PRIVACY_URL, LEGAL_TERMS_URL } from "@/config/env";
 import {
-  AUTH_ACCENT_YELLOW,
-  AUTH_ACCENT_YELLOW_DEEP,
   AUTH_FONT,
   AUTH_PRIMARY,
   AUTH_PRIMARY_DEEP,
-  AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
 import { useAuth } from "@/providers/AuthProvider";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useProfileStore } from "@/store/profileStore";
 import { isSheetProfileComplete } from "@/utils/auth/profileComplete";
-import { GreatVibes_400Regular } from "@expo-google-fonts/great-vibes";
 import {
   Poppins_400Regular,
   Poppins_500Medium,
@@ -26,9 +22,10 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Keyboard,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -67,17 +64,20 @@ export function PhoneAuthScreen() {
   const enterGuestMode = useOnboardingStore((s) => s.enterGuestMode);
   const { signInWithPhone } = useAuth();
 
+  const scrollRef = useRef<ScrollView>(null);
+  const sheetOffsetY = useRef(0);
+  const phoneFieldOffsetY = useRef(0);
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focused, setFocused] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
-    GreatVibes_400Regular,
   });
 
   const phoneReady = phone.replace(/\D/g, "").length === 10;
@@ -108,6 +108,9 @@ export function PhoneAuthScreen() {
   const onSkipBrowse = useCallback(() => {
     setError(null);
     enterGuestMode();
+    if (!useOnboardingStore.getState().appTutorialCompleted) {
+      useOnboardingStore.getState().setPendingInAppTutorial(true);
+    }
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.replace("/(tabs)");
   }, [enterGuestMode, router]);
@@ -128,6 +131,44 @@ export function PhoneAuthScreen() {
     phoneFocus.value = withTiming(focused ? 1 : 0, { duration: 220 });
   }, [focused, phoneFocus]);
 
+  useEffect(() => {
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const onShow = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+    });
+    const onHide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
+  const keyboardOpen = keyboardHeight > 0;
+
+  const ensurePhoneVisible = useCallback(() => {
+    const y = Math.max(0, sheetOffsetY.current + phoneFieldOffsetY.current - 20);
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y, animated: true });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!keyboardOpen) return;
+    const t = setTimeout(ensurePhoneVisible, Platform.OS === "ios" ? 60 : 120);
+    return () => clearTimeout(t);
+  }, [ensurePhoneVisible, keyboardOpen]);
+
+  const onPhoneFocus = useCallback(() => {
+    setFocused(true);
+    void Haptics.selectionAsync();
+    setTimeout(ensurePhoneVisible, Platform.OS === "ios" ? 80 : 160);
+  }, [ensurePhoneVisible]);
+
   const contentEnterStyle = useAnimatedStyle(() => ({
     opacity: contentOpacity.value,
     transform: [{ translateY: contentTranslateY.value }],
@@ -137,7 +178,7 @@ export function PhoneAuthScreen() {
     borderColor: interpolateColor(
       phoneFocus.value,
       [0, 1],
-      ["rgba(0,74,173,0.12)", AUTH_PRIMARY],
+      ["rgba(23,23,23,0.12)", AUTH_PRIMARY],
     ),
     shadowOpacity: 0.06 + phoneFocus.value * 0.12,
   }));
@@ -191,65 +232,62 @@ export function PhoneAuthScreen() {
         <KeyboardAvoidingView
           style={styles.flex}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 52 : 0}
         >
           <ScrollView
+            ref={scrollRef}
             style={styles.scroll}
             contentContainerStyle={[
               styles.scrollContent,
-              { paddingBottom: Math.max(insets.bottom, 28) },
+              keyboardOpen && styles.scrollContentKeyboard,
+              {
+                paddingBottom:
+                  Math.max(insets.bottom, 28) +
+                  (Platform.OS === "android" ? keyboardHeight : 0),
+              },
             ]}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
             <View style={styles.screenCenterWrap}>
-              <Animated.View
-                entering={FadeInDown.duration(480).delay(40)}
-                style={[styles.heroSection, { paddingTop: 8 }]}
-              >
-                <View style={styles.logoRow}>
-                  <Text style={[styles.logo, { fontFamily: AUTH_FONT.bold }]}>
-                    Insta
+              {!keyboardOpen ? (
+                <Animated.View
+                  entering={FadeInDown.duration(480).delay(40)}
+                  style={[styles.heroSection, { paddingTop: 8 }]}
+                >
+                  <Text style={[styles.wordmark, { fontFamily: AUTH_FONT.bold }]}>
+                    InstaHelp
                   </Text>
-                  <Text style={[styles.logoAccent, { fontFamily: AUTH_FONT.bold }]}>
-                    Help
+                  <Text style={[styles.logoSub, { fontFamily: AUTH_FONT.medium }]}>
+                    We&apos;ll get it done
+                  </Text>
+                  <LoginHeroVisual />
+                </Animated.View>
+              ) : (
+                <View style={styles.heroCompact}>
+                  <Text style={[styles.wordmarkCompact, { fontFamily: AUTH_FONT.bold }]}>
+                    InstaHelp
                   </Text>
                 </View>
-                <Text style={[styles.logoSub, { fontFamily: AUTH_FONT.medium }]}>
-                  We&apos;ll get it done
-                </Text>
-                <LoginHeroVisual />
-              </Animated.View>
+              )}
 
-              <Animated.View entering={FadeInUp.duration(520).delay(120)}>
-                <LinearGradient
-                  colors={[AUTH_PRIMARY, AUTH_PRIMARY_LIGHT, AUTH_ACCENT_YELLOW]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.sheetRim}
-                >
-                  <View style={styles.sheet}>
-                    <View style={styles.sheetAccentBar}>
-                      <View style={styles.sheetAccentBlue} />
-                      <View style={styles.sheetAccentYellow} />
-                    </View>
-
-                    <Text style={[styles.headline, { fontFamily: AUTH_FONT.bold }]}>
-                      Everything You{" "}
-                      <Text style={[styles.headlineCursive, { fontFamily: AUTH_FONT.cursive }]}>
-                        Need
-                      </Text>
-                      .{"\n"}
-                      One{" "}
-                      <Text style={[styles.headlineCursive, { fontFamily: AUTH_FONT.cursive }]}>
-                        Tap
-                      </Text>{" "}
-                      Away.
-                    </Text>
-                    <View style={styles.headlineMarkRow}>
-                      <View style={styles.headlineMarkBlue} />
-                      <View style={styles.headlineMarkYellow} />
-                    </View>
+              <Animated.View
+                entering={FadeInUp.duration(520).delay(120)}
+                onLayout={(e) => {
+                  sheetOffsetY.current = e.nativeEvent.layout.y;
+                }}
+              >
+                <View style={styles.sheet}>
+                    {!keyboardOpen ? (
+                      <>
+                        <Text style={[styles.headline, { fontFamily: AUTH_FONT.bold }]}>
+                          Everything you need.{"\n"}One tap away.
+                        </Text>
+                        <View style={styles.headlineMark} />
+                      </>
+                    ) : null}
 
                     <Text
                       style={[styles.formLabel, { fontFamily: AUTH_FONT.semibold }]}
@@ -257,11 +295,16 @@ export function PhoneAuthScreen() {
                       LOG IN OR SIGN UP
                     </Text>
 
-                    <Animated.View style={[styles.phoneShell, phoneFieldStyle]}>
+                    <Animated.View
+                      style={[styles.phoneShell, phoneFieldStyle]}
+                      onLayout={(e) => {
+                        phoneFieldOffsetY.current = e.nativeEvent.layout.y;
+                      }}
+                    >
                       <View style={styles.countryBox}>
-                        <View style={styles.flagBadge}>
-                          <Ionicons name="flag" size={14} color={AUTH_PRIMARY} />
-                        </View>
+                        <Text style={styles.flagEmoji} accessibilityLabel="India">
+                          🇮🇳
+                        </Text>
                         <Text
                           style={[
                             styles.countryCode,
@@ -278,10 +321,7 @@ export function PhoneAuthScreen() {
                           setError(null);
                           setPhone(t.replace(/\D/g, "").slice(0, 10));
                         }}
-                        onFocus={() => {
-                          setFocused(true);
-                          void Haptics.selectionAsync();
-                        }}
+                        onFocus={onPhoneFocus}
                         onBlur={() => setFocused(false)}
                         placeholder="10-digit mobile number"
                         placeholderTextColor="#94A3B8"
@@ -292,7 +332,7 @@ export function PhoneAuthScreen() {
                       />
                       {phoneReady ? (
                         <View style={styles.readyDot}>
-                          <Ionicons name="checkmark" size={12} color="#0A0A0A" />
+                          <Ionicons name="checkmark" size={12} color="#FFFFFF" />
                         </View>
                       ) : null}
                     </Animated.View>
@@ -321,7 +361,7 @@ export function PhoneAuthScreen() {
                       <LinearGradient
                         colors={
                           phoneReady
-                            ? [AUTH_ACCENT_YELLOW, AUTH_ACCENT_YELLOW_DEEP]
+                            ? [AUTH_PRIMARY, AUTH_PRIMARY_DEEP]
                             : ["#E5E7EB", "#E5E7EB"]
                         }
                         start={{ x: 0, y: 0.5 }}
@@ -333,7 +373,7 @@ export function PhoneAuthScreen() {
                       >
                         {loading ? (
                           <ActivityIndicator
-                            color={phoneReady ? "#0A0A0A" : "#9CA3AF"}
+                            color={phoneReady ? "#FFFFFF" : "#9CA3AF"}
                           />
                         ) : (
                           <View style={styles.continueInner}>
@@ -349,33 +389,12 @@ export function PhoneAuthScreen() {
                             <Ionicons
                               name="arrow-forward"
                               size={16}
-                              color={phoneReady ? "#0A0A0A" : "#9CA3AF"}
+                              color={phoneReady ? "#FFFFFF" : "#9CA3AF"}
                             />
                           </View>
                         )}
                       </LinearGradient>
                     </AnimatedPressable>
-
-                    <View style={styles.trustRow}>
-                      <View style={styles.trustChip}>
-                        <Ionicons name="shield-checkmark" size={12} color={AUTH_PRIMARY} />
-                        <Text style={[styles.trustText, { fontFamily: AUTH_FONT.medium }]}>
-                          Secure
-                        </Text>
-                      </View>
-                      <View style={styles.trustChipYellow}>
-                        <Ionicons name="flash" size={12} color="#0A0A0A" />
-                        <Text style={[styles.trustTextDark, { fontFamily: AUTH_FONT.medium }]}>
-                          Fast
-                        </Text>
-                      </View>
-                      <View style={styles.trustChip}>
-                        <Ionicons name="sparkles" size={12} color={AUTH_PRIMARY} />
-                        <Text style={[styles.trustText, { fontFamily: AUTH_FONT.medium }]}>
-                          Local help
-                        </Text>
-                      </View>
-                    </View>
 
                     <Text style={[styles.legal, { fontFamily: AUTH_FONT.regular }]}>
                       By continuing, you agree to our{" "}
@@ -393,8 +412,7 @@ export function PhoneAuthScreen() {
                         Privacy Policy
                       </Text>
                     </Text>
-                  </View>
-                </LinearGradient>
+                </View>
               </Animated.View>
             </View>
           </ScrollView>
@@ -405,7 +423,7 @@ export function PhoneAuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F7F6FB" },
+  root: { flex: 1, backgroundColor: "#FAFAF9" },
   flex: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: {
@@ -413,6 +431,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 20,
     paddingHorizontal: 20,
+  },
+  scrollContentKeyboard: {
+    justifyContent: "flex-start",
+    paddingTop: 8,
   },
   screenCenterWrap: {
     width: "100%",
@@ -422,19 +444,22 @@ const styles = StyleSheet.create({
   },
   loader: { alignItems: "center", justifyContent: "center" },
   heroSection: { alignItems: "center", paddingBottom: 16 },
-  logoRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
+  heroCompact: {
+    alignItems: "center",
+    paddingTop: 4,
+    paddingBottom: 10,
   },
-  logo: {
-    fontSize: 34,
-    color: "#111827",
-    letterSpacing: -0.6,
-  },
-  logoAccent: {
+  wordmark: {
     fontSize: 34,
     color: AUTH_PRIMARY,
     letterSpacing: -0.6,
+    textAlign: "center",
+  },
+  wordmarkCompact: {
+    fontSize: 22,
+    color: AUTH_PRIMARY,
+    letterSpacing: -0.4,
+    textAlign: "center",
   },
   logoSub: {
     marginTop: 4,
@@ -443,71 +468,36 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     textAlign: "center",
   },
-  sheetRim: {
-    borderRadius: 30,
-    padding: 1.5,
-    shadowColor: AUTH_PRIMARY,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 22,
-    elevation: 6,
-  },
   sheet: {
     width: "100%",
     backgroundColor: "#FFFFFF",
-    borderRadius: 28.5,
+    borderRadius: 24,
     paddingHorizontal: 22,
-    paddingTop: 20,
+    paddingTop: 24,
     paddingBottom: 22,
-    overflow: "hidden",
-  },
-  sheetAccentBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 4,
-    flexDirection: "row",
-  },
-  sheetAccentBlue: {
-    flex: 1.4,
-    backgroundColor: AUTH_PRIMARY,
-  },
-  sheetAccentYellow: {
-    flex: 1,
-    backgroundColor: AUTH_ACCENT_YELLOW,
+    borderWidth: 1,
+    borderColor: "rgba(23,23,23,0.08)",
+    shadowColor: "#171717",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+    elevation: 3,
   },
   headline: {
-    marginTop: 10,
-    fontSize: 26,
-    lineHeight: 34,
+    fontSize: 24,
+    lineHeight: 32,
     color: "#111827",
     letterSpacing: -0.4,
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: "center",
   },
-  headlineCursive: {
-    fontSize: 34,
-    lineHeight: 38,
-    color: AUTH_PRIMARY_DEEP,
-  },
-  headlineMarkRow: {
+  headlineMark: {
     alignSelf: "center",
-    flexDirection: "row",
-    gap: 6,
-    marginBottom: 20,
-  },
-  headlineMarkBlue: {
-    width: 28,
+    width: 36,
     height: 3,
     borderRadius: 99,
     backgroundColor: AUTH_PRIMARY,
-  },
-  headlineMarkYellow: {
-    width: 14,
-    height: 3,
-    borderRadius: 99,
-    backgroundColor: AUTH_ACCENT_YELLOW,
+    marginBottom: 20,
   },
   formLabel: {
     fontSize: 11,
@@ -525,7 +515,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: "#F8FAFC",
     borderWidth: 1.5,
-    borderColor: "rgba(0,74,173,0.12)",
+    borderColor: "rgba(23,23,23,0.12)",
     paddingHorizontal: 10,
     paddingVertical: 6,
     shadowColor: AUTH_PRIMARY,
@@ -540,19 +530,15 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     paddingVertical: 8,
   },
-  flagBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,74,173,0.08)",
+  flagEmoji: {
+    fontSize: 18,
+    lineHeight: 22,
   },
   countryCode: { fontSize: 15, color: "#111827" },
   phoneDivider: {
     width: 1,
     height: 22,
-    backgroundColor: "rgba(0,74,173,0.16)",
+    backgroundColor: "rgba(23,23,23,0.12)",
   },
   phoneInput: {
     flex: 1,
@@ -568,7 +554,7 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: AUTH_ACCENT_YELLOW,
+    backgroundColor: AUTH_PRIMARY,
   },
   error: {
     fontSize: 12,
@@ -588,11 +574,11 @@ const styles = StyleSheet.create({
     minHeight: 54,
   },
   continueBtnActive: {
-    shadowColor: AUTH_ACCENT_YELLOW_DEEP,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowColor: AUTH_PRIMARY_DEEP,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 4,
   },
   continueInner: {
     flexDirection: "row",
@@ -605,39 +591,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   continueLabelActive: {
-    color: "#0A0A0A",
-  },
-  trustRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
-    marginBottom: 14,
-  },
-  trustChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,74,173,0.08)",
-  },
-  trustChipYellow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: AUTH_ACCENT_YELLOW,
-  },
-  trustText: {
-    fontSize: 11,
-    color: AUTH_PRIMARY,
-  },
-  trustTextDark: {
-    fontSize: 11,
-    color: "#0A0A0A",
+    color: "#FFFFFF",
   },
   topBar: {
     width: "100%",
@@ -652,13 +606,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 18,
-    backgroundColor: "rgba(0,74,173,0.06)",
+    backgroundColor: "rgba(23,23,23,0.06)",
     borderWidth: 1,
-    borderColor: "rgba(0,74,173,0.12)",
+    borderColor: "rgba(23,23,23,0.12)",
   },
   skipButtonPressed: {
     opacity: 0.88,
-    backgroundColor: "rgba(0,74,173,0.1)",
+    backgroundColor: "rgba(23,23,23,0.1)",
   },
   skipLabel: {
     fontSize: 15,

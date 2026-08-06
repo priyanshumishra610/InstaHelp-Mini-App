@@ -1,4 +1,4 @@
-import { SPLASH_BACKGROUND, SPLASH_MIN_DURATION_MS } from "@/constants/splash";
+import { SPLASH_MIN_DURATION_MS } from "@/constants/splash";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useAuthHydration } from "@/hooks/usePersistHydration";
 import { useSplashTransitionStore } from "@/store/splashTransitionStore";
@@ -38,6 +38,6 @@ export default function Index() {
 const styles = StyleSheet.create({
   placeholder: {
     flex: 1,
-    backgroundColor: SPLASH_BACKGROUND,
+    backgroundColor: "transparent",
   },
 });

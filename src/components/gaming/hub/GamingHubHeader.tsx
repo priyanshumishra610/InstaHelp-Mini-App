@@ -16,7 +16,7 @@ export function GamingHubHeader({ onGiftPress, onMenuPress }: Props) {
       <View style={styles.actions}>
         <View style={styles.avatarWrap}>
           <LinearGradient
-            colors={["#004aad", "#003780"]}
+            colors={["#171717", "#0C0A09"]}
             style={styles.avatar}
           >
             <Ionicons name="game-controller" size={20} color="#fff" />

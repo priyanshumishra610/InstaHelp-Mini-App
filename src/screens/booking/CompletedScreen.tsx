@@ -73,10 +73,10 @@ function CheckBadge() {
           width: 72,
           height: 72,
           borderRadius: 36,
-          backgroundColor: "#004aad",
+          backgroundColor: "#171717",
           alignItems: "center",
           justifyContent: "center",
-          shadowColor: "#004aad",
+          shadowColor: "#171717",
           shadowOpacity: 0.3,
           shadowRadius: 18,
           shadowOffset: { width: 0, height: 8 },
@@ -246,7 +246,7 @@ export function CompletedScreen() {
                 Share or copy the booking summary.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#004aad" />
+            <Ionicons name="chevron-forward" size={18} color="#171717" />
           </Pressable>
 
           <Pressable
@@ -273,7 +273,7 @@ export function CompletedScreen() {
                 Re-run this exact request with one tap.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#004aad" />
+            <Ionicons name="chevron-forward" size={18} color="#171717" />
           </Pressable>
 
           <Pressable

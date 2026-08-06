@@ -1,6 +1,6 @@
 import {
-  AUTH_ACCENT_YELLOW,
   AUTH_FONT,
+  AUTH_GRADIENT,
   AUTH_PRIMARY,
 } from "@/constants/authPremium";
 import { GlassAuthCard } from "@/components/auth/premium/GlassAuthCard";
@@ -105,7 +105,7 @@ export function RegisterAuthCard({
         style={{ marginTop: 16 }}
       >
         <LinearGradient
-          colors={[AUTH_ACCENT_YELLOW, "#E6C000", "#D4AF00"]}
+          colors={[...AUTH_GRADIENT]}
           locations={[0, 0.5, 1]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
@@ -114,7 +114,7 @@ export function RegisterAuthCard({
           <Text style={[styles.primaryLabel, { fontFamily: AUTH_FONT.bold }]}>
             Create Account
           </Text>
-          <Ionicons name="arrow-forward" size={16} color="#0A0A0A" />
+          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" />
         </LinearGradient>
       </PremiumPressable>
 
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(148,163,184,0.25)",
   },
   fieldFocused: {
-    borderColor: "rgba(37,99,235,0.45)",
+    borderColor: "rgba(23,23,23,0.18)",
     backgroundColor: "#fff",
     shadowColor: AUTH_PRIMARY,
     shadowOffset: { width: 0, height: 3 },
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     elevation: 6,
   },
-  primaryLabel: { color: "#0A0A0A", fontSize: 15 },
+  primaryLabel: { color: "#FFFFFF", fontSize: 15 },
   socialRow: {
     flexDirection: "row",
     gap: 10,

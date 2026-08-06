@@ -73,7 +73,7 @@ export function BookingsScreen() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#004aad"
+            tintColor="#171717"
           />
         }
       >
@@ -200,7 +200,7 @@ export function BookingsScreen() {
 
         {isPending ? (
           <View className="mt-12 items-center">
-            <ActivityIndicator color="#004aad" />
+            <ActivityIndicator color="#171717" />
           </View>
         ) : isError ? (
           <EmptyState
@@ -257,7 +257,7 @@ export function BookingsScreen() {
                     className="flex-row items-start gap-3 px-4 py-4 active:bg-neutral-200/50 dark:active:bg-neutral-800"
                   >
                     <View className="mt-0.5 h-10 w-10 items-center justify-center rounded-full bg-accent-soft dark:bg-accent/25">
-                      <Ionicons name="receipt-outline" size={18} color="#004aad" />
+                      <Ionicons name="receipt-outline" size={18} color="#171717" />
                     </View>
                     <View className="min-w-0 flex-1">
                       <View className="flex-row items-start justify-between gap-2">

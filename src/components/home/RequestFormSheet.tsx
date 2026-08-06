@@ -2,12 +2,17 @@ import { ExploreServiceSuggestion } from "@/components/home/ExploreServiceSugges
 import { GlowButton } from "@/components/ui/GlowButton";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { DateTimeSlotPicker } from "@/components/ui/DateTimeSlotPicker";
+import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { SelectField, type SelectOption } from "@/components/ui/SelectField";
-import { ExploreGlassCard } from "@/components/vendors/ExploreGlassCard";
 import { LEGAL_PRIVACY_URL, LEGAL_TERMS_URL } from "@/config/env";
-import { RADIUS } from "@/constants/designSystem";
-import { ACCENT, HERO_BACKDROP, HERO_LAVENDER } from "@/constants/theme";
+import {
+  AUTH_FONT,
+  AUTH_GRADIENT,
+  AUTH_PRIMARY,
+  AUTH_PRIMARY_LIGHT,
+} from "@/constants/authPremium";
+import { HERO_BACKDROP, HERO_LAVENDER, HERO_LAVENDER_MIST } from "@/constants/theme";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -18,6 +23,7 @@ import {
   type ExploreFormSuggestion,
 } from "@/services/vendors/matchFormToExplore";
 import { openWhatsApp } from "@/utils/whatsapp";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -83,6 +89,14 @@ type Props = {
   initialSource?: string;
   onBrowseExplore?: (suggestion: ExploreFormSuggestion) => void;
 };
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <Text style={[styles.sectionLabel, { fontFamily: AUTH_FONT.semibold }]}>
+      {children}
+    </Text>
+  );
+}
 
 export function RequestFormSheet({
   visible,
@@ -252,9 +266,11 @@ export function RequestFormSheet({
     router.push("/(tabs)/bookings");
   };
 
+  if (!visible) return null;
+
   return (
     <Modal
-      visible={visible}
+      visible
       animationType="slide"
       transparent
       onRequestClose={onClose}
@@ -264,22 +280,29 @@ export function RequestFormSheet({
         style={styles.overlay}
       >
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close form" />
-        <ExploreGlassCard
-          radius={RADIUS.xxl}
-          intensity="strong"
-          style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}
+
+        <LinearGradient
+          colors={[...AUTH_GRADIENT]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.sheetRim, { paddingBottom: Math.max(insets.bottom, 12) }]}
         >
-          <View className="px-5 pt-5">
-            <View className="mb-3 flex-row items-center justify-between">
-              <View>
-                <Text
-                  className="text-[10px] font-semibold uppercase tracking-[0.18em]"
-                  style={{ color: ACCENT }}
-                >
-                  Concierge
+          <View style={styles.sheet}>
+            <View style={styles.sheetAccentBar}>
+              <View style={styles.sheetAccentPrimary} />
+              <View style={styles.sheetAccentSecondary} />
+            </View>
+
+            <View style={styles.headerRow}>
+              <View style={styles.headerCopy}>
+                <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
+                  CONCIERGE
                 </Text>
-                <Text className="mt-1 text-[20px] font-extrabold text-neutral-950">
+                <Text style={[styles.title, { fontFamily: AUTH_FONT.bold }]}>
                   Get it done today
+                </Text>
+                <Text style={[styles.subtitle, { fontFamily: AUTH_FONT.regular }]}>
+                  Tell us your task — we handle the rest via WhatsApp.
                 </Text>
               </View>
               <Pressable
@@ -289,97 +312,109 @@ export function RequestFormSheet({
                 accessibilityLabel="Close"
                 style={styles.closePill}
               >
-                <Text className="text-[12px] font-bold text-neutral-600">Close</Text>
+                <Text style={[styles.closeLabel, { fontFamily: AUTH_FONT.semibold }]}>
+                  Close
+                </Text>
               </Pressable>
             </View>
 
             <ScrollView
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 20 }}
-              style={{ maxHeight: "78%" }}
+              contentContainerStyle={styles.scrollContent}
+              style={styles.scroll}
             >
-              <Text className="mb-4 text-[13px] leading-[19px] text-neutral-500">
-                Tell us your task — we handle the rest.
-              </Text>
+              <SectionLabel>YOUR DETAILS</SectionLabel>
 
-              <View className="flex-row gap-3">
-                <View className="flex-1">
-                  <Input
-                    placeholder="Your name"
-                    value={name}
-                    onChangeText={(v) => {
-                      nameTouchedRef.current = true;
-                      setName(v);
-                      if (errors.name) setErrors((e) => ({ ...e, name: "" }));
-                    }}
-                    error={!!errors.name}
-                    autoCapitalize="words"
-                  />
-                  {errors.name ? (
-                    <Text className="ml-1 mt-1 text-[11px] text-red-500">{errors.name}</Text>
-                  ) : null}
+              <View style={styles.row}>
+                <View style={styles.rowHalf}>
+                  <FormField label="Name" error={errors.name}>
+                    <Input
+                      placeholder="Your name"
+                      value={name}
+                      onChangeText={(v) => {
+                        nameTouchedRef.current = true;
+                        setName(v);
+                        if (errors.name) setErrors((e) => ({ ...e, name: "" }));
+                      }}
+                      error={!!errors.name}
+                      autoCapitalize="words"
+                    />
+                  </FormField>
                 </View>
-                <View className="flex-1">
-                  <Input
-                    placeholder="Phone"
-                    value={phoneInput}
-                    onChangeText={(v) => {
-                      phoneTouchedRef.current = true;
-                      setPhoneInput(v);
-                      if (errors.phone) setErrors((e) => ({ ...e, phone: "" }));
-                    }}
-                    error={!!errors.phone}
-                    keyboardType="phone-pad"
-                  />
-                  {errors.phone ? (
-                    <Text className="ml-1 mt-1 text-[11px] text-red-500">{errors.phone}</Text>
-                  ) : null}
+                <View style={styles.rowHalf}>
+                  <FormField label="Phone" error={errors.phone}>
+                    <Input
+                      placeholder="Mobile number"
+                      value={phoneInput}
+                      onChangeText={(v) => {
+                        phoneTouchedRef.current = true;
+                        setPhoneInput(v);
+                        if (errors.phone) setErrors((e) => ({ ...e, phone: "" }));
+                      }}
+                      error={!!errors.phone}
+                      keyboardType="phone-pad"
+                    />
+                  </FormField>
                 </View>
               </View>
 
-              <View className="relative mt-3">
-                <Input
-                  placeholder={
-                    deviceLocation.isLoading && !address
-                      ? "Detecting location..."
-                      : "Service address"
-                  }
-                  value={address}
-                  onChangeText={(v) => {
-                    addressTouchedRef.current = true;
-                    setAddress(v);
-                    setAddressAutofilled(false);
-                    if (errors.address) setErrors((e) => ({ ...e, address: "" }));
-                  }}
-                  error={!!errors.address}
-                  multiline
-                  numberOfLines={2}
-                  className="min-h-[64px] pr-11"
-                />
-                <Pressable
-                  onPress={() => {
-                    addressTouchedRef.current = false;
-                    setAddressAutofilled(false);
-                    deviceLocation.refresh().catch(() => {});
-                  }}
-                  disabled={deviceLocation.isLoading}
-                  className="absolute right-2 top-2 h-9 w-9 items-center justify-center rounded-full"
-                  style={{ backgroundColor: "rgba(0,74,173,0.08)" }}
-                >
-                  {deviceLocation.isLoading ? (
-                    <ActivityIndicator color={ACCENT} size="small" />
-                  ) : (
-                    <AppIcon name="locate" size={18} color={ACCENT} />
-                  )}
-                </Pressable>
-              </View>
+              <FormField
+                label="Service address"
+                error={errors.address}
+                hint={
+                  addressAutofilled
+                    ? "Filled from your location — edit if needed"
+                    : undefined
+                }
+                className="mt-3"
+              >
+                <View style={styles.addressWrap}>
+                  <Input
+                    placeholder={
+                      deviceLocation.isLoading && !address
+                        ? "Detecting location..."
+                        : "Where should we send help?"
+                    }
+                    value={address}
+                    onChangeText={(v) => {
+                      addressTouchedRef.current = true;
+                      setAddress(v);
+                      setAddressAutofilled(false);
+                      if (errors.address) setErrors((e) => ({ ...e, address: "" }));
+                    }}
+                    error={!!errors.address}
+                    multiline
+                    numberOfLines={2}
+                    className="min-h-[64px] pr-11"
+                  />
+                  <Pressable
+                    onPress={() => {
+                      addressTouchedRef.current = false;
+                      setAddressAutofilled(false);
+                      deviceLocation.refresh().catch(() => {});
+                    }}
+                    disabled={deviceLocation.isLoading}
+                    style={styles.locateBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Use current location"
+                  >
+                    {deviceLocation.isLoading ? (
+                      <ActivityIndicator color={AUTH_PRIMARY} size="small" />
+                    ) : (
+                      <AppIcon name="locate" size={18} color={AUTH_PRIMARY} />
+                    )}
+                  </Pressable>
+                </View>
+              </FormField>
 
-              <View className="mt-3">
+              <SectionLabel>TASK</SectionLabel>
+
+              <FormField label="Service type" error={errors.service}>
                 <SelectField
                   value={serviceType}
                   options={SERVICE_OPTIONS}
-                  placeholder="Service type"
+                  placeholder="What do you need?"
                   pickerTitle="What do you need?"
                   error={!!errors.service}
                   onChange={(v) => {
@@ -387,7 +422,7 @@ export function RequestFormSheet({
                     if (errors.service) setErrors((e) => ({ ...e, service: "" }));
                   }}
                 />
-              </View>
+              </FormField>
 
               {exploreSuggestion &&
               !exploreSuggestionDismissed &&
@@ -402,9 +437,9 @@ export function RequestFormSheet({
                 />
               ) : null}
 
-              <View className="mt-3">
+              <FormField label="Describe your task" error={errors.description} className="mt-3">
                 <Input
-                  placeholder="Describe your task..."
+                  placeholder="Share details — timing, scope, anything helpful..."
                   value={description}
                   onChangeText={(v) => {
                     setDescription(v);
@@ -416,9 +451,9 @@ export function RequestFormSheet({
                   numberOfLines={4}
                   className="min-h-[100px]"
                 />
-              </View>
+              </FormField>
 
-              <View className="mt-3">
+              <FormField label="Preferred time" error={errors.time} className="mt-3">
                 <DateTimeSlotPicker
                   value={preferredTime}
                   onChange={(next) => {
@@ -427,13 +462,15 @@ export function RequestFormSheet({
                   }}
                   error={!!errors.time}
                 />
-              </View>
+              </FormField>
 
-              <View className="mt-3">
+              <SectionLabel>ABOUT YOU</SectionLabel>
+
+              <FormField label="How did you find us?" error={errors.source}>
                 <SelectField
                   value={source}
                   options={SOURCE_OPTIONS}
-                  placeholder="How did you find us?"
+                  placeholder="Select one"
                   pickerTitle="How did you hear about us?"
                   error={!!errors.source}
                   onChange={(v) => {
@@ -441,13 +478,13 @@ export function RequestFormSheet({
                     if (errors.source) setErrors((e) => ({ ...e, source: "" }));
                   }}
                 />
-              </View>
+              </FormField>
 
-              <View className="mt-3">
+              <FormField label="Already paid elsewhere?" error={errors.paid} className="mt-3">
                 <SelectField
                   value={paid}
                   options={PAID_OPTIONS}
-                  placeholder="Already paid elsewhere?"
+                  placeholder="Select one"
                   pickerTitle="Payment status"
                   error={!!errors.paid}
                   onChange={(v) => {
@@ -455,16 +492,16 @@ export function RequestFormSheet({
                     if (errors.paid) setErrors((e) => ({ ...e, paid: "" }));
                   }}
                 />
-              </View>
+              </FormField>
 
-              <View className="mt-5">
+              <View style={styles.submitBlock}>
                 {submitting ? (
-                  <View className="h-14 items-center justify-center">
-                    <ActivityIndicator color={ACCENT} />
+                  <View style={styles.submitLoading}>
+                    <ActivityIndicator color={AUTH_PRIMARY} />
                   </View>
                 ) : (
                   <GlowButton
-                    label="Submit Request"
+                    label="Submit request"
                     onPress={() => {
                       void handleSubmit();
                     }}
@@ -474,19 +511,17 @@ export function RequestFormSheet({
                 )}
               </View>
 
-              <Text className="mt-3 text-center text-[11px] leading-[17px] text-neutral-500">
+              <Text style={[styles.legal, { fontFamily: AUTH_FONT.regular }]}>
                 By submitting, you allow us to contact you. See{" "}
                 <Text
-                  className="underline"
-                  style={{ color: ACCENT }}
+                  style={styles.legalLink}
                   onPress={() => Linking.openURL(LEGAL_TERMS_URL).catch(() => {})}
                 >
                   Terms
                 </Text>{" "}
                 and{" "}
                 <Text
-                  className="underline"
-                  style={{ color: ACCENT }}
+                  style={styles.legalLink}
                   onPress={() => Linking.openURL(LEGAL_PRIVACY_URL).catch(() => {})}
                 >
                   Privacy
@@ -495,7 +530,7 @@ export function RequestFormSheet({
               </Text>
             </ScrollView>
           </View>
-        </ExploreGlassCard>
+        </LinearGradient>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -510,17 +545,124 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: HERO_BACKDROP,
   },
+  sheetRim: {
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: 1.5,
+    maxHeight: "94%",
+  },
   sheet: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    maxHeight: "92%",
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28.5,
+    borderTopRightRadius: 28.5,
+    overflow: "hidden",
+    maxHeight: "100%",
+  },
+  sheetAccentBar: {
+    flexDirection: "row",
+    height: 4,
+  },
+  sheetAccentPrimary: {
+    flex: 1.4,
+    backgroundColor: AUTH_PRIMARY,
+  },
+  sheetAccentSecondary: {
+    flex: 1,
+    backgroundColor: AUTH_PRIMARY_LIGHT,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 4,
+  },
+  headerCopy: {
+    flex: 1,
+  },
+  eyebrow: {
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: AUTH_PRIMARY,
+  },
+  title: {
+    marginTop: 4,
+    fontSize: 22,
+    color: "#111827",
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    marginTop: 6,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#6B7280",
   },
   closePill: {
-    borderRadius: RADIUS.pill,
+    borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
     backgroundColor: HERO_LAVENDER,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(139,92,246,0.12)",
+    borderColor: "rgba(23,23,23,0.12)",
+  },
+  closeLabel: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  scroll: {
+    maxHeight: "72%",
+  },
+  scrollContent: {
+    paddingHorizontal: 22,
+    paddingBottom: 24,
+  },
+  sectionLabel: {
+    marginTop: 18,
+    marginBottom: 10,
+    fontSize: 10,
+    letterSpacing: 1.3,
+    color: AUTH_PRIMARY,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  rowHalf: {
+    flex: 1,
+  },
+  addressWrap: {
+    position: "relative",
+  },
+  locateBtn: {
+    position: "absolute",
+    right: 8,
+    top: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(23,23,23,0.08)",
+  },
+  submitBlock: {
+    marginTop: 24,
+  },
+  submitLoading: {
+    height: 52,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  legal: {
+    marginTop: 12,
+    textAlign: "center",
+    fontSize: 11,
+    lineHeight: 17,
+    color: "#6B7280",
+  },
+  legalLink: {
+    color: AUTH_PRIMARY,
+    textDecorationLine: "underline",
   },
 });

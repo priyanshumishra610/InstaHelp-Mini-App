@@ -1,32 +1,27 @@
-import { AnimatedPressable } from "@/components/ui/AnimatedPressable";
+import { DraggableFab } from "@/components/home/DraggableFab";
 import { AUTH_FONT, AUTH_PRIMARY, AUTH_PRIMARY_LIGHT } from "@/constants/authPremium";
+import { TAB_BAR_BASE_HEIGHT } from "@/constants/tabBar";
 import { HERO_LAVENDER_MIST, LAVENDER_GLOW } from "@/constants/theme";
 import { useHomeHubStore } from "@/store/homeHubStore";
+import { useTutorialStore } from "@/store/tutorialStore";
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
-import { MotiView } from "moti";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export const TAB_BAR_BASE_HEIGHT = 64;
-const FAB_GAP = 16;
+export { TAB_BAR_BASE_HEIGHT };
+
+const TUTORIAL_TARGET = "sort-filter-fab";
 
 type Props = {
   offsetTabBar?: boolean;
 };
 
-/** Floating hub — opens sort, filter, and concierge in one sheet. */
+/** Floating hub — opens sort, filter, and concierge. Drag to reposition. */
 export function HomeHubFab({ offsetTabBar = true }: Props) {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
   const open = useHomeHubStore((s) => s.open);
   const activeFilterCount = useHomeHubStore((s) => s.activeFilterCount);
-
-  const bottomInset = Math.max(insets.bottom, 8);
-  const bottom = offsetTabBar
-    ? TAB_BAR_BASE_HEIGHT + bottomInset + FAB_GAP + 4
-    : bottomInset + FAB_GAP;
 
   const onPress = () => {
     const onHome =
@@ -37,51 +32,44 @@ export function HomeHubFab({ offsetTabBar = true }: Props) {
     if (!onHome) {
       router.push("/(tabs)");
     }
+    useTutorialStore.getState().advanceOnTarget(TUTORIAL_TARGET);
     open();
   };
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={{ position: "absolute", right: 16, bottom, zIndex: 50 }}
+    <DraggableFab
+      id="sort-filter"
+      tutorialId={TUTORIAL_TARGET}
+      defaultAnchor="bottom-right"
+      offsetTabBar={offsetTabBar}
+      entranceDelayMs={300}
+      accessibilityLabel="Sort and filter"
+      onPress={onPress}
     >
-      <MotiView
-        from={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", damping: 14, stiffness: 220, delay: 300 }}
-      >
-        <View style={styles.lavenderHalo}>
-          <AnimatedPressable
-            accessibilityRole="button"
-            accessibilityLabel="Sort and filter"
-            onPress={onPress}
-            haptic
-            scaleTo={0.94}
-            style={styles.glow}
-          >
-            <View style={styles.rim}>
-              <LinearGradient
-                colors={[AUTH_PRIMARY, AUTH_PRIMARY_LIGHT]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.fill}
-              >
-                <Text style={[styles.label, { fontFamily: AUTH_FONT.bold }]}>
-                  Sort & Filter
-                </Text>
-                {activeFilterCount > 0 ? (
-                  <View style={styles.badge}>
-                    <Text style={[styles.badgeText, { fontFamily: AUTH_FONT.bold }]}>
-                      {activeFilterCount}
-                    </Text>
-                  </View>
-                ) : null}
-              </LinearGradient>
-            </View>
-          </AnimatedPressable>
+      <View style={styles.lavenderHalo} pointerEvents="none">
+        <View style={styles.glow}>
+          <View style={styles.rim}>
+            <LinearGradient
+              colors={[AUTH_PRIMARY, AUTH_PRIMARY_LIGHT]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.fill}
+            >
+              <Text style={[styles.label, { fontFamily: AUTH_FONT.bold }]}>
+                Sort & Filter
+              </Text>
+              {activeFilterCount > 0 ? (
+                <View style={styles.badge}>
+                  <Text style={[styles.badgeText, { fontFamily: AUTH_FONT.bold }]}>
+                    {activeFilterCount}
+                  </Text>
+                </View>
+              ) : null}
+            </LinearGradient>
+          </View>
         </View>
-      </MotiView>
-    </View>
+      </View>
+    </DraggableFab>
   );
 }
 

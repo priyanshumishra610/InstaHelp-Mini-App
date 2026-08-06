@@ -69,7 +69,7 @@ export function PlayEarnRewardsCard() {
               icon="pricetag"
               label="Offers"
               value="3 unlocked"
-              accent="#0066FF"
+              accent="#292524"
             />
           </View>
 

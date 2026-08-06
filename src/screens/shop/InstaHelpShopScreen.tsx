@@ -38,12 +38,32 @@ type FilterId = "all" | ShopStoreCategoryId;
 
 const FILTERS: { id: FilterId; label: string }[] = [
   { id: "all", label: "All" },
-  ...SHOP_STORE_SECTIONS.map((s) => ({ id: s.id as FilterId, label: s.title })),
+  ...SHOP_STORE_SECTIONS.map((s) => ({
+    id: s.id as FilterId,
+    label: s.title.replace(/ Stores$/, ""),
+  })),
 ];
+
+const COLS = 4;
+const H_PAD = 20;
+const COL_GAP = 16;
+const ROW_GAP = 18;
+const SECTION_GAP = 32;
+const NAME_LINES = 2;
+const NAME_LINE_HEIGHT = 14;
+const NAME_HEIGHT = NAME_LINES * NAME_LINE_HEIGHT;
+
+function chunkRows<T>(items: T[], cols: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += cols) {
+    rows.push(items.slice(i, i + cols));
+  }
+  return rows;
+}
 
 function CategoryBadge({
   section,
-  size = 44,
+  size = 36,
 }: {
   section: ShopStoreSection;
   size?: number;
@@ -54,7 +74,7 @@ function CategoryBadge({
       style={{
         width: size,
         height: size,
-        borderRadius: size * 0.32,
+        borderRadius: size * 0.28,
       }}
       contentFit="cover"
       accessibilityIgnoresInvertColors
@@ -83,6 +103,11 @@ function StoreTile({
   const [src, setSrc] = useState(shopStoreLogoUrl(store));
   const [failed, setFailed] = useState(false);
   const isWordmark = store.logoType === "wordmark" && !failed;
+  const iconSize = tileWidth;
+  const radius = Math.round(iconSize * 0.26);
+  const logoBox = Math.round(iconSize * 0.58);
+  const wordmarkW = Math.round(iconSize * 0.72);
+  const wordmarkH = Math.round(iconSize * 0.32);
 
   return (
     <Pressable
@@ -95,15 +120,34 @@ function StoreTile({
       accessibilityRole="link"
       accessibilityLabel={`Open ${store.name}`}
     >
-      <View style={[styles.tileIcon, isWordmark && styles.tileIconWordmark]}>
+      <View
+        style={[
+          styles.tileIcon,
+          {
+            width: iconSize,
+            height: iconSize,
+            borderRadius: radius,
+          },
+          isWordmark && styles.tileIconWordmark,
+        ]}
+      >
         {failed ? (
-          <Text style={styles.tileInitial} numberOfLines={1}>
+          <Text
+            style={[
+              styles.tileInitial,
+              { fontSize: Math.round(iconSize * 0.26) },
+            ]}
+          >
             {store.name.slice(0, 2).toUpperCase()}
           </Text>
         ) : (
           <Image
             source={{ uri: src }}
-            style={isWordmark ? styles.tileLogoWordmark : styles.tileLogo}
+            style={
+              isWordmark
+                ? { width: wordmarkW, height: wordmarkH }
+                : { width: logoBox, height: logoBox }
+            }
             contentFit="contain"
             onError={() => {
               const fallback = faviconUrl(store.url);
@@ -117,10 +161,50 @@ function StoreTile({
           />
         )}
       </View>
-      <Text style={styles.tileName} numberOfLines={2}>
+      <Text style={styles.tileName} numberOfLines={NAME_LINES}>
         {store.name}
       </Text>
     </Pressable>
+  );
+}
+
+function StoreGrid({
+  stores,
+  tileWidth,
+  onOpen,
+}: {
+  stores: ShopStore[];
+  tileWidth: number;
+  onOpen: (store: ShopStore) => void;
+}) {
+  const rows = useMemo(() => chunkRows(stores, COLS), [stores]);
+
+  return (
+    <View style={styles.grid}>
+      {rows.map((row, rowIndex) => (
+        <View key={`row-${rowIndex}`} style={styles.gridRow}>
+          {Array.from({ length: COLS }, (_, colIndex) => {
+            const store = row[colIndex];
+            if (!store) {
+              return (
+                <View
+                  key={`spacer-${rowIndex}-${colIndex}`}
+                  style={{ width: tileWidth }}
+                />
+              );
+            }
+            return (
+              <StoreTile
+                key={store.id}
+                store={store}
+                tileWidth={tileWidth}
+                onOpen={onOpen}
+              />
+            );
+          })}
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -164,11 +248,9 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
       .filter((row) => row.stores.length > 0);
   }, [filter, isSearching]);
 
-  const cols = 4;
-  const hPad = 16;
-  const gutter = 8;
+  const contentWidth = windowWidth - H_PAD * 2;
   const tileWidth = Math.floor(
-    (windowWidth - hPad * 2 - 14 * 2 - gutter * (cols - 1)) / cols,
+    (contentWidth - COL_GAP * (COLS - 1)) / COLS,
   );
 
   const openStore = useCallback(async (store: ShopStore) => {
@@ -202,7 +284,7 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
     if (text.trim()) setFilter("all");
   }, []);
 
-  const topPad = embedded ? 8 : insets.top + 8;
+  const topPad = embedded ? 4 : insets.top + 8;
   const hasResults = isSearching
     ? searchResults.length > 0
     : visibleSections.length > 0;
@@ -217,8 +299,7 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
         keyboardShouldPersistTaps="handled"
         stickyHeaderIndices={[1]}
       >
-        {/* Hero */}
-        <View style={[styles.hero, { paddingTop: topPad + 12 }]}>
+        <View style={[styles.hero, { paddingTop: topPad + 10 }]}>
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
             <LinearGradient
               colors={[WEB_SHOP.gray50, WEB_SHOP.white]}
@@ -229,14 +310,16 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
             Shop smarter.{"\n"}
             <Text style={styles.heroTitleEm}>Best stores only.</Text>
           </Text>
+          <Text style={styles.heroSub}>
+            Tap a store to open deals in your browser
+          </Text>
         </View>
 
-        {/* Sticky toolbar */}
         <View style={styles.toolbar}>
           <View style={styles.searchWrap}>
             <Ionicons
               name="search"
-              size={18}
+              size={17}
               color={WEB_SHOP.gray400}
               style={styles.searchIcon}
             />
@@ -287,7 +370,6 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
           </ScrollView>
         </View>
 
-        {/* Sections */}
         <View style={styles.main}>
           {!hasResults ? (
             <View style={styles.empty}>
@@ -300,59 +382,45 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
               </Text>
             </View>
           ) : isSearching ? (
-            <View style={styles.sectionCard}>
+            <View style={styles.section}>
               <View style={styles.sectionHead}>
-                <View style={styles.catFallbackSearch}>
-                  <Ionicons name="search" size={18} color={WEB_SHOP.accent} />
-                </View>
                 <View style={styles.sectionMeta}>
-                  <Text style={styles.sectionTitle}>Search results</Text>
+                  <Text style={styles.sectionTitle}>Results</Text>
                   <Text style={styles.sectionSub}>
-                    {searchResults.length} stores found
+                    {searchResults.length}{" "}
+                    {searchResults.length === 1 ? "store" : "stores"}
                   </Text>
                 </View>
               </View>
-              <View style={styles.grid}>
-                {searchResults.map((store) => (
-                  <StoreTile
-                    key={store.id}
-                    store={store}
-                    tileWidth={tileWidth}
-                    onOpen={openStore}
-                  />
-                ))}
-              </View>
+              <StoreGrid
+                stores={searchResults}
+                tileWidth={tileWidth}
+                onOpen={openStore}
+              />
             </View>
           ) : (
             visibleSections.map(({ section, stores }) => (
-              <View key={section.id} style={styles.sectionCard}>
+              <View key={section.id} style={styles.section}>
                 <View style={styles.sectionHead}>
-                  <View style={styles.catLogoWrap}>
-                    <CategoryBadge section={section} size={44} />
-                  </View>
+                  <CategoryBadge section={section} size={36} />
                   <View style={styles.sectionMeta}>
                     <Text style={styles.sectionTitle}>{section.title}</Text>
                     <Text style={styles.sectionSub}>
-                      {stores.length} curated stores
+                      {stores.length}{" "}
+                      {stores.length === 1 ? "store" : "stores"}
                     </Text>
                   </View>
                 </View>
 
-                <View style={styles.grid}>
-                  {stores.map((store) => (
-                    <StoreTile
-                      key={store.id}
-                      store={store}
-                      tileWidth={tileWidth}
-                      onOpen={openStore}
-                    />
-                  ))}
-                </View>
+                <StoreGrid
+                  stores={stores}
+                  tileWidth={tileWidth}
+                  onOpen={openStore}
+                />
               </View>
             ))
           )}
 
-          {/* CTA */}
           <View style={styles.ctaCard}>
             <View style={styles.ctaCopy}>
               <Text style={styles.ctaTitle}>Need help placing an order?</Text>
@@ -369,6 +437,7 @@ export function InstaHelpShopScreen({ embedded = false }: { embedded?: boolean }
               accessibilityRole="button"
               accessibilityLabel={`Call ${WEB_SHOP.supportPhoneDisplay}`}
             >
+              <Ionicons name="call" size={15} color={WEB_SHOP.black} />
               <Text style={styles.ctaBtnText}>
                 Call {WEB_SHOP.supportPhoneDisplay}
               </Text>
@@ -393,15 +462,15 @@ const styles = StyleSheet.create({
   hero: {
     position: "relative",
     overflow: "hidden",
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: H_PAD,
+    paddingBottom: 16,
     alignItems: "center",
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
-    letterSpacing: -0.8,
-    lineHeight: 34,
+    letterSpacing: -0.7,
+    lineHeight: 32,
     color: WEB_SHOP.black,
     textAlign: "center",
   },
@@ -409,145 +478,119 @@ const styles = StyleSheet.create({
     color: WEB_SHOP.accent,
     fontWeight: "800",
   },
+  heroSub: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: "500",
+    color: WEB_SHOP.gray400,
+    textAlign: "center",
+  },
   toolbar: {
-    backgroundColor: "rgba(255,255,255,0.96)",
-    paddingHorizontal: 16,
-    paddingTop: 8,
+    backgroundColor: "rgba(255,255,255,0.97)",
+    paddingTop: 6,
     paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(0,0,0,0.04)",
+    borderBottomColor: "rgba(0,0,0,0.05)",
   },
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: WEB_SHOP.white,
+    backgroundColor: WEB_SHOP.gray50,
     borderWidth: 1,
     borderColor: WEB_SHOP.gray200,
     borderRadius: WEB_SHOP.radiusPill,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 2,
+    marginHorizontal: H_PAD,
     marginBottom: 12,
-    gap: 10,
+    gap: 8,
   },
   searchIcon: {
     marginLeft: 2,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "500",
     color: WEB_SHOP.black,
-    paddingVertical: 12,
+    paddingVertical: 11,
   },
   filtersRow: {
     gap: 8,
+    paddingHorizontal: H_PAD,
     paddingVertical: 2,
-    paddingRight: 8,
   },
   filterChip: {
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: WEB_SHOP.gray100,
     borderRadius: WEB_SHOP.radiusPill,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 9,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
   filterChipActive: {
     backgroundColor: WEB_SHOP.yellow,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    borderColor: "rgba(0,0,0,0.06)",
   },
   filterChipText: {
     fontSize: 13,
     fontWeight: "600",
-    color: WEB_SHOP.black,
+    color: WEB_SHOP.gray700,
   },
   filterChipTextActive: {
     color: WEB_SHOP.black,
+    fontWeight: "700",
   },
   main: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    gap: 14,
+    paddingHorizontal: H_PAD,
+    paddingTop: 20,
+    gap: SECTION_GAP,
   },
-  sectionCard: {
-    backgroundColor: WEB_SHOP.white,
-    borderWidth: 1,
-    borderColor: WEB_SHOP.gray200,
-    borderRadius: WEB_SHOP.radiusMd,
-    paddingHorizontal: 14,
-    paddingVertical: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+  section: {
+    gap: 16,
   },
   sectionHead: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: WEB_SHOP.gray100,
-  },
-  catLogoWrap: {
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
-  },
-  catFallbackSearch: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: WEB_SHOP.gray50,
-    borderWidth: 1,
-    borderColor: WEB_SHOP.gray200,
-    alignItems: "center",
-    justifyContent: "center",
+    gap: 10,
   },
   sectionMeta: {
     flex: 1,
     minWidth: 0,
+    gap: 2,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "800",
-    letterSpacing: -0.4,
+    letterSpacing: -0.35,
     color: WEB_SHOP.black,
   },
   sectionSub: {
-    marginTop: 2,
     fontSize: 12,
     fontWeight: "500",
     color: WEB_SHOP.gray400,
   },
   grid: {
+    gap: ROW_GAP,
+  },
+  gridRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
-    rowGap: 12,
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   tile: {
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 2,
+    gap: 8,
   },
   tilePressed: {
+    opacity: 0.72,
     transform: [{ scale: 0.96 }],
   },
   tileIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: WEB_SHOP.gray50,
-    borderWidth: 1,
+    backgroundColor: WEB_SHOP.white,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: WEB_SHOP.gray200,
     alignItems: "center",
     justifyContent: "center",
@@ -555,31 +598,24 @@ const styles = StyleSheet.create({
   },
   tileIconWordmark: {
     paddingHorizontal: 6,
-  },
-  tileLogo: {
-    width: 40,
-    height: 40,
-  },
-  tileLogoWordmark: {
-    width: 48,
-    height: 20,
+    backgroundColor: WEB_SHOP.gray50,
   },
   tileInitial: {
-    fontSize: 13,
     fontWeight: "700",
     color: WEB_SHOP.gray400,
   },
   tileName: {
-    fontSize: 10,
+    height: NAME_HEIGHT,
+    fontSize: 11,
     fontWeight: "600",
     textAlign: "center",
-    lineHeight: 13,
+    lineHeight: NAME_LINE_HEIGHT,
     color: WEB_SHOP.gray700,
-    maxWidth: "100%",
+    width: "100%",
   },
   empty: {
     alignItems: "center",
-    paddingVertical: 40,
+    paddingVertical: 48,
     paddingHorizontal: 16,
   },
   emptyIcon: {
@@ -592,10 +628,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
     color: WEB_SHOP.black,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptyBody: {
     fontSize: 14,
@@ -603,7 +639,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   ctaCard: {
-    marginTop: 10,
+    marginTop: 4,
     backgroundColor: WEB_SHOP.black,
     borderRadius: WEB_SHOP.radiusLg,
     paddingHorizontal: 18,
@@ -615,9 +651,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   ctaTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
-    letterSpacing: -0.3,
+    letterSpacing: -0.25,
     color: WEB_SHOP.white,
     textAlign: "center",
   },
@@ -631,9 +667,12 @@ const styles = StyleSheet.create({
   ctaBtn: {
     backgroundColor: WEB_SHOP.yellow,
     borderRadius: WEB_SHOP.radiusPill,
-    paddingVertical: 14,
+    paddingVertical: 13,
     paddingHorizontal: 18,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
   },
   ctaBtnPressed: {
     backgroundColor: WEB_SHOP.yellowDk,
@@ -644,10 +683,10 @@ const styles = StyleSheet.create({
     color: WEB_SHOP.black,
   },
   disclaimer: {
-    marginTop: 14,
+    marginTop: -8,
     marginBottom: 8,
     fontSize: 11,
-    lineHeight: 18,
+    lineHeight: 17,
     color: WEB_SHOP.gray400,
     textAlign: "center",
     paddingHorizontal: 8,

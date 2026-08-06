@@ -53,12 +53,13 @@ export const useProfileStore = create<ProfileState>()(
         }),
       toggleFavorite: (serviceId) =>
         set((s) => {
-          let profile = s.profile;
+          const profile = s.profile;
           if (!profile) return s;
-          const has = profile.favorites.includes(serviceId);
+          const current = profile.favorites ?? [];
+          const has = current.includes(serviceId);
           const favorites = has
-            ? profile.favorites.filter((x) => x !== serviceId)
-            : [...profile.favorites, serviceId];
+            ? current.filter((x) => x !== serviceId)
+            : [...current, serviceId];
           return { profile: { ...profile, favorites } };
         }),
     }),

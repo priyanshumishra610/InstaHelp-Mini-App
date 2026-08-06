@@ -4,9 +4,9 @@ import { OtpInputRow } from "@/components/auth/premium/OtpInputRow";
 import { PremiumPressable } from "@/components/auth/premium/PremiumPressable";
 import { SocialAuthButton } from "@/components/auth/premium/SocialAuthButton";
 import {
-  AUTH_ACCENT_YELLOW,
   AUTH_ACCENT_TEAL,
   AUTH_FONT,
+  AUTH_GRADIENT,
   AUTH_PRIMARY,
 } from "@/constants/authPremium";
 import { Ionicons } from "@expo/vector-icons";
@@ -103,7 +103,7 @@ export function LoginAuthCard({
         <LinearGradient
           colors={
             phoneReady
-              ? [AUTH_ACCENT_YELLOW, "#E6C000", "#D4AF00"]
+              ? [...AUTH_GRADIENT]
               : ["#94a3b8", "#64748b", "#475569"]
           }
           locations={[0, 0.45, 1]}
@@ -112,13 +112,13 @@ export function LoginAuthCard({
           style={[styles.primaryBtn, loading && { opacity: 0.82 }]}
         >
           {loading ? (
-            <ActivityIndicator color="#0A0A0A" />
+            <ActivityIndicator color="#FFFFFF" />
           ) : (
             <View style={styles.ctaInner}>
               <Text style={[styles.primaryLabel, { fontFamily: AUTH_FONT.bold }]}>
                 Continue
               </Text>
-              <Ionicons name="arrow-forward" size={18} color="#0A0A0A" />
+              <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
             </View>
           )}
         </LinearGradient>
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  primaryLabel: { color: "#0A0A0A", fontSize: 16, letterSpacing: 0.2 },
+  primaryLabel: { color: "#FFFFFF", fontSize: 16, letterSpacing: 0.2 },
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 8,
     borderRadius: 999,
-    backgroundColor: "rgba(37,99,235,0.06)",
+    backgroundColor: "rgba(23,23,23,0.06)",
     borderWidth: 1,
-    borderColor: "rgba(37,99,235,0.1)",
+    borderColor: "rgba(23,23,23,0.1)",
   },
   trustChipText: {
     fontSize: 9,

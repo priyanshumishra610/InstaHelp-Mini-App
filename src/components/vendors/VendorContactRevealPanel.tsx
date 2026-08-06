@@ -43,7 +43,7 @@ export function VendorContactRevealPanel({
 
   if (unlocked) {
     return (
-      <View className="rounded-xl border border-neutral-200 bg-white p-4">
+      <View className="rounded-2xl bg-neutral-50 p-4">
         <InfoRow label="Phone" value={vendor.phone ?? "Not available"} />
         {vendor.email ? <InfoRow label="Email" value={vendor.email} /> : null}
         <InfoRow
@@ -55,7 +55,7 @@ export function VendorContactRevealPanel({
           <Pressable
             onPress={() => dialPhone(vendor.phone)}
             disabled={!digits}
-            className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-3 active:opacity-90 disabled:opacity-40"
+            className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-neutral-900 py-3 active:opacity-90 disabled:opacity-40"
           >
             <Ionicons name="call" size={18} color="#ffffff" />
             <Text className="text-[14px] font-semibold text-white">Call</Text>
@@ -83,7 +83,7 @@ export function VendorContactRevealPanel({
             }
             className="mt-2 flex-row items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 active:bg-neutral-50"
           >
-            <Ionicons name="mail-outline" size={18} color="#004aad" />
+            <Ionicons name="mail-outline" size={18} color="#171717" />
             <Text className="text-[14px] font-semibold text-neutral-800">
               Email
             </Text>
@@ -94,20 +94,20 @@ export function VendorContactRevealPanel({
   }
 
   return (
-    <View className="rounded-xl border border-neutral-200 bg-white p-4">
+    <View className="rounded-2xl bg-neutral-50 p-4">
       <View className="items-center py-2">
-        <Ionicons name="lock-closed-outline" size={28} color="#004aad" />
+        <Ionicons name="lock-closed-outline" size={24} color="#171717" />
         <Text className="mt-2 text-[16px] font-semibold text-neutral-900">
           Contact locked
         </Text>
-        <Text className="mt-1 text-center text-[13px] leading-5 text-neutral-600">
+        <Text className="mt-1 text-center text-[13px] leading-5 text-neutral-500">
           {usesPlanReveal
             ? `Use your Explore plan to unlock call and WhatsApp (${revealLabel}).`
             : `Use ${revealLabel} to unlock call and WhatsApp for this vendor.`}
         </Text>
       </View>
 
-      <View className="mt-3 rounded-lg bg-neutral-50 px-3 py-2.5">
+      <View className="mt-3 rounded-xl border border-neutral-200/80 bg-white px-3 py-2.5">
         <Text className="text-center text-[15px] font-medium tracking-wide text-neutral-700">
           {maskPhoneForDisplay(vendor.phone)}
         </Text>
@@ -117,7 +117,7 @@ export function VendorContactRevealPanel({
         onPress={onReveal}
         accessibilityRole="button"
         accessibilityLabel="Reveal vendor contact"
-        className="mt-4 flex-row items-center justify-center gap-2 rounded-xl bg-accent py-3.5 active:opacity-90"
+        className="mt-4 flex-row items-center justify-center gap-2 rounded-xl bg-neutral-900 py-3.5 active:opacity-90"
       >
         <Ionicons name="lock-open-outline" size={18} color="#ffffff" />
         <Text className="text-[14px] font-semibold text-white">

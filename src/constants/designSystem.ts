@@ -24,7 +24,7 @@ export const COLORS = {
   accent: ACCENT,
   accentDeep: ACCENT_DEEP,
   accentTint: ACCENT_TINT,
-  accentSoft: "#F0F6FF",
+  accentSoft: "#F5F5F4",
   heroCanvas: HERO_CANVAS,
   heroLavender: HERO_LAVENDER,
   heroLavenderMist: HERO_LAVENDER_MIST,

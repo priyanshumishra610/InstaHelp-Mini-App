@@ -5,7 +5,7 @@ export default function ExperiencesStackLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#eef2fb" },
+        contentStyle: { backgroundColor: "#FFFFFF" },
       }}
     >
       <Stack.Screen name="index" />

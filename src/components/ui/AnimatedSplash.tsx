@@ -1,5 +1,4 @@
 import { LoginHeroVisual } from "@/components/auth/LoginHeroVisual";
-import { AppAtmosphere } from "@/components/ui/AppAtmosphere";
 import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
 import {
   SPLASH_BRAND_TAGLINE,
@@ -30,7 +29,7 @@ import Animated, {
 const BRAND_DELAY_MS = 120;
 const TAGLINE_DELAY_MS = 380;
 const HERO_DELAY_MS = 280;
-const EXIT_MS = 480;
+const EXIT_MS = 0;
 
 type Props = {
   onFinish?: () => void;
@@ -154,13 +153,17 @@ export function AnimatedSplash({
     onExitStartRef.current?.();
 
     let didFinish = false;
-    let fallback: ReturnType<typeof setTimeout> | null = null;
-
     const safeFinish = () => {
       if (didFinish) return;
       didFinish = true;
       onFinishRef.current?.();
     };
+
+    if (EXIT_MS <= 0) {
+      screenOpacity.value = 0;
+      safeFinish();
+      return;
+    }
 
     taglineOpacity.value = withTiming(0, { duration: EXIT_MS * 0.55 });
     taglineTranslateY.value = withTiming(-6, { duration: EXIT_MS * 0.55 });
@@ -175,10 +178,10 @@ export function AnimatedSplash({
         if (finished) runOnJS(safeFinish)();
       },
     );
-    fallback = setTimeout(safeFinish, EXIT_MS + 220);
+    const fallback = setTimeout(safeFinish, EXIT_MS + 220);
 
     return () => {
-      if (fallback) clearTimeout(fallback);
+      clearTimeout(fallback);
     };
   }, [
     barProgress,
@@ -220,7 +223,6 @@ export function AnimatedSplash({
     return (
       <View style={styles.root}>
         <StatusBar style="dark" />
-        <AppAtmosphere variant="auth" />
       </View>
     );
   }
@@ -228,7 +230,6 @@ export function AnimatedSplash({
   return (
     <Animated.View style={[styles.root, screenStyle]}>
       <StatusBar style="dark" />
-      <AppAtmosphere variant="auth" />
 
       <View style={styles.center}>
         <Animated.View style={[styles.brandBlock, brandStyle]}>
@@ -259,7 +260,7 @@ export function AnimatedSplash({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#F7F6FB",
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 3,
     borderRadius: 2,
-    backgroundColor: "rgba(0,74,173,0.12)",
+    backgroundColor: "rgba(23,23,23,0.12)",
     overflow: "hidden",
   },
   progressBar: {

@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
     ...Platform.select({
       ios: {
-        shadowColor: "#0066FF",
+        shadowColor: "#292524",
         shadowOpacity: 0.6,
         shadowRadius: 16,
       },
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 999,
-    backgroundColor: "#6366f1",
+    backgroundColor: "#171717",
   },
   retryText: {
     fontSize: 14,

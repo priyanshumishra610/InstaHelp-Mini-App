@@ -171,7 +171,7 @@ export function AssignedScreen() {
                 Change the preferred time before they roll out.
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#004aad" />
+            <Ionicons name="chevron-forward" size={18} color="#171717" />
           </Pressable>
 
           <Pressable

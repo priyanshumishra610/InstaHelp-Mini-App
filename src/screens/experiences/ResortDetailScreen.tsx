@@ -33,7 +33,7 @@ export function ResortDetailScreen() {
 
   if (!resort) {
     return (
-      <Screen className="items-center justify-center bg-[#eef2fb] px-6">
+      <Screen className="items-center justify-center bg-[#FFFFFF] px-6">
         <Ionicons name="alert-circle-outline" size={40} color="#9ca3af" />
         <Text className="mt-3 text-center text-base font-bold text-neutral-800">
           Resort not found
@@ -60,7 +60,7 @@ export function ResortDetailScreen() {
   };
 
   return (
-    <Screen className="bg-[#eef2fb]" inset={false}>
+    <Screen className="bg-[#FFFFFF]" inset={false}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 28 + insets.bottom }}
         showsVerticalScrollIndicator={false}

@@ -1,5 +1,5 @@
 import { SPRING } from "@/constants/designSystem";
-import { ACCENT } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { cn } from "@/utils/cn";
 import * as Haptics from "expo-haptics";
 import { MotiView } from "moti";
@@ -38,6 +38,7 @@ export function Button({
   loading,
   accessibilityLabel,
 }: Props) {
+  const { colors } = useAppTheme();
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -71,7 +72,7 @@ export function Button({
     danger: "bg-red-500 active:opacity-90",
   };
   const textStyles: Record<Variant, string> = {
-    primary: "text-neutral-950 font-bold",
+    primary: "font-bold",
     secondary: "text-white font-semibold",
     ghost: "text-neutral-900 dark:text-white font-medium",
     outline: "text-neutral-900 dark:text-neutral-100 font-semibold",
@@ -80,10 +81,13 @@ export function Button({
 
   const indicatorColor =
     variant === "primary"
-      ? "#0A0A0A"
+      ? colors.accentForeground
       : variant === "outline" || variant === "ghost"
-        ? ACCENT
+        ? colors.accent
         : "#ffffff";
+
+  const primaryTextStyle =
+    variant === "primary" ? { color: colors.accentForeground } : undefined;
 
   return (
     <AnimatedPressable
@@ -116,7 +120,10 @@ export function Button({
         {loading ? (
           <ActivityIndicator color={indicatorColor} />
         ) : typeof children === "string" ? (
-          <Text className={cn(sizeText[size], textStyles[variant], textClassName)}>
+          <Text
+            className={cn(sizeText[size], textStyles[variant], textClassName)}
+            style={primaryTextStyle}
+          >
             {children}
           </Text>
         ) : (

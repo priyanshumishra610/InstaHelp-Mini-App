@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
-    borderColor: "rgba(0,74,173,0.28)",
-    backgroundColor: "rgba(232,240,255,0.55)",
+    borderColor: "rgba(23,23,23,0.2)",
+    backgroundColor: "rgba(245,245,244,0.9)",
   },
   softLabel: {
     fontSize: 13,

@@ -51,7 +51,7 @@ export function GameCard({ game, index = 0, onPress }: Props) {
   }));
 
   const iconName = game.icon as keyof typeof Ionicons.glyphMap;
-  const colors = game.gradient.length >= 2 ? game.gradient : ["#6366f1", "#0066FF"];
+  const colors = game.gradient.length >= 2 ? game.gradient : ["#171717", "#292524"];
 
   return (
     <Animated.View style={[styles.outer, floatStyle]}>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: "#6366f1",
+        shadowColor: "#171717",
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.35,
         shadowRadius: 18,

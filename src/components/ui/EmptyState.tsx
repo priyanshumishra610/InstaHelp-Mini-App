@@ -63,7 +63,7 @@ export function EmptyState({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", delay: 100 }}
       >
-        <AppIcon name={resolved} size={28} color="#004aad" chip />
+        <AppIcon name={resolved} size={28} color="#171717" chip />
       </MotiView>
       <Text className="mt-4 text-center text-base font-bold text-neutral-900">
         {title}

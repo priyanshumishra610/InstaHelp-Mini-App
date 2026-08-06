@@ -1,4 +1,9 @@
 {
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-6513857875305294~9603037789",
+    "ios_app_id": "ca-app-pub-6513857875305294~9603037789",
+    "user_tracking_usage_description": "This identifier is used to deliver personalized ads that help you earn vendor credits."
+  },
   "expo": {
     "name": "InstaHelp",
     "slug": "instahelp",
@@ -13,7 +18,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.priyanshum567.instahelp",
+      "bundleIdentifier": "in.instahelp.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -32,7 +37,7 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.POST_NOTIFICATIONS"
       ],
-      "package": "com.priyanshum567.instahelp"
+      "package": "in.instahelp.app"
     },
     "web": {
       "bundler": "metro",
@@ -71,7 +76,15 @@
           "color": "#004aad"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-6513857875305294~9603037789",
+          "iosAppId": "ca-app-pub-6513857875305294~9603037789",
+          "userTrackingUsageDescription": "This identifier is used to deliver personalized ads that help you earn vendor credits."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

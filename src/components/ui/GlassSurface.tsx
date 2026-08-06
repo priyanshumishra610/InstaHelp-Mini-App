@@ -1,5 +1,4 @@
 import { GLASS, RADIUS, cardShadow, claySurface } from "@/constants/designSystem";
-import { ACCENT } from "@/constants/theme";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { type ReactNode, useEffect, useState } from "react";
@@ -101,8 +100,8 @@ export function GlassSurface({
             pointerEvents="none"
             colors={
               useLiveBlur
-                ? [GLASS.fillStrong, GLASS.fill]
-                : [GLASS.fillFallback, "rgba(255,255,255,0.9)"]
+                ? ["rgba(255,255,255,0.35)", "rgba(255,255,255,0.2)"]
+                : ["rgba(23,23,23,0.04)", "rgba(23,23,23,0.02)"]
             }
             style={StyleSheet.absoluteFill}
           />
@@ -133,22 +132,22 @@ export function GlassSurface({
   return content;
 }
 
-/** List-safe translucent glass with blue tint (no BlurView). */
+/** List-safe card surface — solid white so content stays bright and readable. */
 export function glassCardStyle(radius: number = RADIUS.xl): ViewStyle {
   return {
     borderRadius: radius,
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.62)",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.12)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(28,25,23,0.08)",
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.1,
-        shadowRadius: 18,
+        shadowColor: "#1C1917",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
       },
-      android: { elevation: 4 },
+      android: { elevation: 2 },
       default: {},
     }),
   };

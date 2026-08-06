@@ -52,8 +52,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,74,173,0.08)",
+    backgroundColor: "rgba(23,23,23,0.08)",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.14)",
+    borderColor: "rgba(23,23,23,0.14)",
   },
 });

@@ -1,5 +1,6 @@
 import { AnimatedSplash } from "@/components/ui/AnimatedSplash";
 import { SPLASH_MIN_DURATION_MS } from "@/constants/splash";
+import { useOnboardingStore } from "@/store/onboardingStore";
 import { useSplashTransitionStore } from "@/store/splashTransitionStore";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -8,9 +9,42 @@ import { StyleSheet, View } from "react-native";
 /** Safety net if auth hydration or destination never resolves. */
 const SPLASH_WATCHDOG_MS = 8000;
 
+/** Hard cap so a stuck exit never leaves a translucent splash over the app. */
+const EXIT_TEARDOWN_MS = 700;
+
+function navigateAfterSplash(
+  router: ReturnType<typeof useRouter>,
+  destination: NonNullable<
+    ReturnType<typeof useSplashTransitionStore.getState>["destination"]
+  >,
+) {
+  const tutorialDone = useOnboardingStore.getState().appTutorialCompleted;
+  if (!tutorialDone) {
+    useOnboardingStore.getState().setPendingInAppTutorial(true);
+    const goesToAuth =
+      destination === "/(auth)/phone" ||
+      destination === "/(auth)/otp" ||
+      destination === "/(auth)/profile";
+    if (goesToAuth) {
+      router.replace("/(auth)/tutorial");
+      return;
+    }
+  }
+
+  if (destination === "/(auth)/phone") {
+    router.replace({
+      pathname: "/(auth)/phone",
+      params: { fromSplash: "1" },
+    });
+    return;
+  }
+
+  router.replace(destination);
+}
+
 /**
- * Full-screen splash that stays above the stack during exit so navigation
- * to phone auth can cross-fade underneath.
+ * Full-screen splash on cold start only. Tears down immediately after navigation
+ * so the white fade layer cannot stick over the app as a translucent overlay.
  */
 export function SplashExitOverlay() {
   const router = useRouter();
@@ -30,6 +64,13 @@ export function SplashExitOverlay() {
   }, [beginExit, readyToExit]);
 
   useEffect(() => {
+    if (!exitStarted || !destination || navigated.current) return;
+    navigated.current = true;
+    navigateAfterSplash(router, destination);
+    finish();
+  }, [destination, exitStarted, finish, router]);
+
+  useEffect(() => {
     if (!active) return;
     const watchdog = setTimeout(() => {
       const state = useSplashTransitionStore.getState();
@@ -45,34 +86,24 @@ export function SplashExitOverlay() {
     return () => clearTimeout(watchdog);
   }, [active]);
 
-  const handleExitStart = () => {
-    if (navigated.current || !destination) return;
-    navigated.current = true;
-    if (destination === "/(auth)/phone") {
-      router.replace({
-        pathname: "/(auth)/phone",
-        params: { fromSplash: "1" },
-      });
-      return;
-    }
-    router.replace(destination);
-  };
-
-  const handleFinish = () => {
-    navigated.current = false;
-    finish();
-  };
+  useEffect(() => {
+    if (!active || !exitStarted) return;
+    const failSafe = setTimeout(() => {
+      if (useSplashTransitionStore.getState().active) {
+        useSplashTransitionStore.getState().finish();
+      }
+    }, EXIT_TEARDOWN_MS);
+    return () => clearTimeout(failSafe);
+  }, [active, exitStarted]);
 
   if (!active) return null;
 
   return (
-    <View style={styles.overlay} pointerEvents={exitStarted ? "none" : "auto"}>
+    <View style={styles.overlay} pointerEvents="auto">
       <AnimatedSplash
         minDurationMs={SPLASH_MIN_DURATION_MS}
         readyToExit={readyToExit || exitStarted}
         exitImmediately={exitStarted}
-        onExitStart={handleExitStart}
-        onFinish={handleFinish}
       />
     </View>
   );

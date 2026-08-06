@@ -41,7 +41,7 @@ export function ExploreServiceSuggestion({
     >
       <View className="flex-row items-start gap-3">
         <View className="mt-0.5 h-9 w-9 items-center justify-center rounded-2xl bg-white">
-          <Ionicons name="compass-outline" size={18} color="#004aad" />
+          <Ionicons name="compass-outline" size={18} color="#171717" />
         </View>
         <View className="min-w-0 flex-1">
           <Text className="text-[13px] font-extrabold text-neutral-900">

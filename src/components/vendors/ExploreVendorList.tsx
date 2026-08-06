@@ -1,7 +1,9 @@
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GlowButton } from "@/components/ui/GlowButton";
+import { AppIcon } from "@/components/ui/AppIcon";
 import { HomeExploreChrome } from "@/components/home/HomeExploreChrome";
-import { AUTH_FONT, AUTH_PRIMARY, AUTH_ACCENT_YELLOW } from "@/constants/authPremium";
+import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import { COLORS, RADIUS } from "@/constants/designSystem";
 import { ACCENT } from "@/constants/theme";
 import { EarlyAccessStrip } from "@/components/vendors/EarlyAccessStrip";
 import { MarketplaceVendorCard } from "@/components/vendors/MarketplaceVendorCard";
@@ -12,6 +14,7 @@ import {
   type ExploreCatalogState,
 } from "@/hooks/useExploreCatalog";
 import { useRouter } from "expo-router";
+import { MotiView } from "moti";
 import {
   Platform,
   RefreshControl,
@@ -44,9 +47,12 @@ export function ExploreVendorList({
     revealCostLabel,
     filtered,
     sections,
+    resultSummary,
     handleReveal,
     clearFilters,
     entitlements,
+    activeFilterCount,
+    sortMode,
   } = catalog;
 
   if (loading && !filtered.length && !error) {
@@ -76,6 +82,13 @@ export function ExploreVendorList({
       </View>
     );
   }
+
+  const sortLabel =
+    sortMode === "distance"
+      ? "Nearest first"
+      : sortMode === "rating"
+        ? "Top rated"
+        : "Recommended";
 
   return (
     <SectionList
@@ -113,26 +126,75 @@ export function ExploreVendorList({
             isPro={entitlements.isPro}
             savedLimit={entitlements.savedVendorLimit}
           />
+          {resultSummary.vendorCount > 0 ? (
+            <MotiView
+              from={{ opacity: 0, translateY: 6 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 280 }}
+              style={styles.summaryWrap}
+            >
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryLeft}>
+                  <Text style={[styles.summaryCount, { fontFamily: AUTH_FONT.bold }]}>
+                    {resultSummary.vendorCount.toLocaleString("en-IN")}
+                  </Text>
+                  <Text style={[styles.summaryLabel, { fontFamily: AUTH_FONT.medium }]}>
+                    vendors · {resultSummary.categoryCount}{" "}
+                    {resultSummary.categoryCount === 1 ? "category" : "categories"}
+                  </Text>
+                </View>
+                <View style={styles.summaryRight}>
+                  <AppIcon name="filter" size={14} color={COLORS.inkMuted} />
+                  <Text style={[styles.summarySort, { fontFamily: AUTH_FONT.semibold }]}>
+                    {sortLabel}
+                    {activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}
+                  </Text>
+                </View>
+              </View>
+            </MotiView>
+          ) : null}
         </>
       }
-      renderSectionHeader={({ section }) => (
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionEyebrow, { fontFamily: AUTH_FONT.semibold }]}>
-            {section.title.toUpperCase()}
-          </Text>
-          <View style={styles.sectionTitleRow}>
-            <Text style={[styles.sectionTitle, { fontFamily: AUTH_FONT.bold }]}>
-              {section.data.length} vendor{section.data.length === 1 ? "" : "s"}
-            </Text>
-            <View style={styles.sectionMarkBlue} />
-            <View style={styles.sectionMarkYellow} />
-          </View>
-        </View>
-      )}
+      renderSectionHeader={({ section }) => {
+        const avg =
+          section.avgRating != null ? section.avgRating.toFixed(1) : null;
+        const metaParts = [
+          `${section.data.length} vendor${section.data.length === 1 ? "" : "s"}`,
+          section.verifiedCount > 0
+            ? `${section.verifiedCount} verified`
+            : null,
+          avg ? `${avg} avg` : null,
+        ].filter(Boolean);
+
+        return (
+          <MotiView
+            from={{ opacity: 0, translateX: -8 }}
+            animate={{ opacity: 1, translateX: 0 }}
+            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            style={styles.sectionHeaderWrap}
+          >
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleBlock}>
+                <Text style={[styles.sectionTitle, { fontFamily: AUTH_FONT.bold }]}>
+                  {section.title}
+                </Text>
+                <Text style={[styles.sectionMeta, { fontFamily: AUTH_FONT.medium }]}>
+                  {metaParts.join(" · ")}
+                </Text>
+              </View>
+              <View style={styles.sectionRail}>
+                <View style={styles.sectionMarkPrimary} />
+                <View style={styles.sectionMarkSecondary} />
+              </View>
+            </View>
+          </MotiView>
+        );
+      }}
       renderItem={({ item, index }) => (
         <MarketplaceVendorCard
           vendor={item}
           index={index}
+          glass
           distanceKm={distanceKmFromUser(item, coords)}
           unlocked={isVendorUnlocked(item.id)}
           revealCostLabel={revealCostLabel}
@@ -169,37 +231,92 @@ export function ExploreVendorList({
 }
 
 const styles = StyleSheet.create({
-  sectionHeader: {
-    paddingHorizontal: 20,
-    paddingTop: 28,
-    paddingBottom: 8,
+  summaryWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  sectionEyebrow: {
-    fontSize: 10,
-    letterSpacing: 1.4,
-    color: AUTH_PRIMARY,
-  },
-  sectionTitleRow: {
-    marginTop: 4,
+  summaryCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COLORS.line,
+  },
+  summaryLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  summaryCount: {
+    fontSize: 18,
+    letterSpacing: -0.3,
+    color: COLORS.ink,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  summaryRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: COLORS.lineLight,
+  },
+  summarySort: {
+    fontSize: 11,
+    color: COLORS.inkMuted,
+  },
+  sectionHeaderWrap: {
+    paddingHorizontal: 16,
+    paddingTop: 22,
+    paddingBottom: 8,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 4,
+  },
+  sectionTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+    gap: 3,
   },
   sectionTitle: {
     fontSize: 20,
-    letterSpacing: -0.3,
-    color: "#111827",
+    letterSpacing: -0.35,
+    color: COLORS.ink,
   },
-  sectionMarkBlue: {
-    width: 20,
+  sectionMeta: {
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  sectionRail: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingBottom: 6,
+  },
+  sectionMarkPrimary: {
+    width: 18,
     height: 2.5,
     borderRadius: 99,
     backgroundColor: AUTH_PRIMARY,
   },
-  sectionMarkYellow: {
-    width: 10,
+  sectionMarkSecondary: {
+    width: 8,
     height: 2.5,
     borderRadius: 99,
-    backgroundColor: AUTH_ACCENT_YELLOW,
+    backgroundColor: COLORS.line,
   },
 });

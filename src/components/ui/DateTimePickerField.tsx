@@ -125,7 +125,7 @@ export function DateTimePickerField({ value, onPick, label }: Props) {
             {value || "Tap to open the clock"}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color="#004aad" />
+        <Ionicons name="chevron-forward" size={18} color="#171717" />
       </Pressable>
 
       {Platform.OS === "android" && open ? (
@@ -147,7 +147,7 @@ export function DateTimePickerField({ value, onPick, label }: Props) {
         >
           <Pressable
             onPress={close}
-            className="flex-1 items-center justify-end bg-black/40"
+            className="flex-1 items-center justify-end"
           >
             <Pressable
               onPress={() => {}}

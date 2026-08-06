@@ -1,9 +1,12 @@
 import { EARLY_ACCESS_CATEGORIES } from "@/constants/exploreEntitlements";
 import { MarketplaceVendorCard } from "@/components/vendors/MarketplaceVendorCard";
 import { GlowButton } from "@/components/ui/GlowButton";
+import { glassCardStyle } from "@/components/ui/GlassSurface";
 import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import { RADIUS } from "@/constants/designSystem";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { useRouter } from "expo-router";
+import { MotiView } from "moti";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -39,7 +42,13 @@ export function EarlyAccessStrip({
 
   if (!canAccess) {
     return (
-      <View style={styles.promoBlock}>
+      <MotiView
+        from={{ opacity: 0, translateY: 8 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: "spring", damping: 20 }}
+        style={styles.promoWrap}
+      >
+        <View style={[styles.promoBlock, glassCardStyle(RADIUS.lg)]}>
         <Text style={[styles.promoTitle, { fontFamily: AUTH_FONT.bold }]}>
           Early access categories
         </Text>
@@ -53,7 +62,8 @@ export function EarlyAccessStrip({
             variant="soft"
           />
         </View>
-      </View>
+        </View>
+      </MotiView>
     );
   }
 
@@ -103,12 +113,13 @@ const styles = StyleSheet.create({
     width: 300,
     marginHorizontal: 8,
   },
+  promoWrap: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
   promoBlock: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,74,173,0.08)",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   promoTitle: {
     fontSize: 16,
