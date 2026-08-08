@@ -10,7 +10,7 @@ const spring = {
 /** Shared sliding active-pill geometry (window coords → bar-local). */
 export const glassPill = {
   x: makeMutable(0),
-  y: makeMutable(4),
+  y: makeMutable(0),
   w: makeMutable(0),
   h: makeMutable(0),
   opacity: makeMutable(0),

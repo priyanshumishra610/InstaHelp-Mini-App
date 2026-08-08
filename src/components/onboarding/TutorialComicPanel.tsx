@@ -23,15 +23,12 @@ type Props = {
   onSkip: () => void;
 };
 
-/** Clean coach card — static layout, no looping Moti animations. */
+/** Clean coach card — static layout, system fonts only (readable without Poppins loaded). */
 export function TutorialComicPanel({
   step,
   stepIndex,
   totalSteps,
   pose,
-  titleFont,
-  bodyFont,
-  labelFont,
   nextLabel,
   isLast,
   isWelcome,
@@ -52,17 +49,11 @@ export function TutorialComicPanel({
     >
       <View style={styles.frame}>
         <View style={styles.topRow}>
-          <Text
-            style={[
-              styles.stepLabel,
-              { color: step.accent },
-              labelFont && { fontFamily: labelFont },
-            ]}
-          >
+          <Text style={[styles.stepLabel, { color: step.accent }]}>
             {stepIndex + 1}/{totalSteps}
           </Text>
           <Pressable onPress={onSkip} hitSlop={8} accessibilityRole="button">
-            <Text style={[styles.skip, labelFont && { fontFamily: labelFont }]}>Skip</Text>
+            <Text style={styles.skip}>Skip</Text>
           </Pressable>
         </View>
 
@@ -75,27 +66,15 @@ export function TutorialComicPanel({
             animated={false}
           />
           <View style={styles.copyCol}>
-            {isWelcome ? (
-              <Text style={[styles.brand, titleFont && { fontFamily: titleFont }]}>
-                InstaHelp
-              </Text>
-            ) : null}
-            <Text style={[styles.title, titleFont && { fontFamily: titleFont }]}>
-              {step.title}
-            </Text>
-            <Text
-              style={[styles.body, bodyFont && { fontFamily: bodyFont }]}
-              numberOfLines={compact ? 2 : 3}
-            >
+            {isWelcome ? <Text style={styles.brand}>InstaHelp</Text> : null}
+            <Text style={styles.title}>{step.title}</Text>
+            <Text style={styles.body} numberOfLines={compact ? 2 : 5}>
               {compact ? step.comicBubble : step.body}
             </Text>
             {step.tapHint ? (
               <View style={[styles.tapHint, { backgroundColor: step.bubbleBg }]}>
                 <Ionicons name="hand-left-outline" size={12} color={step.accent} />
-                <Text
-                  style={[styles.tapHintText, labelFont && { fontFamily: labelFont }]}
-                  numberOfLines={2}
-                >
+                <Text style={styles.tapHintText} numberOfLines={2}>
                   {step.tapHint}
                 </Text>
               </View>
@@ -113,9 +92,7 @@ export function TutorialComicPanel({
             pressed && styles.nextBtnPressed,
           ]}
         >
-          <Text style={[styles.nextLabel, titleFont && { fontFamily: titleFont }]}>
-            {nextLabel}
-          </Text>
+          <Text style={styles.nextLabel}>{nextLabel}</Text>
           <Ionicons
             name={isLast ? "checkmark" : isWelcome ? "play" : "arrow-forward"}
             size={16}
@@ -187,16 +164,16 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#171717",
+    color: "#111827",
     letterSpacing: -0.2,
     marginBottom: 4,
   },
   body: {
-    fontSize: 12,
-    lineHeight: 17,
-    color: "#57534E",
+    fontSize: 13,
+    lineHeight: 18,
+    color: "#374151",
   },
   tapHint: {
     flexDirection: "row",
@@ -209,10 +186,10 @@ const styles = StyleSheet.create({
   },
   tapHintText: {
     flex: 1,
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: "600",
-    color: "#44403C",
+    color: "#1F2937",
   },
   nextBtn: {
     flexDirection: "row",
@@ -226,7 +203,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   nextLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "800",
     color: "#FFFFFF",
   },

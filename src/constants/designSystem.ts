@@ -140,6 +140,6 @@ export function claySurface(radius: number = RADIUS.xl): ViewStyle {
 
 export const SPRING = {
   gentle: { damping: 20, stiffness: 300, mass: 0.8 },
-  snappy: { damping: 18, stiffness: 400, mass: 0.6 },
+  snappy: { damping: 22, stiffness: 500, mass: 0.6 },
   bouncy: { damping: 14, stiffness: 280, mass: 0.9 },
 } as const;

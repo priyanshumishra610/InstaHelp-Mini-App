@@ -741,13 +741,14 @@ async function ensureAndroidChannel() {
   if (Platform.OS !== "android") return;
 
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
-    name: "Nearby demand signals",
-    importance: Notifications.AndroidImportance.DEFAULT,
+    name: "InstaHelp updates",
+    importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 180, 120, 180],
     lightColor: "#171717",
     sound: null,
-    description:
-      "Calm, hyperlocal InstaHelp® signals — not promotions.",
+    description: "Local InstaHelp alerts for nearby help and requests.",
+    enableLights: true,
+    showBadge: false,
   });
 }
 
@@ -912,10 +913,13 @@ export async function scheduleSmartLocalDemandNotifications({
     planned.map((item, index) =>
       Notifications.scheduleNotificationAsync({
         content: {
-          title: "InstaHelp\u00ae",
-          subtitle: "We\u2019ll get it done.",
+          title: "InstaHelp",
+          subtitle: "We'll get it done.",
           body: item.body,
           data: item.data,
+          color: "#171717",
+          sound: false,
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,

@@ -122,8 +122,8 @@ export function HelpSupportScreen() {
               className="mt-5 flex-row items-center justify-center gap-2 rounded-full py-3.5 active:opacity-92"
               style={{ backgroundColor: "#171717" }}
             >
-              <Ionicons name="logo-whatsapp" size={20} color="#0A0A0A" />
-              <Text className="text-[15px] font-extrabold text-neutral-950">
+              <Ionicons name="logo-whatsapp" size={20} color="#ffffff" />
+              <Text className="text-[15px] font-extrabold text-white">
                 Message InstaHelp
               </Text>
             </Pressable>

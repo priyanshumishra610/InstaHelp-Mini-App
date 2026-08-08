@@ -1,7 +1,8 @@
+import { PerfAnimatedView } from "@/components/ui/PerfAnimatedView";
 import type { ExploreFormSuggestion } from "@/services/vendors/matchFormToExplore";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, Text, View } from "react-native";
-import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
+import { FadeInDown, FadeOutUp } from "react-native-reanimated";
 
 type Props = {
   suggestion: ExploreFormSuggestion;
@@ -34,7 +35,7 @@ export function ExploreServiceSuggestion({
         } in Explore. Browse matching services, or keep submitting for concierge help.${related}`;
 
   return (
-    <Animated.View
+    <PerfAnimatedView
       entering={FadeInDown.duration(280)}
       exiting={FadeOutUp.duration(180)}
       className="mt-3 overflow-hidden rounded-2xl border border-accent-tint bg-accent-soft px-3.5 py-3"
@@ -77,6 +78,6 @@ export function ExploreServiceSuggestion({
           </View>
         </View>
       </View>
-    </Animated.View>
+    </PerfAnimatedView>
   );
 }

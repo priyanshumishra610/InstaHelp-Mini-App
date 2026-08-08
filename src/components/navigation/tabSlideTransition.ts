@@ -6,15 +6,11 @@ import { Dimensions, Easing } from "react-native";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
-/** Horizontal page slide when switching tabs. */
+/** Horizontal page slide when switching tabs — no scene opacity (avoids washed-out UI). */
 export const slideSceneInterpolator: BottomTabSceneStyleInterpolator = ({
   current,
 }) => ({
   sceneStyle: {
-    opacity: current.progress.interpolate({
-      inputRange: [-1, -0.35, 0, 0.35, 1],
-      outputRange: [0, 1, 1, 1, 0],
-    }),
     transform: [
       {
         translateX: current.progress.interpolate({

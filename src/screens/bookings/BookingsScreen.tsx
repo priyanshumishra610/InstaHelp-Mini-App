@@ -1,4 +1,5 @@
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PerfAnimatedView } from "@/components/ui/PerfAnimatedView";
 import { Screen } from "@/components/ui/Screen";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useBookingsQuery } from "@/hooks/queries/useBookings";
@@ -20,7 +21,7 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import { FadeInUp } from "react-native-reanimated";
 
 type Filter = "all" | "active" | "completed";
 
@@ -77,7 +78,7 @@ export function BookingsScreen() {
           />
         }
       >
-        <Animated.View entering={FadeInUp.duration(380)} className="pt-2">
+        <PerfAnimatedView entering={FadeInUp.duration(380)} className="pt-2">
           <Text className="text-[11px] font-bold uppercase tracking-[0.16em] text-accent-deep dark:text-accent">
             Activity
           </Text>
@@ -87,11 +88,11 @@ export function BookingsScreen() {
           <Text className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Live status for every request InstaHelp is handling for you.
           </Text>
-        </Animated.View>
+        </PerfAnimatedView>
 
         {!isPending && !isError && rows.length > 0 ? (
           <>
-            <Animated.View
+            <PerfAnimatedView
               entering={FadeInUp.duration(420).delay(60)}
               className="mt-6 overflow-hidden rounded-[28px] bg-accent p-6 shadow-sm"
             >
@@ -119,9 +120,9 @@ export function BookingsScreen() {
                   Pull down anytime to refresh
                 </Text>
               </View>
-            </Animated.View>
+            </PerfAnimatedView>
 
-            <Animated.View
+            <PerfAnimatedView
               entering={FadeInUp.duration(420).delay(120)}
               className="mt-5 overflow-hidden rounded-2xl bg-neutral-50 py-4 dark:bg-neutral-900"
             >
@@ -144,9 +145,9 @@ export function BookingsScreen() {
                   icon="star-outline"
                 />
               </View>
-            </Animated.View>
+            </PerfAnimatedView>
 
-            <Animated.View
+            <PerfAnimatedView
               entering={FadeInUp.duration(420).delay(180)}
               className="mt-6"
             >
@@ -194,7 +195,7 @@ export function BookingsScreen() {
                   );
                 })}
               </View>
-            </Animated.View>
+            </PerfAnimatedView>
           </>
         ) : null}
 
@@ -235,7 +236,7 @@ export function BookingsScreen() {
             subtitle={filterEmptyCopy[filter].subtitle}
           />
         ) : (
-          <Animated.View
+          <PerfAnimatedView
             entering={FadeInUp.duration(420).delay(240)}
             className="mt-5"
           >
@@ -314,7 +315,7 @@ export function BookingsScreen() {
                 </View>
               ))}
             </View>
-          </Animated.View>
+          </PerfAnimatedView>
         )}
       </ScrollView>
     </Screen>

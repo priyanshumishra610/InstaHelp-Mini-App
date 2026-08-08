@@ -1,9 +1,10 @@
 import { AppIcon } from "@/components/ui/AppIcon";
+import { PerfBox } from "@/components/ui/PerfBox";
 import { cardShadow } from "@/constants/designSystem";
 import { APP_ICONS, type AppIconKey } from "@/constants/icons";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { cn } from "@/utils/cn";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { MotiView } from "moti";
 import type { ComponentProps, PropsWithChildren } from "react";
 import { Text, View } from "react-native";
 
@@ -18,8 +19,8 @@ const LEGACY_ICON_MAP: Record<string, MciName> = {
   "checkmark-done-outline": "check-all",
   "trophy-outline": "trophy-outline",
   "calendar-outline": "calendar-month-outline",
-  "calendar": "calendar-month",
-  "hourglass": "timer-sand",
+  calendar: "calendar-month",
+  hourglass: "timer-sand",
   "key-outline": "key-outline",
   "cube-outline": "package-variant-closed",
   "cash-outline": "cash",
@@ -45,35 +46,45 @@ export function EmptyState({
   icon?: IconName;
   className?: string;
 }>) {
+  const { colors, isDark } = useAppTheme();
   const resolved = resolveEmptyIcon(icon);
 
   return (
-    <MotiView
+    <PerfBox
       from={{ opacity: 0, scale: 0.96, translateY: 8 }}
       animate={{ opacity: 1, scale: 1, translateY: 0 }}
       transition={{ type: "spring", damping: 18, stiffness: 280 }}
-      className={cn(
-        "items-center justify-center rounded-3xl border border-dashed border-white/80 bg-white/70 px-6 py-10",
-        className,
-      )}
-      style={cardShadow("sm")}
+      className={cn("items-center justify-center rounded-3xl border border-dashed px-6 py-10", className)}
+      style={[
+        cardShadow("sm"),
+        {
+          backgroundColor: isDark ? colors.surface : "rgba(255,255,255,0.7)",
+          borderColor: isDark ? colors.line : "rgba(255,255,255,0.8)",
+        },
+      ]}
     >
-      <MotiView
+      <PerfBox
         from={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", delay: 100 }}
       >
-        <AppIcon name={resolved} size={28} color="#171717" chip />
-      </MotiView>
-      <Text className="mt-4 text-center text-base font-bold text-neutral-900">
+        <AppIcon name={resolved} size={28} color={colors.ink} chip />
+      </PerfBox>
+      <Text
+        className="mt-4 text-center text-base font-bold"
+        style={{ color: colors.ink }}
+      >
         {title}
       </Text>
       {subtitle ? (
-        <Text className="mt-2 max-w-sm text-center text-sm leading-5 text-neutral-500">
+        <Text
+          className="mt-2 max-w-sm text-center text-sm leading-5"
+          style={{ color: colors.inkMuted }}
+        >
           {subtitle}
         </Text>
       ) : null}
       {children ? <View className="mt-5 w-full">{children}</View> : null}
-    </MotiView>
+    </PerfBox>
   );
 }

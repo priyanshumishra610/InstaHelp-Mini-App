@@ -2,11 +2,11 @@ import { EARLY_ACCESS_CATEGORIES } from "@/constants/exploreEntitlements";
 import { MarketplaceVendorCard } from "@/components/vendors/MarketplaceVendorCard";
 import { GlowButton } from "@/components/ui/GlowButton";
 import { glassCardStyle } from "@/components/ui/GlassSurface";
-import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import { AUTH_FONT } from "@/constants/authPremium";
 import { RADIUS } from "@/constants/designSystem";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { useRouter } from "expo-router";
-import { MotiView } from "moti";
 import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -27,6 +27,7 @@ export function EarlyAccessStrip({
   distanceKmFromUser,
   revealCostLabel,
 }: Props) {
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
 
   const earlyVendors = useMemo(() => {
@@ -42,34 +43,53 @@ export function EarlyAccessStrip({
 
   if (!canAccess) {
     return (
-      <MotiView
-        from={{ opacity: 0, translateY: 8 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: "spring", damping: 20 }}
-        style={styles.promoWrap}
-      >
-        <View style={[styles.promoBlock, glassCardStyle(RADIUS.lg)]}>
-        <Text style={[styles.promoTitle, { fontFamily: AUTH_FONT.bold }]}>
-          Early access categories
-        </Text>
-        <Text style={[styles.promoCopy, { fontFamily: AUTH_FONT.regular }]}>
-          Pro+ unlocks premium categories before they go mainstream.
-        </Text>
-        <View style={styles.promoCta}>
-          <GlowButton
-            label="Unlock with Pro+"
-            onPress={() => router.push("/(tabs)/vendors/plans")}
-            variant="soft"
-          />
+      <View style={styles.promoWrap}>
+        <View
+          style={[
+            styles.promoBlock,
+            glassCardStyle(RADIUS.lg, {
+              backgroundColor: colors.surface,
+              borderColor: colors.line,
+              isDark,
+            }),
+          ]}
+        >
+          <Text
+            style={[
+              styles.promoTitle,
+              { fontFamily: AUTH_FONT.bold, color: colors.ink },
+            ]}
+          >
+            Early access categories
+          </Text>
+          <Text
+            style={[
+              styles.promoCopy,
+              { fontFamily: AUTH_FONT.regular, color: colors.inkMuted },
+            ]}
+          >
+            Pro+ unlocks premium categories before they go mainstream.
+          </Text>
+          <View style={styles.promoCta}>
+            <GlowButton
+              label="Unlock with Pro+"
+              onPress={() => router.push("/(tabs)/vendors/plans")}
+              variant="soft"
+            />
+          </View>
         </View>
-        </View>
-      </MotiView>
+      </View>
     );
   }
 
   return (
     <View style={styles.block}>
-      <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
+      <Text
+        style={[
+          styles.eyebrow,
+          { fontFamily: AUTH_FONT.semibold, color: colors.inkMuted },
+        ]}
+      >
         EARLY ACCESS · PRO+
       </Text>
       <ScrollView
@@ -104,7 +124,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 10,
     letterSpacing: 1.3,
-    color: AUTH_PRIMARY,
   },
   scrollContent: {
     paddingHorizontal: 12,
@@ -123,13 +142,11 @@ const styles = StyleSheet.create({
   },
   promoTitle: {
     fontSize: 16,
-    color: "#111827",
   },
   promoCopy: {
     marginTop: 4,
     fontSize: 12,
     lineHeight: 18,
-    color: "#6B7280",
   },
   promoCta: {
     marginTop: 12,

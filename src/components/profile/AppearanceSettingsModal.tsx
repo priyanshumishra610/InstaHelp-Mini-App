@@ -1,19 +1,22 @@
 import {
   ACCENT_PRESETS,
   COLOR_SCHEME_OPTIONS,
+  getAccentPreset,
+  resolveThemeColors,
   type AccentId,
   type ColorSchemePreference,
 } from "@/constants/appearance";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   Platform,
   Pressable,
   ScrollView,
   Text,
+  useColorScheme as useSystemColorScheme,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -25,35 +28,68 @@ type Props = {
 
 export function AppearanceSettingsModal({ open, onClose }: Props) {
   const insets = useSafeAreaInsets();
+  const systemScheme = useSystemColorScheme();
   const {
-    colors,
-    isDark,
     colorSchemePreference,
     accentId,
     setColorScheme,
     setAccentId,
   } = useAppTheme();
 
+  const [draftScheme, setDraftScheme] = useState<ColorSchemePreference>(
+    colorSchemePreference,
+  );
+  const [draftAccent, setDraftAccent] = useState<AccentId>(accentId);
+
   useEffect(() => {
     if (!open) return;
-  }, [open]);
+    setDraftScheme(colorSchemePreference);
+    setDraftAccent(accentId);
+  }, [open, colorSchemePreference, accentId]);
+
+  const draftIsDark =
+    draftScheme === "dark" ||
+    (draftScheme === "system" && systemScheme === "dark");
+  const colors = useMemo(
+    () => resolveThemeColors(draftAccent, draftIsDark),
+    [draftAccent, draftIsDark],
+  );
+  const isDark = draftIsDark;
+
+  const dirty =
+    draftScheme !== colorSchemePreference || draftAccent !== accentId;
 
   const selectScheme = (next: ColorSchemePreference) => {
     void Haptics.selectionAsync();
-    setColorScheme(next);
+    setDraftScheme(next);
   };
 
   const selectAccent = (next: AccentId) => {
     void Haptics.selectionAsync();
-    setAccentId(next);
+    setDraftAccent(next);
   };
+
+  const onApply = () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setColorScheme(draftScheme);
+    setAccentId(draftAccent);
+    onClose();
+  };
+
+  const onCancel = () => {
+    setDraftScheme(colorSchemePreference);
+    setDraftAccent(accentId);
+    onClose();
+  };
+
+  const previewAccent = getAccentPreset(draftAccent);
 
   return (
     <Modal
       visible={open}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={onCancel}
     >
       <View
         className="flex-1"
@@ -72,7 +108,7 @@ export function AppearanceSettingsModal({ open, onClose }: Props) {
             </Text>
           </View>
           <Pressable
-            onPress={onClose}
+            onPress={onCancel}
             accessibilityRole="button"
             accessibilityLabel="Close appearance settings"
             hitSlop={12}
@@ -86,7 +122,7 @@ export function AppearanceSettingsModal({ open, onClose }: Props) {
         <ScrollView
           contentContainerStyle={{
             paddingHorizontal: 20,
-            paddingBottom: Math.max(insets.bottom, 16) + 24,
+            paddingBottom: Math.max(insets.bottom, 16) + 100,
           }}
           showsVerticalScrollIndicator={false}
         >
@@ -112,7 +148,7 @@ export function AppearanceSettingsModal({ open, onClose }: Props) {
             }}
           >
             {COLOR_SCHEME_OPTIONS.map((option, index) => {
-              const selected = colorSchemePreference === option.id;
+              const selected = draftScheme === option.id;
               return (
                 <View key={option.id}>
                   {index > 0 ? (
@@ -199,7 +235,7 @@ export function AppearanceSettingsModal({ open, onClose }: Props) {
           >
             <View className="flex-row flex-wrap justify-between gap-y-4">
               {ACCENT_PRESETS.map((preset) => {
-                const selected = accentId === preset.id;
+                const selected = draftAccent === preset.id;
                 return (
                   <Pressable
                     key={preset.id}
@@ -256,20 +292,14 @@ export function AppearanceSettingsModal({ open, onClose }: Props) {
               >
                 Preview
               </Text>
-              <Text
-                className="mt-2 text-base font-semibold"
-                style={{ color: colors.ink }}
-              >
-                Instant help, your way
-              </Text>
               <View className="mt-3 flex-row gap-2">
                 <View
                   className="rounded-full px-4 py-2.5"
-                  style={{ backgroundColor: colors.accent }}
+                  style={{ backgroundColor: previewAccent.accent }}
                 >
                   <Text
                     className="text-xs font-bold"
-                    style={{ color: colors.accentForeground }}
+                    style={{ color: previewAccent.accentForeground }}
                   >
                     Primary
                   </Text>
@@ -289,6 +319,37 @@ export function AppearanceSettingsModal({ open, onClose }: Props) {
             </View>
           </View>
         </ScrollView>
+
+        <View
+          className="absolute left-0 right-0 border-t px-5 pt-3"
+          style={{
+            bottom: 0,
+            paddingBottom: Math.max(insets.bottom, 16),
+            backgroundColor: colors.paper,
+            borderTopColor: colors.line,
+          }}
+        >
+          <Pressable
+            onPress={onApply}
+            disabled={!dirty}
+            accessibilityRole="button"
+            accessibilityLabel="Apply appearance"
+            className="items-center justify-center rounded-2xl py-3.5 active:opacity-90"
+            style={{
+              backgroundColor: dirty ? colors.accent : colors.surfaceMuted,
+              opacity: dirty ? 1 : 0.7,
+            }}
+          >
+            <Text
+              className="text-[15px] font-bold"
+              style={{
+                color: dirty ? colors.accentForeground : colors.inkMuted,
+              }}
+            >
+              Apply
+            </Text>
+          </Pressable>
+        </View>
       </View>
     </Modal>
   );

@@ -6,11 +6,16 @@ import {
   useRef,
   type PropsWithChildren,
 } from "react";
-import { AppState, type AppStateStatus } from "react-native";
+import { AppState, InteractionManager, type AppStateStatus } from "react-native";
 
-export function ExperienceSyncProvider({ children }: PropsWithChildren) {
+type Props = PropsWithChildren<{
+  deferStart?: boolean;
+}>;
+
+export function ExperienceSyncProvider({ children, deferStart = false }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     const runSync = async (force = false) => {
@@ -46,15 +51,32 @@ export function ExperienceSyncProvider({ children }: PropsWithChildren) {
       }
     };
 
-    void runSync(false);
-    startPolling();
+    const boot = () => {
+      if (startedRef.current) return;
+      startedRef.current = true;
+      void runSync(false);
+      startPolling();
+    };
+
+    let cancelInteraction: { cancel: () => void } | null = null;
+    let deferTimer: ReturnType<typeof setTimeout> | null = null;
+
+    if (deferStart) {
+      cancelInteraction = InteractionManager.runAfterInteractions(() => {
+        deferTimer = setTimeout(boot, 1500);
+      });
+    } else {
+      boot();
+    }
 
     const sub = AppState.addEventListener("change", onAppState);
     return () => {
+      cancelInteraction?.cancel();
+      if (deferTimer) clearTimeout(deferTimer);
       stopPolling();
       sub.remove();
     };
-  }, []);
+  }, [deferStart]);
 
   return <>{children}</>;
 }

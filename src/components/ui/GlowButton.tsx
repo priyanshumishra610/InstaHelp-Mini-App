@@ -1,7 +1,6 @@
 import { RADIUS } from "@/constants/designSystem";
-import { ACCENT, ACCENT_DEEP } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { LinearGradient } from "expo-linear-gradient";
-import { MotiView } from "moti";
 import { memo } from "react";
 import {
   Platform,
@@ -16,7 +15,7 @@ import {
 type Props = {
   label: string;
   onPress: () => void;
-  /** primary = filled blue glow · soft = glass blue outline */
+  /** primary = filled accent glow · soft = outlined surface pill */
   variant?: "primary" | "soft";
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -31,14 +30,14 @@ function GlowButtonInner({
   style,
   accessibilityLabel,
 }: Props) {
+  const { colors, isDark } = useAppTheme();
   const isPrimary = variant === "primary";
+  const primaryTop = isDark ? colors.ink : colors.accent;
+  const primaryBottom = isDark ? colors.inkMuted : colors.accentDeep;
+  const primaryLabel = isDark ? colors.canvas : colors.accentForeground;
 
   return (
-    <MotiView
-      animate={{ opacity: [0.92, 1, 0.92] }}
-      transition={{ type: "timing", duration: 2800, loop: true }}
-      style={[fullWidth && styles.fullWidth, style]}
-    >
+    <View style={[fullWidth && styles.fullWidth, style]}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
@@ -46,26 +45,58 @@ function GlowButtonInner({
         className="active:opacity-90"
         style={[
           styles.pressable,
-          isPrimary ? styles.primaryGlow : styles.softGlow,
+          isPrimary
+            ? [
+                styles.primaryGlow,
+                Platform.OS === "ios"
+                  ? {
+                      shadowColor: primaryTop,
+                      shadowOffset: { width: 0, height: 10 },
+                      shadowOpacity: 0.35,
+                      shadowRadius: 22,
+                    }
+                  : { elevation: 8 },
+              ]
+            : [
+                styles.softGlow,
+                Platform.OS === "ios"
+                  ? {
+                      shadowColor: colors.ink,
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: isDark ? 0.2 : 0.12,
+                      shadowRadius: 14,
+                    }
+                  : { elevation: 4 },
+              ],
         ]}
       >
         {isPrimary ? (
           <LinearGradient
-            colors={[ACCENT, ACCENT_DEEP]}
+            colors={[primaryTop, primaryBottom]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.primaryFill}
           >
             <View pointerEvents="none" style={styles.primarySheen} />
-            <Text style={styles.primaryLabel}>{label}</Text>
+            <Text style={[styles.primaryLabel, { color: primaryLabel }]}>
+              {label}
+            </Text>
           </LinearGradient>
         ) : (
-          <View style={styles.softFill}>
-            <Text style={styles.softLabel}>{label}</Text>
+          <View
+            style={[
+              styles.softFill,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.line,
+              },
+            ]}
+          >
+            <Text style={[styles.softLabel, { color: colors.ink }]}>{label}</Text>
           </View>
         )}
       </Pressable>
-    </MotiView>
+    </View>
   );
 }
 
@@ -77,26 +108,8 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.pill,
     overflow: "hidden",
   },
-  primaryGlow: Platform.select({
-    ios: {
-      shadowColor: ACCENT,
-      shadowOffset: { width: 0, height: 10 },
-      shadowOpacity: 0.42,
-      shadowRadius: 22,
-    },
-    android: { elevation: 8 },
-    default: {},
-  }) ?? {},
-  softGlow: Platform.select({
-    ios: {
-      shadowColor: ACCENT,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.22,
-      shadowRadius: 14,
-    },
-    android: { elevation: 4 },
-    default: {},
-  }) ?? {},
+  primaryGlow: {},
+  softGlow: {},
   primaryFill: {
     alignItems: "center",
     justifyContent: "center",
@@ -114,7 +127,6 @@ const styles = StyleSheet.create({
   primaryLabel: {
     fontSize: 13,
     fontWeight: "800",
-    color: "#FFFFFF",
     letterSpacing: 0.2,
   },
   softFill: {
@@ -124,13 +136,10 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     borderRadius: RADIUS.pill,
     borderWidth: 1.5,
-    borderColor: "rgba(23,23,23,0.2)",
-    backgroundColor: "rgba(245,245,244,0.9)",
   },
   softLabel: {
     fontSize: 13,
     fontWeight: "700",
-    color: ACCENT,
   },
 });
 

@@ -1,5 +1,5 @@
-import { TutorialTarget } from "@/components/onboarding/TutorialTarget";
 import { TAB_BAR_BASE_HEIGHT } from "@/constants/tabBar";
+import { TourAnchor } from "@/components/onboarding/guided/TourAnchor";
 import {
   type FabPosition,
   type FabSlotId,
@@ -12,6 +12,7 @@ import {
   Platform,
   StyleSheet,
   useWindowDimensions,
+  View,
   type LayoutChangeEvent,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -25,8 +26,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FAB_GAP = 16;
 const EDGE_PAD = 12;
-const DEFAULT_WIDTH = 148;
-const DEFAULT_HEIGHT = 52;
+const DEFAULT_WIDTH = 184;
+const DEFAULT_HEIGHT = 56;
 
 type Anchor = "bottom-left" | "bottom-right";
 
@@ -34,6 +35,8 @@ type Props = {
   id: FabSlotId;
   tutorialId: string;
   defaultAnchor: Anchor;
+  /** Extra bottom offset above the tab clearance (stacks FABs on the same side). */
+  defaultLift?: number;
   onPress: () => void;
   children: React.ReactNode;
   offsetTabBar?: boolean;
@@ -51,6 +54,7 @@ export function DraggableFab({
   id,
   tutorialId,
   defaultAnchor,
+  defaultLift = 0,
   onPress,
   children,
   offsetTabBar = true,
@@ -91,8 +95,8 @@ export function DraggableFab({
       defaultAnchor === "bottom-left"
         ? EDGE_PAD + 4
         : Math.max(minLeft, screenW - size.w - EDGE_PAD - 4);
-    return { left, bottom: minBottom };
-  }, [defaultAnchor, minBottom, minLeft, screenW, size.w]);
+    return { left, bottom: minBottom + defaultLift };
+  }, [defaultAnchor, defaultLift, minBottom, minLeft, screenW, size.w]);
 
   const resolvePos = useCallback(
     (pos: FabPosition | undefined): FabPosition => {
@@ -123,7 +127,7 @@ export function DraggableFab({
     const next = resolvePos({ left: left.value, bottom: bottom.value });
     left.value = next.left;
     bottom.value = next.bottom;
-  }, [minLeft, maxLeft, minBottom, maxBottom, left, bottom, resolvePos]);
+  }, [minLeft, maxLeft, minBottom, maxBottom, size.w, size.h, left, bottom, resolvePos]);
 
   const persist = useCallback(
     (pos: FabPosition) => {
@@ -206,50 +210,47 @@ export function DraggableFab({
   }));
 
   return (
-    <TutorialTarget
-      id={tutorialId}
-      pointerEvents="box-none"
-      style={styles.anchor}
-    >
-      <MotiView
-        from={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{
-          type: "spring",
-          damping: 14,
-          stiffness: 220,
-          delay: entranceDelayMs,
-        }}
-        style={styles.moti}
-      >
-        <GestureDetector gesture={gesture}>
-          <Animated.View
-            accessibilityRole="button"
-            accessibilityLabel={accessibilityLabel}
-            accessibilityHint="Drag to move"
-            onLayout={onLayout}
-            style={[styles.fab, animatedStyle]}
-          >
-            {children}
-          </Animated.View>
-        </GestureDetector>
-      </MotiView>
-    </TutorialTarget>
+    <View pointerEvents="box-none" style={styles.layer}>
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          accessibilityRole="button"
+          accessibilityLabel={accessibilityLabel}
+          accessibilityHint="Drag to move"
+          onLayout={onLayout}
+          style={[styles.fab, animatedStyle]}
+        >
+          <TourAnchor id={tutorialId} style={styles.anchor}>
+            <MotiView
+              from={{ scale: 0.88, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{
+                type: "spring",
+                damping: 14,
+                stiffness: 220,
+                delay: entranceDelayMs,
+              }}
+              style={styles.anchor}
+            >
+              {children}
+            </MotiView>
+          </TourAnchor>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  anchor: {
+  layer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 50,
-    pointerEvents: "box-none",
-  },
-  moti: {
-    ...StyleSheet.absoluteFillObject,
     pointerEvents: "box-none",
   },
   fab: {
     position: "absolute",
     zIndex: 50,
+  },
+  anchor: {
+    alignSelf: "flex-start",
   },
 });

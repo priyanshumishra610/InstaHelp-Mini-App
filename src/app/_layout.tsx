@@ -1,5 +1,4 @@
 import { AuthNavigationGuard } from "@/components/auth/AuthNavigationGuard";
-import { SplashExitOverlay } from "@/components/ui/SplashExitOverlay";
 import { HubbleLinkingBridge } from "@/components/system/HubbleLinkingBridge";
 import { AppThemeProvider } from "@/providers/AppThemeProvider";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -13,10 +12,17 @@ import {
   isMobileAdsSupported,
 } from "@/services/ads/initializeMobileAds";
 import { preloadRewardedInterstitial } from "@/services/ads/rewardedInterstitial";
+import {
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  useFonts,
+} from "@expo-google-fonts/poppins";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { View } from "react-native";
+import { InteractionManager, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -39,10 +45,24 @@ function NativeSplashFallback() {
 function MobileAdsBootstrap() {
   useEffect(() => {
     if (!isMobileAdsSupported()) return;
-    void (async () => {
-      await initializeMobileAds();
-      await preloadRewardedInterstitial();
-    })();
+
+    let cancelled = false;
+    let deferTimer: ReturnType<typeof setTimeout> | null = null;
+    const task = InteractionManager.runAfterInteractions(() => {
+      deferTimer = setTimeout(() => {
+        if (cancelled) return;
+        void (async () => {
+          await initializeMobileAds();
+          await preloadRewardedInterstitial();
+        })();
+      }, 2000);
+    });
+
+    return () => {
+      cancelled = true;
+      task.cancel();
+      if (deferTimer) clearTimeout(deferTimer);
+    };
   }, []);
   return null;
 }
@@ -70,7 +90,6 @@ function RootStack() {
       <NativeSplashFallback />
       <MobileAdsBootstrap />
       <AuthNavigationGuard />
-      <SplashExitOverlay />
       <HubbleLinkingBridge />
       <Stack
         screenOptions={{
@@ -81,7 +100,13 @@ function RootStack() {
           statusBarStyle: isDark ? "light" : "dark",
         }}
       >
-        <Stack.Screen name="index" />
+        <Stack.Screen
+          name="index"
+          options={{
+            animation: "none",
+            contentStyle: { backgroundColor: "transparent" },
+          }}
+        />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="support" options={headerOptions("Help & support")} />
@@ -128,14 +153,21 @@ function RootStack() {
 }
 
 export default function RootLayout() {
+  useFonts({
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  });
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryProvider>
           <CmsRealtimeProvider />
           <AuthProvider>
-            <ShopSyncProvider>
-              <ExperienceSyncProvider>
+            <ShopSyncProvider deferStart>
+              <ExperienceSyncProvider deferStart>
                 <AppThemeProvider>
                   <RootStack />
                 </AppThemeProvider>

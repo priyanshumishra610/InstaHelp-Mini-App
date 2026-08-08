@@ -1,14 +1,11 @@
 import { apiRegisterPhone } from "@/api/appsScriptClient";
 import { APPS_SCRIPT_URL } from "@/api/env";
-import { USE_FIREBASE_AUTH } from "@/constants/authBackend";
 import { refreshProfile } from "@/services/profileService";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useProfileStore } from "@/store/profileStore";
 import { useSheetAuthStore } from "@/store/sheetAuthStore";
-import type { FirestoreUser } from "@/types/firestoreUser";
 import { isSheetProfileComplete } from "@/utils/auth/profileComplete";
 import { toE164IndianPhone } from "@/utils/auth/phoneFormat";
-import type { User } from "firebase/auth";
 import {
   createContext,
   useCallback,
@@ -19,22 +16,6 @@ import {
   type PropsWithChildren,
 } from "react";
 
-/* Firebase Auth (disabled — kept for reference)
-import { isFirebaseConfigured } from "@/firebase/config";
-import { sendPhoneOtp, signOutFirebase, verifyPhoneOtp } from "@/firebase/auth";
-import {
-  createUserDocument,
-  fetchUserDocument,
-  syncFirestoreUserToLocalProfile,
-} from "@/firebase/users";
-import { useAuthUiStore } from "@/stores/authUiStore";
-import { isProfileComplete } from "@/types/firestoreUser";
-import { mapFirebaseAuthError } from "@/utils/auth/firebaseErrors";
-import type { ApplicationVerifier, ConfirmationResult } from "firebase/auth";
-import { onAuthStateChanged, signInWithCustomToken } from "firebase/auth";
-import { getFirebaseAuth } from "@/firebase/auth";
-*/
-
 export type AuthStatus =
   | "loading"
   | "unauthenticated"
@@ -44,20 +25,11 @@ export type AuthStatus =
 type AuthContextValue = {
   status: AuthStatus;
   isReady: boolean;
-  /** Always null when Firebase auth is disabled. */
-  firebaseUser: User | null;
-  /** Always null when Firebase auth is disabled. */
-  firestoreUser: FirestoreUser | null;
   /** Sign in with 10-digit mobile; stores phone + row in the backend. */
   signInWithPhone: (digits10: string) => Promise<void>;
   signOut: () => Promise<void>;
   /** Re-read profile from the backend and update auth status. */
   refreshSession: () => Promise<void>;
-  /** Legacy stubs (Firebase auth disabled). */
-  sendOtp: (_digits10: string, _verifier: unknown) => Promise<void>;
-  verifyOtp: (_code: string) => Promise<void>;
-  refreshFirestoreUser: () => Promise<FirestoreUser | null>;
-  getConfirmation: () => null;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -101,12 +73,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let cancelled = false;
-
-    if (USE_FIREBASE_AUTH) {
-      setStatus("unauthenticated");
-      setIsReady(true);
-      return;
-    }
 
     const phone = useSheetAuthStore.getState().phone;
     if (!phone) {
@@ -170,25 +136,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setStatus("unauthenticated");
   }, []);
 
-  const disabledFirebase = useCallback(async () => {
-    throw new Error("Firebase auth is disabled. Use phone sign-in with the backend.");
-  }, []);
-
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       isReady,
-      firebaseUser: null,
-      firestoreUser: null,
       signInWithPhone,
       signOut,
       refreshSession,
-      sendOtp: disabledFirebase,
-      verifyOtp: disabledFirebase,
-      refreshFirestoreUser: async () => null,
-      getConfirmation: () => null,
     }),
-    [disabledFirebase, isReady, refreshSession, signInWithPhone, signOut, status],
+    [isReady, refreshSession, signInWithPhone, signOut, status],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

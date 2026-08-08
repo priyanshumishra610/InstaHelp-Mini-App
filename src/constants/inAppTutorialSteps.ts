@@ -55,15 +55,15 @@ export const IN_APP_TUTORIAL_STEPS: InAppTutorialStep[] = [
     id: "welcome",
     showBrand: true,
     route: "/(tabs)",
-    comicBubble: "Yo! I'm Stick. Ready for a 60-second adventure?",
-    title: "Meet InstaHelp",
-    body: "Your everyday concierge — home help, getaways, deals, and real humans on WhatsApp when you need them. Less stress, more life.",
+    comicBubble: "I'll point, you tap. Ready?",
+    title: "Quick tour",
+    body: "This short walkthrough shows the main buttons on Home. Follow the arrow, tap the highlighted control to try it, or press Next to move on. You can Skip anytime and replay later from Profile.",
     accent: "#E11D48",
     bubbleBg: "#FFF1F2",
     icon: "human-greeting-variant",
     action: "next",
     guidePose: "wave",
-    nextLabel: "Let's roll",
+    nextLabel: "Start tour",
     panelPlacement: "mid-center",
     introPerks: [
       { icon: "home-outline", label: "Home help" },
@@ -85,8 +85,8 @@ export const IN_APP_TUTORIAL_STEPS: InAppTutorialStep[] = [
     action: "tap",
     tapHint: "Tap the glowing button to try it, or Next to continue",
     guidePose: "point-down",
-    // FAB is bottom-left — keep card up and to the right
-    panelPlacement: "top-right",
+    // FAB is bottom-right — keep card up and to the left
+    panelPlacement: "top-left",
   },
   {
     id: "sort-filter",
@@ -101,7 +101,7 @@ export const IN_APP_TUTORIAL_STEPS: InAppTutorialStep[] = [
     action: "tap",
     tapHint: "Tap Sort & Filter to try it, or Next to keep going",
     guidePose: "point-down",
-    // FAB is bottom-right — keep card up and to the left
+    // FAB is bottom-right (lower) — keep card up and to the left
     panelPlacement: "top-left",
   },
   {
@@ -153,9 +153,9 @@ export const IN_APP_TUTORIAL_STEPS: InAppTutorialStep[] = [
   {
     id: "finish",
     route: "/(tabs)/profile",
-    comicBubble: "You crushed it. Go explore!",
+    comicBubble: "You are all set. Explore freely!",
     title: "You're all set",
-    body: "InstaHelp has your back — browse vendors, book getaways, and replay this tour from Profile anytime.",
+    body: "That was the tour. Use New request, filters, credits, and the tabs anytime. Replay this walkthrough from Profile whenever you need a refresher.",
     accent: "#171717",
     bubbleBg: "#FFF9E6",
     icon: "check-decagram",

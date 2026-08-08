@@ -28,43 +28,52 @@ export function useSmartLocalNotifications(
   favoriteServiceIds: string[],
   firstName: string | null = null,
   persona: NotificationPersona = "consumer",
+  deferMs = 0,
 ) {
   const router = useRouter();
   const handledResponseIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    let deferTimer: ReturnType<typeof setTimeout> | null = null;
 
-    void (async () => {
-      let weatherHint: WeatherHint = "neutral";
-      try {
-        const last = await Location.getLastKnownPositionAsync();
-        if (last?.coords) {
-          weatherHint = await fetchWeatherHint(
-            last.coords.latitude,
-            last.coords.longitude,
-          );
+    const run = () => {
+      void (async () => {
+        let weatherHint: WeatherHint = "neutral";
+        try {
+          const last = await Location.getLastKnownPositionAsync();
+          if (last?.coords) {
+            weatherHint = await fetchWeatherHint(
+              last.coords.latitude,
+              last.coords.longitude,
+            );
+          }
+        } catch {
+          weatherHint = "neutral";
         }
-      } catch {
-        weatherHint = "neutral";
-      }
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      await scheduleSmartLocalDemandNotifications({
-        favoriteServiceIds,
-        firstName,
-        persona,
-        weatherHint,
-      }).catch(() => {
-        // Local notifications should never block the app shell.
-      });
-    })();
+        await scheduleSmartLocalDemandNotifications({
+          favoriteServiceIds,
+          firstName,
+          persona,
+          weatherHint,
+        }).catch(() => {});
+      })();
+    };
+
+    if (deferMs > 0) {
+      deferTimer = setTimeout(run, deferMs);
+    } else {
+      run();
+    }
 
     return () => {
       cancelled = true;
+      if (deferTimer) clearTimeout(deferTimer);
     };
-  }, [favoriteServiceIds, firstName, persona]);
+  }, [deferMs, favoriteServiceIds, firstName, persona]);
 
   useEffect(() => {
     let subscription: { remove: () => void } | null = null;

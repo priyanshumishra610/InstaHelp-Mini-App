@@ -1,3 +1,4 @@
+import { PERF_MODE } from "@/constants/performance";
 import { useEffect, useState } from "react";
 import { Text, type StyleProp, type TextStyle } from "react-native";
 
@@ -21,6 +22,10 @@ export function AnimatedNumber({
   const [display, setDisplay] = useState(value);
 
   useEffect(() => {
+    if (PERF_MODE) {
+      setDisplay(value);
+      return;
+    }
     const from = display;
     const to = value;
     if (from === to) return;

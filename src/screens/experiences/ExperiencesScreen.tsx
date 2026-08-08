@@ -2,13 +2,9 @@ import { ExperiencesExploreChrome } from "@/components/experiences/ExperiencesEx
 import { FilterChipRow } from "@/components/experiences/FilterChipRow";
 import { HolidayCard } from "@/components/experiences/HolidayCard";
 import { ResortCard } from "@/components/experiences/ResortCard";
+import { AppIcon } from "@/components/ui/AppIcon";
 import { Screen } from "@/components/ui/Screen";
-import {
-  AUTH_FONT,
-  AUTH_GRADIENT,
-  AUTH_PRIMARY,
-  AUTH_PRIMARY_LIGHT,
-} from "@/constants/authPremium";
+import { AUTH_FONT } from "@/constants/authPremium";
 import { EXP } from "@/constants/experienceTheme";
 import {
   useAllResorts,
@@ -21,13 +17,12 @@ import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useExperienceSyncStatus } from "@/providers/ExperienceSyncProvider";
 import type { HolidayPackage } from "@/types/experienceCatalog";
 import type { ResortRecord } from "@/types/resortExperience";
-import { buildHolidayWhatsAppMessage } from "@/utils/holidayBookingMessage";
+import { useRequestFormStore } from "@/store/requestFormStore";
 import { matchesSearchQuery } from "@/utils/searchMatch";
-import { openWhatsApp } from "@/utils/whatsapp";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -36,7 +31,6 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PRICE_FILTERS = [
@@ -54,6 +48,7 @@ const HOLIDAY_TIER_FILTERS = [
 ] as const;
 
 type CatalogMode = "resorts" | "holidays";
+type SortMode = "rank" | "rating" | "price";
 
 type GeneratedTripDay = {
   day: number;
@@ -166,9 +161,37 @@ function buildTripPlan(
   };
 }
 
+function sortResorts(items: ResortRecord[], sort: SortMode): ResortRecord[] {
+  const copy = [...items];
+  if (sort === "rating") {
+    return copy.sort(
+      (a, b) => (b.tripadvisorRating ?? 0) - (a.tripadvisorRating ?? 0),
+    );
+  }
+  if (sort === "price") {
+    const tierRank = (tier: string | null) =>
+      tier === "Low" ? 1 : tier === "Mid" ? 2 : tier === "High" ? 3 : 4;
+    return copy.sort(
+      (a, b) => tierRank(a.priceTier) - tierRank(b.priceTier),
+    );
+  }
+  return copy.sort((a, b) => {
+    const ar = a.rank != null && a.rank > 0 ? a.rank : 9999;
+    const br = b.rank != null && b.rank > 0 ? b.rank : 9999;
+    return ar - br;
+  });
+}
+
+const SORT_LABELS: Record<SortMode, string> = {
+  rank: "Sort",
+  rating: "Rating",
+  price: "Budget",
+};
+
 export function ExperiencesScreen({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const listRef = useRef<FlatList>(null);
   const { data: profile } = useProfileQuery();
   const resortMeta = useResortMeta();
   const holidayMeta = useHolidayMeta();
@@ -180,6 +203,8 @@ export function ExperiencesScreen({ embedded = false }: { embedded?: boolean }) 
   const [priceFilter, setPriceFilter] = useState<string | null>(null);
   const [countryFilter, setCountryFilter] = useState<string | null>(null);
   const [tierFilter, setTierFilter] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("rank");
+  const [showAllStates, setShowAllStates] = useState(false);
   const [tripOpen, setTripOpen] = useState(false);
   const [generatedTrip, setGeneratedTrip] = useState<GeneratedTrip | null>(null);
 
@@ -205,9 +230,15 @@ export function ExperiencesScreen({ embedded = false }: { embedded?: boolean }) 
     [query, countryFilter, tierFilter],
   );
 
-  const resorts = useResorts(resortFilters);
+  const resortsRaw = useResorts(resortFilters);
+  const resorts = useMemo(
+    () => sortResorts(resortsRaw, sortMode),
+    [resortsRaw, sortMode],
+  );
   const holidays = useHolidayPackages(holidayFilters);
-  const topStates = resortMeta.states.slice(0, 12);
+  const topStates = showAllStates
+    ? resortMeta.states
+    : resortMeta.states.slice(0, 12);
   const topCountries = holidayMeta.countries.slice(0, 12);
 
   const stateChips = useMemo(
@@ -243,17 +274,40 @@ export function ExperiencesScreen({ embedded = false }: { embedded?: boolean }) 
     );
   };
 
-  const enquireHoliday = useCallback((item: HolidayPackage) => {
-    openWhatsApp(buildHolidayWhatsAppMessage(item));
-  }, []);
+  const cycleSort = () => {
+    setSortMode((prev) =>
+      prev === "rank" ? "rating" : prev === "rating" ? "price" : "rank",
+    );
+  };
+
+  const openRequestForm = useRequestFormStore((s) => s.open);
+
+  const enquireHoliday = useCallback(
+    (item: HolidayPackage) => {
+      const bits = [
+        item.title,
+        item.destination || item.country,
+        item.duration,
+        item.priceFrom,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      openRequestForm({
+        service: "holiday_package",
+        source: "experiences",
+        description: `Holiday enquiry: ${bits}`,
+      });
+    },
+    [openRequestForm],
+  );
 
   const statusLine = isSyncing
     ? "Syncing catalog…"
     : fetchFailed
       ? "Showing offline catalog"
       : mode === "holidays"
-        ? "Curated packages · WhatsApp booking"
-        : "Curated properties · WhatsApp booking";
+        ? "Curated packages · In-app booking"
+        : "Curated properties · In-app booking";
 
   const listData = mode === "holidays" ? holidays : resorts;
   const hasActiveSearch = query.trim().length > 0;
@@ -266,332 +320,388 @@ export function ExperiencesScreen({ embedded = false }: { embedded?: boolean }) 
         ? resorts.length
         : resortMeta.total;
 
+  const focusFilters = () => {
+    listRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
   return (
     <Screen surface="white" atmosphere={false} inset={!embedded}>
-      <ExperiencesExploreChrome
-        greeting={greeting}
-        query={query}
-        onQueryChange={setQuery}
-        statusLine={statusLine}
-        propertyCount={propertyCount}
-        mode={mode}
-      />
+      <View style={styles.canvas}>
+        <ExperiencesExploreChrome
+          greeting={greeting}
+          query={query}
+          onQueryChange={setQuery}
+          statusLine={statusLine}
+          propertyCount={propertyCount}
+          mode={mode}
+          onFilterPress={focusFilters}
+        />
 
-      <FlatList
-        data={listData as (ResortRecord | HolidayPackage)[]}
-        keyExtractor={(item) => `${mode}-${item.id}`}
-        contentContainerStyle={{
-          paddingBottom:
-            (embedded ? 28 : Platform.OS === "ios" ? 160 : 150) + insets.bottom,
-          flexGrow: 1,
-        }}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.filtersBlock}>
-            <View style={styles.modeRow}>
-              {(
-                [
-                  { id: "resorts", label: "Resorts", icon: "bed-outline" },
-                  {
-                    id: "holidays",
-                    label: "Holidays",
-                    icon: "airplane-outline",
-                  },
-                ] as const
-              ).map((tab) => {
-                const active = mode === tab.id;
-                return (
-                  <Pressable
-                    key={tab.id}
-                    onPress={() => {
-                      setMode(tab.id);
-                      setQuery("");
-                    }}
-                    style={[styles.modeChip, active && styles.modeChipActive]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Ionicons
-                      name={tab.icon}
-                      size={15}
-                      color={active ? "#fff" : AUTH_PRIMARY}
-                    />
-                    <Text
-                      style={[
-                        styles.modeChipLabel,
-                        {
-                          fontFamily: AUTH_FONT.bold,
-                          color: active ? "#fff" : AUTH_PRIMARY,
-                        },
-                      ]}
+        <FlatList
+          ref={listRef}
+          data={listData as (ResortRecord | HolidayPackage)[]}
+          keyExtractor={(item) => `${mode}-${item.id}`}
+          contentContainerStyle={{
+            paddingBottom:
+              (embedded ? 28 : Platform.OS === "ios" ? 160 : 150) +
+              insets.bottom,
+            flexGrow: 1,
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <View style={styles.filtersBlock}>
+              <View style={styles.modeRow}>
+                {(
+                  [
+                    { id: "resorts", label: "Resorts", icon: "bed-outline" as const },
+                    {
+                      id: "holidays",
+                      label: "Holidays",
+                      icon: "airplane" as const,
+                    },
+                  ] as const
+                ).map((tab) => {
+                  const active = mode === tab.id;
+                  return (
+                    <Pressable
+                      key={tab.id}
+                      onPress={() => {
+                        setMode(tab.id);
+                        setQuery("");
+                      }}
+                      style={[styles.modeChip, active && styles.modeChipActive]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
                     >
-                      {tab.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                      <MaterialCommunityIcons
+                        name={tab.icon}
+                        size={16}
+                        color={active ? "#fff" : EXP.ink}
+                      />
+                      <Text
+                        style={[
+                          styles.modeChipLabel,
+                          {
+                            fontFamily: AUTH_FONT.bold,
+                            color: active ? "#fff" : EXP.ink,
+                          },
+                        ]}
+                      >
+                        {tab.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
 
-            {mode === "resorts" ? (
-              <>
-                <FilterChipRow
-                  label="Where"
-                  chips={stateChips}
-                  selected={stateFilter}
-                  onSelect={setStateFilter}
-                  activeColor={AUTH_PRIMARY}
-                />
+              {mode === "resorts" ? (
+                <>
+                  <FilterChipRow
+                    label="Where"
+                    labelIcon="map-marker-outline"
+                    chips={stateChips}
+                    selected={stateFilter}
+                    onSelect={setStateFilter}
+                    activeColor={EXP.primary}
+                    onExpand={() => setShowAllStates((v) => !v)}
+                  />
 
-                <FilterChipRow
-                  label="Budget"
-                  chips={[...PRICE_FILTERS]}
-                  selected={priceFilter}
-                  onSelect={setPriceFilter}
-                  activeColor={AUTH_PRIMARY}
-                />
+                  <FilterChipRow
+                    label="Budget"
+                    labelIcon="tag-outline"
+                    chips={[...PRICE_FILTERS]}
+                    selected={priceFilter}
+                    onSelect={setPriceFilter}
+                    activeColor={EXP.primary}
+                  />
 
-                <Animated.View
-                  entering={FadeInDown.delay(80).duration(360)}
-                  style={styles.tripBlock}
-                >
-                  <LinearGradient
-                    colors={[...AUTH_GRADIENT]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.tripGradient}
-                  >
-                    <View style={styles.tripHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.tripEyebrow,
-                            { fontFamily: AUTH_FONT.semibold },
-                          ]}
-                        >
-                          Trip planner
-                        </Text>
-                        <Text
-                          style={[
-                            styles.tripTitle,
-                            { fontFamily: AUTH_FONT.bold },
-                          ]}
-                        >
-                          Build a stay itinerary
-                        </Text>
+                  <View style={styles.tripBlock}>
+                    <LinearGradient
+                      colors={[EXP.tripFrom, EXP.tripTo]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.tripGradient}
+                    >
+                      <View style={styles.tripArt} pointerEvents="none">
+                        <View style={styles.tripSun} />
+                        <MaterialCommunityIcons
+                          name="image-filter-hdr"
+                          size={54}
+                          color="rgba(27,77,62,0.18)"
+                          style={styles.tripMountains}
+                        />
                       </View>
-                      <Pressable onPress={generateTrip} style={styles.tripButton}>
-                        <Ionicons name="sparkles" size={16} color={AUTH_PRIMARY} />
-                        <Text
-                          style={[
-                            styles.tripButtonLabel,
-                            { fontFamily: AUTH_FONT.bold },
-                          ]}
-                        >
-                          Generate
-                        </Text>
-                      </Pressable>
-                    </View>
 
-                    {tripOpen && generatedTrip ? (
-                      <View style={styles.tripResults}>
-                        <Text
-                          style={[
-                            styles.tripPlanTitle,
-                            { fontFamily: AUTH_FONT.bold },
-                          ]}
-                        >
-                          {generatedTrip.title}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.tripPlanSubtitle,
-                            { fontFamily: AUTH_FONT.regular },
-                          ]}
-                        >
-                          {generatedTrip.subtitle}
-                        </Text>
-                        {generatedTrip.days.map((day) => (
-                          <Pressable
-                            key={`${day.day}-${day.resort.id}`}
-                            onPress={() =>
-                              router.push({
-                                pathname: "/(tabs)/experiences/[id]",
-                                params: { id: day.resort.id },
-                              })
-                            }
-                            style={styles.tripDayRow}
+                      <View style={styles.tripHeader}>
+                        <View style={{ flex: 1, paddingRight: 8 }}>
+                          <Text
+                            style={[
+                              styles.tripEyebrow,
+                              { fontFamily: AUTH_FONT.semibold },
+                            ]}
                           >
-                            <View style={styles.tripDayBadge}>
-                              <Text
-                                style={[
-                                  styles.tripDayBadgeText,
-                                  { fontFamily: AUTH_FONT.bold },
-                                ]}
-                              >
-                                D{day.day}
-                              </Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text
-                                style={[
-                                  styles.tripDayLabel,
-                                  { fontFamily: AUTH_FONT.semibold },
-                                ]}
-                              >
-                                {day.title}
-                              </Text>
-                              <Text
-                                numberOfLines={1}
-                                style={[
-                                  styles.tripDayResort,
-                                  { fontFamily: AUTH_FONT.bold },
-                                ]}
-                              >
-                                {day.resort.name}
-                              </Text>
-                            </View>
-                            <Ionicons
-                              name="chevron-forward"
-                              size={16}
-                              color="rgba(255,255,255,0.7)"
-                            />
-                          </Pressable>
-                        ))}
+                            Trip planner
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tripTitle,
+                              { fontFamily: AUTH_FONT.bold },
+                            ]}
+                          >
+                            Build a stay itinerary
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tripSubtitle,
+                              { fontFamily: AUTH_FONT.regular },
+                            ]}
+                          >
+                            Plan your perfect trip in seconds
+                          </Text>
+                        </View>
+                        <Pressable
+                          onPress={generateTrip}
+                          style={({ pressed }) => [
+                            styles.tripButton,
+                            pressed && { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                          ]}
+                        >
+                          <AppIcon name="sparkles" size={14} color="#fff" />
+                          <Text
+                            style={[
+                              styles.tripButtonLabel,
+                              { fontFamily: AUTH_FONT.bold },
+                            ]}
+                          >
+                            Generate
+                          </Text>
+                        </Pressable>
                       </View>
-                    ) : null}
-                  </LinearGradient>
-                </Animated.View>
 
-                <View style={styles.sectionHeader}>
-                  <Text
-                    style={[
-                      styles.sectionEyebrow,
-                      { fontFamily: AUTH_FONT.semibold },
-                    ]}
-                  >
-                    RESORTS
-                  </Text>
-                  <View style={styles.sectionTitleRow}>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { fontFamily: AUTH_FONT.bold },
-                      ]}
-                    >
-                      {resorts.length} {resorts.length === 1 ? "stay" : "stays"}
-                      {stateFilter ? ` · ${stateFilter}` : ""}
-                      {hasActiveSearch ? " · search" : ""}
-                    </Text>
-                    <View style={styles.sectionMarkPrimary} />
-                    <View style={styles.sectionMarkSecondary} />
+                      {tripOpen && generatedTrip ? (
+                        <View style={styles.tripResults}>
+                          <Text
+                            style={[
+                              styles.tripPlanTitle,
+                              { fontFamily: AUTH_FONT.bold },
+                            ]}
+                          >
+                            {generatedTrip.title}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.tripPlanSubtitle,
+                              { fontFamily: AUTH_FONT.regular },
+                            ]}
+                          >
+                            {generatedTrip.subtitle}
+                          </Text>
+                          {generatedTrip.days.map((day) => (
+                            <Pressable
+                              key={`${day.day}-${day.resort.id}`}
+                              onPress={() =>
+                                router.push({
+                                  pathname: "/(tabs)/experiences/[id]",
+                                  params: { id: day.resort.id },
+                                })
+                              }
+                              style={styles.tripDayRow}
+                            >
+                              <View style={styles.tripDayBadge}>
+                                <Text
+                                  style={[
+                                    styles.tripDayBadgeText,
+                                    { fontFamily: AUTH_FONT.bold },
+                                  ]}
+                                >
+                                  D{day.day}
+                                </Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text
+                                  style={[
+                                    styles.tripDayLabel,
+                                    { fontFamily: AUTH_FONT.semibold },
+                                  ]}
+                                >
+                                  {day.title}
+                                </Text>
+                                <Text
+                                  numberOfLines={1}
+                                  style={[
+                                    styles.tripDayResort,
+                                    { fontFamily: AUTH_FONT.bold },
+                                  ]}
+                                >
+                                  {day.resort.name}
+                                </Text>
+                              </View>
+                              <AppIcon
+                                name="chevron-right"
+                                size={16}
+                                color={EXP.primary}
+                              />
+                            </Pressable>
+                          ))}
+                        </View>
+                      ) : null}
+                    </LinearGradient>
                   </View>
-                </View>
-              </>
-            ) : (
-              <>
-                <FilterChipRow
-                  label="Destination"
-                  chips={countryChips}
-                  selected={countryFilter}
-                  onSelect={setCountryFilter}
-                  activeColor={AUTH_PRIMARY}
-                />
 
-                <FilterChipRow
-                  label="Tier"
-                  chips={[...HOLIDAY_TIER_FILTERS]}
-                  selected={tierFilter}
-                  onSelect={setTierFilter}
-                  activeColor={AUTH_PRIMARY}
-                />
-
-                <View style={styles.sectionHeader}>
-                  <Text
-                    style={[
-                      styles.sectionEyebrow,
-                      { fontFamily: AUTH_FONT.semibold },
-                    ]}
-                  >
-                    HOLIDAYS
-                  </Text>
-                  <View style={styles.sectionTitleRow}>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { fontFamily: AUTH_FONT.bold },
+                  <View style={styles.sectionHeader}>
+                    <View>
+                      <Text
+                        style={[
+                          styles.sectionEyebrow,
+                          { fontFamily: AUTH_FONT.semibold },
+                        ]}
+                      >
+                        RESORTS
+                      </Text>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          { fontFamily: AUTH_FONT.bold },
+                        ]}
+                      >
+                        {resorts.length}{" "}
+                        {resorts.length === 1 ? "stay" : "stays"}
+                        {stateFilter ? ` · ${stateFilter}` : ""}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={cycleSort}
+                      style={({ pressed }) => [
+                        styles.sortBtn,
+                        pressed && { opacity: 0.85 },
                       ]}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Sort by ${SORT_LABELS[sortMode]}`}
                     >
-                      {holidays.length}{" "}
-                      {holidays.length === 1 ? "package" : "packages"}
-                      {countryFilter ? ` · ${countryFilter}` : ""}
-                      {hasActiveSearch ? " · search" : ""}
-                    </Text>
-                    <View style={styles.sectionMarkPrimary} />
-                    <View style={styles.sectionMarkSecondary} />
+                      <AppIcon name="sort" size={15} color={EXP.ink} />
+                      <Text
+                        style={[
+                          styles.sortLabel,
+                          { fontFamily: AUTH_FONT.semibold },
+                        ]}
+                      >
+                        {SORT_LABELS[sortMode]}
+                      </Text>
+                      <AppIcon name="chevron-down" size={15} color={EXP.muted} />
+                    </Pressable>
                   </View>
-                </View>
-              </>
-            )}
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            {mode === "holidays" ? (
-              <HolidayCard
-                item={item as HolidayPackage}
-                onPress={() => enquireHoliday(item as HolidayPackage)}
+                </>
+              ) : (
+                <>
+                  <FilterChipRow
+                    label="Destination"
+                    labelIcon="earth"
+                    chips={countryChips}
+                    selected={countryFilter}
+                    onSelect={setCountryFilter}
+                    activeColor={EXP.primary}
+                  />
+
+                  <FilterChipRow
+                    label="Tier"
+                    labelIcon="diamond-stone"
+                    chips={[...HOLIDAY_TIER_FILTERS]}
+                    selected={tierFilter}
+                    onSelect={setTierFilter}
+                    activeColor={EXP.primary}
+                  />
+
+                  <View style={styles.sectionHeader}>
+                    <View>
+                      <Text
+                        style={[
+                          styles.sectionEyebrow,
+                          { fontFamily: AUTH_FONT.semibold },
+                        ]}
+                      >
+                        HOLIDAYS
+                      </Text>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          { fontFamily: AUTH_FONT.bold },
+                        ]}
+                      >
+                        {holidays.length}{" "}
+                        {holidays.length === 1 ? "package" : "packages"}
+                        {countryFilter ? ` · ${countryFilter}` : ""}
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
+          }
+          renderItem={({ item }) => (
+            <View style={styles.cardWrap}>
+              {mode === "holidays" ? (
+                <HolidayCard
+                  item={item as HolidayPackage}
+                  onPress={() => enquireHoliday(item as HolidayPackage)}
+                />
+              ) : (
+                <ResortCard
+                  resort={item as ResortRecord}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(tabs)/experiences/[id]",
+                      params: { id: item.id },
+                    })
+                  }
+                />
+              )}
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <MaterialCommunityIcons
+                name={mode === "holidays" ? "airplane" : "bed-outline"}
+                size={36}
+                color="#94A3B8"
               />
-            ) : (
-              <ResortCard
-                resort={item as ResortRecord}
-                onPress={() =>
-                  router.push({
-                    pathname: "/(tabs)/experiences/[id]",
-                    params: { id: item.id },
-                  })
-                }
-              />
-            )}
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons
-              name={mode === "holidays" ? "airplane-outline" : "bed-outline"}
-              size={36}
-              color="#94A3B8"
-            />
-            <Text style={[styles.emptyTitle, { fontFamily: AUTH_FONT.bold }]}>
-              {mode === "holidays" ? "No packages match" : "No resorts match"}
-            </Text>
-            <Text style={[styles.emptyCopy, { fontFamily: AUTH_FONT.regular }]}>
-              {hasActiveSearch
-                ? "Try fewer words, another spelling, or clear search."
-                : mode === "holidays"
-                  ? "Try another destination or clear your filters."
-                  : "Try another state or clear your filters."}
-            </Text>
-          </View>
-        }
-        initialNumToRender={8}
-        maxToRenderPerBatch={12}
-        windowSize={8}
-        extraData={`${mode}:${query}:${listData.length}`}
-      />
+              <Text style={[styles.emptyTitle, { fontFamily: AUTH_FONT.bold }]}>
+                {mode === "holidays" ? "No packages match" : "No resorts match"}
+              </Text>
+              <Text
+                style={[styles.emptyCopy, { fontFamily: AUTH_FONT.regular }]}
+              >
+                {hasActiveSearch
+                  ? "Try fewer words, another spelling, or clear search."
+                  : mode === "holidays"
+                    ? "Try another destination or clear your filters."
+                    : "Try another state or clear your filters."}
+              </Text>
+            </View>
+          }
+          initialNumToRender={8}
+          maxToRenderPerBatch={12}
+          windowSize={8}
+          extraData={`${mode}:${query}:${sortMode}:${listData.length}`}
+        />
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  canvas: {
+    flex: 1,
+    backgroundColor: EXP.canvas,
+  },
   filtersBlock: {
     paddingHorizontal: 20,
   },
   modeRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 14,
+    marginBottom: 4,
   },
   modeChip: {
     flex: 1,
@@ -599,15 +709,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: AUTH_PRIMARY,
-    backgroundColor: "#fff",
-    paddingVertical: 11,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: EXP.line,
+    backgroundColor: EXP.white,
+    paddingVertical: 12,
   },
   modeChipActive: {
-    backgroundColor: AUTH_PRIMARY,
-    borderColor: AUTH_PRIMARY,
+    backgroundColor: EXP.primary,
+    borderColor: EXP.primary,
   },
   modeChipLabel: {
     fontSize: 13,
@@ -619,6 +729,30 @@ const styles = StyleSheet.create({
   tripGradient: {
     borderRadius: 22,
     padding: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(27,77,62,0.08)",
+  },
+  tripArt: {
+    position: "absolute",
+    right: 8,
+    top: 8,
+    width: 90,
+    height: 70,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tripSun: {
+    position: "absolute",
+    top: 6,
+    right: 18,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(232,184,74,0.55)",
+  },
+  tripMountains: {
+    marginTop: 10,
   },
   tripHeader: {
     flexDirection: "row",
@@ -627,19 +761,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tripEyebrow: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 11,
-    letterSpacing: 1.2,
+    color: EXP.primary,
+    fontSize: 10,
+    letterSpacing: 1.4,
     textTransform: "uppercase",
   },
   tripTitle: {
-    color: "#fff",
+    color: EXP.ink,
     fontSize: 17,
     marginTop: 4,
   },
+  tripSubtitle: {
+    color: EXP.muted,
+    fontSize: 12,
+    marginTop: 3,
+  },
   tripButton: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: EXP.primary,
+    borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 11,
     flexDirection: "row",
@@ -647,7 +786,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tripButtonLabel: {
-    color: AUTH_PRIMARY,
+    color: "#fff",
     fontSize: 13,
   },
   tripResults: {
@@ -655,74 +794,78 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tripPlanTitle: {
-    color: "#fff",
+    color: EXP.ink,
     fontSize: 15,
   },
   tripPlanSubtitle: {
-    color: "rgba(255,255,255,0.75)",
+    color: EXP.muted,
     fontSize: 12,
     lineHeight: 18,
   },
   tripDayRow: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.72)",
     borderRadius: 16,
     padding: 12,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    borderWidth: 1,
+    borderColor: "rgba(27,77,62,0.08)",
   },
   tripDayBadge: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.16)",
+    backgroundColor: EXP.primarySoft,
     alignItems: "center",
     justifyContent: "center",
   },
   tripDayBadgeText: {
-    color: "#fff",
+    color: EXP.primary,
     fontSize: 12,
   },
   tripDayLabel: {
-    color: "rgba(255,255,255,0.65)",
+    color: EXP.muted,
     fontSize: 11,
   },
   tripDayResort: {
-    color: "#fff",
+    color: EXP.ink,
     fontSize: 14,
     marginTop: 2,
   },
   sectionHeader: {
-    paddingTop: 28,
-    paddingBottom: 8,
+    paddingTop: 24,
+    paddingBottom: 10,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 12,
   },
   sectionEyebrow: {
     fontSize: 10,
     letterSpacing: 1.4,
-    color: AUTH_PRIMARY,
-  },
-  sectionTitleRow: {
-    marginTop: 4,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    color: EXP.muted,
   },
   sectionTitle: {
+    marginTop: 4,
     fontSize: 20,
     letterSpacing: -0.3,
-    color: "#111827",
+    color: EXP.ink,
   },
-  sectionMarkPrimary: {
-    width: 20,
-    height: 2.5,
-    borderRadius: 99,
-    backgroundColor: AUTH_PRIMARY,
+  sortBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: EXP.white,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: EXP.line,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
   },
-  sectionMarkSecondary: {
-    width: 10,
-    height: 2.5,
-    borderRadius: 99,
-    backgroundColor: AUTH_PRIMARY_LIGHT,
+  sortLabel: {
+    fontSize: 12,
+    color: EXP.ink,
   },
   cardWrap: {
     paddingHorizontal: 20,

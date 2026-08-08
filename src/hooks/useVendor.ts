@@ -1,47 +1,40 @@
-import { subscribeVendorById } from "@/firebase/vendors";
-import { useFirestoreCatalog } from "@/firebase/config";
 import { getVendorCatalog } from "@/services/vendors/getVendorCatalog";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { useCallback, useEffect, useState } from "react";
 
 export function useVendor(vendorId: string | undefined) {
-  const firestore = useFirestoreCatalog();
   const [vendor, setVendor] = useState<VendorRecord | null>(null);
   const [loading, setLoading] = useState(Boolean(vendorId));
   const [error, setError] = useState<Error | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const retry = useCallback(() => setError(null), []);
+  const retry = useCallback(() => {
+    setError(null);
+    setRetryCount((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     const id = vendorId?.trim();
     if (!id) {
       setVendor(null);
       setLoading(false);
+      setError(null);
       return;
     }
 
-    if (!firestore) {
+    try {
       const found = getVendorCatalog().getById(id) ?? null;
       setVendor(found);
+      setError(null);
+    } catch (e) {
+      setVendor(null);
+      setError(e instanceof Error ? e : new Error("Failed to load vendor"));
+    } finally {
       setLoading(false);
-      return;
     }
+  }, [vendorId, retryCount]);
 
-    setLoading(true);
-    const unsub = subscribeVendorById(
-      id,
-      (row) => {
-        setVendor(row);
-        setLoading(false);
-        setError(null);
-      },
-      (err) => {
-        setError(err);
-        setLoading(false);
-      },
-    );
-    return () => unsub();
-  }, [firestore, vendorId, retry]);
+  const notFound = Boolean(vendorId?.trim()) && !loading && !error && vendor == null;
 
-  return { vendor, loading, error, retry };
+  return { vendor, loading, error, notFound, retry };
 }

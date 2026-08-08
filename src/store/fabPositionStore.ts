@@ -33,6 +33,14 @@ export const useFabPositionStore = create<FabPositionState>()(
     {
       name: "instahelp-fab-positions",
       storage: createJSONStorage(() => AsyncStorage),
+      version: 2,
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<FabPositionState>;
+        const positions = { ...(state.positions ?? {}) };
+        // New default: New request sits bottom-right (above Sort & Filter).
+        delete positions["new-request"];
+        return { positions };
+      },
       partialize: (s) => ({ positions: s.positions }),
     },
   ),

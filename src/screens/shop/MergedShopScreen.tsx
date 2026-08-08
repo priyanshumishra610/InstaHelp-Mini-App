@@ -8,6 +8,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useShopTabStore } from "@/store/shopTabStore";
 
 type ShopSection = "shop" | "giftcards";
 
@@ -47,6 +48,11 @@ export function MergedShopScreen() {
   const [section, setSection] = useState<ShopSection>(() =>
     resolveInitialSection(sectionParam, hasGiftCardDeepLink),
   );
+  const syncShopTabSection = useShopTabStore((s) => s.setSection);
+
+  useEffect(() => {
+    syncShopTabSection(section);
+  }, [section, syncShopTabSection]);
 
   useEffect(() => {
     const next = resolveInitialSection(sectionParam, hasGiftCardDeepLink);

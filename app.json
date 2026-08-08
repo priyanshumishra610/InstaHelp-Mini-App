@@ -1,9 +1,4 @@
 {
-  "react-native-google-mobile-ads": {
-    "android_app_id": "ca-app-pub-6513857875305294~9603037789",
-    "ios_app_id": "ca-app-pub-6513857875305294~9603037789",
-    "user_tracking_usage_description": "This identifier is used to deliver personalized ads that help you earn vendor credits."
-  },
   "expo": {
     "name": "InstaHelp",
     "slug": "instahelp",
@@ -24,7 +19,6 @@
       }
     },
     "android": {
-      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -49,9 +43,10 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 120
+          "backgroundColor": "#000000",
+          "image": "./assets/images/splash-wordmark.png",
+          "imageWidth": 240,
+          "resizeMode": "contain"
         }
       ],
       [
@@ -73,7 +68,10 @@
       [
         "expo-notifications",
         {
-          "color": "#004aad"
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#171717",
+          "defaultChannel": "instahelp-local-demand",
+          "sounds": []
         }
       ],
       "@react-native-community/datetimepicker",
@@ -91,16 +89,28 @@
     },
     "extra": {
       "router": {},
+      "publicEnv": {
+        "EXPO_PUBLIC_APPS_SCRIPT_URL": "https://script.google.com/macros/s/AKfycbxY3jUaZff3lpInIyOMxmy_vpRsueaghpf2ko8EQlrrVWERpG58pcFEQkDmLSxxxcq7/exec",
+        "EXPO_PUBLIC_WHATSAPP_E164": "917022702220",
+        "EXPO_PUBLIC_APP_WEB_URL": "https://instahelp.in",
+        "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://instahelp.in/terms",
+        "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://instahelp.in/privacy",
+        "EXPO_PUBLIC_HUBBLE_CLIENT_ID": "instahelp-sdk-1z4JmIpo",
+        "EXPO_PUBLIC_HUBBLE_APP_SECRET": "Ppo5udAi9CDXlN8nlPZoH8myUwAwsa7UgsKcxvxTeXrWZHhPMqACBhr7e4FDsaN4",
+        "EXPO_PUBLIC_HUBBLE_ENV": "production",
+        "EXPO_PUBLIC_SHOP_CATALOG_SOURCE": "live",
+        "EXPO_PUBLIC_SHOP_SHEET_ID": "1XfPC6fcV_Ct97vDwaRJDVbZ2hJNQRvj2FWj0nddqwR4",
+        "EXPO_PUBLIC_SHOP_PRODUCTS_GID": "0",
+        "EXPO_PUBLIC_RAZORPAY_KEY_ID": "rzp_live_SxW7oDR9YnHxcV"
+      },
       "eas": {
-        "projectId": "fa27befe-169d-44db-a09d-90b55c657cc7"
+        "projectId": "06de5144-e873-4493-8832-06de0c28aa08"
       }
     },
-    "owner": "priyanshum567",
+    "owner": "priyanshum614",
     "updates": {
       "enabled": false
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    }
+    "runtimeVersion": "1.0.0"
   }
 }

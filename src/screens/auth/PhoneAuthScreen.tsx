@@ -6,6 +6,7 @@ import {
   AUTH_PRIMARY,
   AUTH_PRIMARY_DEEP,
 } from "@/constants/authPremium";
+import { PERF_MODE } from "@/constants/performance";
 import { useAuth } from "@/providers/AuthProvider";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { useProfileStore } from "@/store/profileStore";
@@ -38,8 +39,6 @@ import {
 } from "react-native";
 import Animated, {
   Easing,
-  FadeInDown,
-  FadeInUp,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
@@ -49,7 +48,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const AUTH_ENTER_MS = 520;
+const AUTH_ENTER_MS = PERF_MODE ? 0 : 520;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function PhoneAuthScreen() {
@@ -108,9 +107,11 @@ export function PhoneAuthScreen() {
   const onSkipBrowse = useCallback(() => {
     setError(null);
     enterGuestMode();
+    /* TUTORIAL_DISABLED — tutorialFeature.ts
     if (!useOnboardingStore.getState().appTutorialCompleted) {
       useOnboardingStore.getState().setPendingInAppTutorial(true);
     }
+    */
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.replace("/(tabs)");
   }, [enterGuestMode, router]);
@@ -253,10 +254,7 @@ export function PhoneAuthScreen() {
           >
             <View style={styles.screenCenterWrap}>
               {!keyboardOpen ? (
-                <Animated.View
-                  entering={FadeInDown.duration(480).delay(40)}
-                  style={[styles.heroSection, { paddingTop: 8 }]}
-                >
+                <View style={[styles.heroSection, { paddingTop: 8 }]}>
                   <Text style={[styles.wordmark, { fontFamily: AUTH_FONT.bold }]}>
                     InstaHelp
                   </Text>
@@ -264,7 +262,7 @@ export function PhoneAuthScreen() {
                     We&apos;ll get it done
                   </Text>
                   <LoginHeroVisual />
-                </Animated.View>
+                </View>
               ) : (
                 <View style={styles.heroCompact}>
                   <Text style={[styles.wordmarkCompact, { fontFamily: AUTH_FONT.bold }]}>
@@ -273,8 +271,7 @@ export function PhoneAuthScreen() {
                 </View>
               )}
 
-              <Animated.View
-                entering={FadeInUp.duration(520).delay(120)}
+              <View
                 onLayout={(e) => {
                   sheetOffsetY.current = e.nativeEvent.layout.y;
                 }}
@@ -413,7 +410,7 @@ export function PhoneAuthScreen() {
                       </Text>
                     </Text>
                 </View>
-              </Animated.View>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

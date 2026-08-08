@@ -33,7 +33,7 @@ function formatCreatedAt(value: unknown): string {
 }
 
 function readAuthProvider(raw: unknown): AuthProviderKind | "" {
-  return raw === "otp" ? raw : "";
+  return raw === "truecaller" || raw === "otp" ? raw : "";
 }
 
 function coerceFirestoreEmail(raw: unknown): string | null | undefined {

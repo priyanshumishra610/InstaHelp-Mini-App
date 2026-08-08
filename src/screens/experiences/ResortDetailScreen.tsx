@@ -1,9 +1,9 @@
 import { ResortImage } from "@/components/experiences/ResortImage";
 import { Screen } from "@/components/ui/Screen";
+import { EXP } from "@/constants/experienceTheme";
 import { ACCENT } from "@/constants/theme";
 import { findResortById } from "@/services/resorts/getResortCatalog";
-import { buildResortWhatsAppMessage } from "@/utils/resortBookingMessage";
-import { openWhatsApp } from "@/utils/whatsapp";
+import { useRequestFormStore } from "@/store/requestFormStore";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -30,6 +30,7 @@ export function ResortDetailScreen() {
   );
   const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
   const [imageIndex, setImageIndex] = useState(0);
+  const openRequestForm = useRequestFormStore((s) => s.open);
 
   if (!resort) {
     return (
@@ -51,12 +52,14 @@ export function ResortDetailScreen() {
       : [];
   const hero = images[imageIndex] ?? images[0];
 
-  const bookWhatsApp = () => {
-    openWhatsApp(
-      buildResortWhatsAppMessage(resort, {
-        roomType: selectedRoom ?? undefined,
-      }),
-    );
+  const requestBooking = () => {
+    const roomPart = selectedRoom ? ` · Room: ${selectedRoom}` : "";
+    const place = [resort.location, resort.state].filter(Boolean).join(", ");
+    openRequestForm({
+      service: "resort_stay",
+      source: "experiences",
+      description: `Resort booking: ${resort.name}${place ? ` (${place})` : ""}${roomPart}`,
+    });
   };
 
   return (
@@ -162,7 +165,7 @@ export function ResortDetailScreen() {
             <>
               <SectionTitle>Room options</SectionTitle>
               <Text className="mb-2 text-[12px] text-neutral-500">
-                Tap a room to include it in your WhatsApp request
+                Tap a room to include it in your booking request
               </Text>
               <View className="gap-2">
                 {resort.roomTypes.map((room) => {
@@ -220,20 +223,23 @@ export function ResortDetailScreen() {
 
         <View className="mx-4 mt-6 gap-3">
           <Pressable
-            onPress={bookWhatsApp}
+            onPress={requestBooking}
             accessibilityRole="button"
-            accessibilityLabel="Book via WhatsApp"
-            className="flex-row items-center justify-center gap-2 rounded-2xl bg-[#25D366] py-4 active:opacity-90"
+            accessibilityLabel="Request booking"
+            className="flex-row items-center justify-center gap-2 rounded-2xl py-4 active:opacity-90"
             style={{
-              shadowColor: "#15803d",
+              backgroundColor: EXP.primary,
+              shadowColor: EXP.primaryDeep,
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.25,
               shadowRadius: 14,
               elevation: 6,
             }}
           >
-            <Ionicons name="logo-whatsapp" size={22} color="#fff" />
-            <Text className="text-[16px] font-extrabold text-white">Book via WhatsApp</Text>
+            <Ionicons name="calendar-outline" size={22} color="#fff" />
+            <Text className="text-[16px] font-extrabold text-white">
+              Request booking
+            </Text>
           </Pressable>
 
           {resort.websiteUrl ? (
@@ -249,8 +255,9 @@ export function ResortDetailScreen() {
           <View className="flex-row items-start gap-2 rounded-2xl bg-white/80 px-3 py-3">
             <Ionicons name="information-circle-outline" size={18} color="#6b7280" />
             <Text className="flex-1 text-[12px] leading-[18px] text-neutral-500">
-              InstaHelp concierge will confirm availability and best rates on WhatsApp. Prices
-              shown are estimates from our resort list.
+              Submit a booking request in the app and our concierge will confirm
+              availability and best rates. Prices shown are estimates from our
+              resort list.
             </Text>
           </View>
         </View>

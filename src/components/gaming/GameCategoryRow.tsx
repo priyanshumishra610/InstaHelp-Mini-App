@@ -1,6 +1,5 @@
-import { GameCard, GameCardShimmer, GAME_CARD_WIDTH } from "@/components/gaming/GameCard";
+import { GameCard, GAME_CARD_WIDTH } from "@/components/gaming/GameCard";
 import type { GameCategory, GamezopGame } from "@/constants/gamezopGames";
-import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 
 type Props = {
@@ -10,13 +9,6 @@ type Props = {
 };
 
 export function GameCategoryRow({ category, games, onPlayGame }: Props) {
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 420 + (category.id.length % 3) * 180);
-    return () => clearTimeout(t);
-  }, [category.id]);
-
   if (!games.length) return null;
 
   return (
@@ -27,12 +19,10 @@ export function GameCategoryRow({ category, games, onPlayGame }: Props) {
       </View>
 
       <FlatList
-        data={loading ? Array.from({ length: 4 }) : games}
+        data={games}
         horizontal
         showsHorizontalScrollIndicator={false}
-        keyExtractor={(item, i) =>
-          loading ? `shimmer-${category.id}-${i}` : (item as GamezopGame).id
-        }
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         removeClippedSubviews
         initialNumToRender={4}
@@ -43,17 +33,9 @@ export function GameCategoryRow({ category, games, onPlayGame }: Props) {
           offset: (GAME_CARD_WIDTH + 14) * index,
           index,
         })}
-        renderItem={({ item, index }) =>
-          loading ? (
-            <GameCardShimmer index={index} />
-          ) : (
-            <GameCard
-              game={item as GamezopGame}
-              index={index}
-              onPress={onPlayGame}
-            />
-          )
-        }
+        renderItem={({ item, index }) => (
+          <GameCard game={item} index={index} onPress={onPlayGame} />
+        )}
       />
     </View>
   );

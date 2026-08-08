@@ -1,5 +1,3 @@
-import { RequestFormSheet } from "@/components/home/RequestFormSheet";
-import { RequestFormFab } from "@/components/home/RequestFormFab";
 import { HomeHubSheet } from "@/components/home/HomeHubSheet";
 import { Screen } from "@/components/ui/Screen";
 import { CreditHistoryModal } from "@/components/vendors/CreditHistoryModal";
@@ -8,9 +6,10 @@ import { MarketplaceToast } from "@/components/vendors/MarketplaceToast";
 import { useExploreCatalog } from "@/hooks/useExploreCatalog";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useHomeHubStore } from "@/store/homeHubStore";
+import { useRequestFormStore } from "@/store/requestFormStore";
 import type { ExploreFormSuggestion } from "@/services/vendors/matchFormToExplore";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { View } from "react-native";
 
 export function HomeScreen() {
@@ -43,8 +42,7 @@ export function HomeScreen() {
   const hubVisible = useHomeHubStore((s) => s.visible);
   const closeHub = useHomeHubStore((s) => s.close);
   const setActiveFilterCount = useHomeHubStore((s) => s.setActiveFilterCount);
-
-  const [formOpen, setFormOpen] = useState(false);
+  const openForm = useRequestFormStore((s) => s.open);
 
   useEffect(() => {
     setActiveFilterCount(catalog.activeFilterCount);
@@ -52,9 +50,9 @@ export function HomeScreen() {
 
   useEffect(() => {
     if (serviceParam || sourceParam) {
-      setFormOpen(true);
+      openForm({ service: serviceParam, source: sourceParam });
     }
-  }, [serviceParam, sourceParam]);
+  }, [serviceParam, sourceParam, openForm]);
 
   const greeting = useMemo(() => {
     const n = profile?.name?.trim();
@@ -69,8 +67,8 @@ export function HomeScreen() {
   );
 
   const openConciergeFromHub = useCallback(() => {
-    setFormOpen(true);
-  }, []);
+    openForm();
+  }, [openForm]);
 
   return (
     <Screen surface="white" atmosphere={false}>
@@ -90,16 +88,6 @@ export function HomeScreen() {
           catalog={catalog}
           onOpenConcierge={openConciergeFromHub}
         />
-
-        <RequestFormSheet
-          visible={formOpen}
-          onClose={() => setFormOpen(false)}
-          initialService={serviceParam}
-          initialSource={sourceParam}
-          onBrowseExplore={handleBrowseExploreSuggestion}
-        />
-
-        <RequestFormFab onPress={() => setFormOpen(true)} />
 
         <ExploreVendorList catalog={catalog} greeting={greeting} />
       </View>

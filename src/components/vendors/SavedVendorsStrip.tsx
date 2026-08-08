@@ -1,13 +1,13 @@
 import { SaveVendorButton } from "@/components/vendors/SaveVendorButton";
 import { GlowButton } from "@/components/ui/GlowButton";
 import { glassCardStyle } from "@/components/ui/GlassSurface";
-import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import { AUTH_FONT } from "@/constants/authPremium";
 import { RADIUS } from "@/constants/designSystem";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSavedVendorsStore } from "@/store/savedVendorsStore";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { useRouter } from "expo-router";
-import { MotiView } from "moti";
 import { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -18,6 +18,7 @@ type Props = {
 };
 
 export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
+  const { colors, isDark } = useAppTheme();
   const router = useRouter();
   const savedIds = useSavedVendorsStore((s) => s.vendorIds);
 
@@ -32,18 +33,23 @@ export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
   if (savedIds.length === 0) return null;
 
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 10 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{ type: "spring", damping: 20, stiffness: 280 }}
-      style={styles.block}
-    >
+    <View style={styles.block}>
       <View style={styles.headerRow}>
         <View>
-          <Text style={[styles.eyebrow, { fontFamily: AUTH_FONT.semibold }]}>
+          <Text
+            style={[
+              styles.eyebrow,
+              { fontFamily: AUTH_FONT.semibold, color: colors.inkMuted },
+            ]}
+          >
             SAVED
           </Text>
-          <Text style={[styles.count, { fontFamily: AUTH_FONT.bold }]}>
+          <Text
+            style={[
+              styles.count,
+              { fontFamily: AUTH_FONT.bold, color: colors.ink },
+            ]}
+          >
             {savedIds.length}
             {savedLimit != null ? ` / ${savedLimit}` : ""} vendors
           </Text>
@@ -62,38 +68,44 @@ export function SavedVendorsStrip({ vendors, isPro, savedLimit }: Props) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {savedVendors.map((vendor, index) => (
-          <MotiView
+        {savedVendors.map((vendor) => (
+          <Pressable
             key={vendor.id}
-            from={{ opacity: 0, translateX: 16 }}
-            animate={{ opacity: 1, translateX: 0 }}
-            transition={{ type: "spring", damping: 18, delay: index * 50 }}
+            onPress={() => router.push(`/(tabs)/vendors/${vendor.id}`)}
+            style={({ pressed }) => [
+              styles.chip,
+              glassCardStyle(RADIUS.md, {
+                backgroundColor: colors.surface,
+                borderColor: colors.line,
+                isDark,
+              }),
+              pressed && styles.chipPressed,
+            ]}
           >
-            <Pressable
-              onPress={() => router.push(`/(tabs)/vendors/${vendor.id}`)}
-              style={({ pressed }) => [
-                styles.chip,
-                glassCardStyle(RADIUS.md),
-                pressed && styles.chipPressed,
-              ]}
-            >
             <View style={styles.chipInner}>
               <Text
-                style={[styles.chipTitle, { fontFamily: AUTH_FONT.semibold }]}
+                style={[
+                  styles.chipTitle,
+                  { fontFamily: AUTH_FONT.semibold, color: colors.ink },
+                ]}
                 numberOfLines={1}
               >
                 {vendorDisplayName(vendor)}
               </Text>
               <SaveVendorButton vendorId={vendor.id} size={14} />
             </View>
-            <Text style={[styles.chipMeta, { fontFamily: AUTH_FONT.regular }]}>
+            <Text
+              style={[
+                styles.chipMeta,
+                { fontFamily: AUTH_FONT.regular, color: colors.inkMuted },
+              ]}
+            >
               {vendor.city} · {vendor.category}
             </Text>
-            </Pressable>
-          </MotiView>
+          </Pressable>
         ))}
       </ScrollView>
-    </MotiView>
+    </View>
   );
 }
 
@@ -113,12 +125,10 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontSize: 10,
     letterSpacing: 1.3,
-    color: AUTH_PRIMARY,
   },
   count: {
     marginTop: 2,
     fontSize: 16,
-    color: "#111827",
     letterSpacing: -0.2,
   },
   scrollContent: {
@@ -142,11 +152,9 @@ const styles = StyleSheet.create({
   chipTitle: {
     flex: 1,
     fontSize: 13,
-    color: "#111827",
   },
   chipMeta: {
     marginTop: 4,
     fontSize: 10,
-    color: "#9CA3AF",
   },
 });

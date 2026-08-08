@@ -18,8 +18,12 @@ export default function VendorsStackLayout() {
       <Stack.Screen name="index" options={{ headerShown: false, title: "Explore" }} />
       <Stack.Screen name="plans" options={{ headerShown: false, title: "Plans" }} />
       <Stack.Screen
+        name="popular-services"
+        options={{ headerShown: false, title: "All services" }}
+      />
+      <Stack.Screen
         name="[vendorId]"
-        options={{ title: "Vendor", ...detailStackScreenOptions }}
+        options={{ headerShown: false, title: "Vendor", ...detailStackScreenOptions }}
       />
       <Stack.Screen name="arcade" options={{ headerShown: false }} />
     </Stack>

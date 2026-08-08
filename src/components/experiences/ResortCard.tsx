@@ -1,223 +1,321 @@
-import { AnimatedPressable } from "@/components/ui/AnimatedPressable";
 import { ResortImage } from "@/components/experiences/ResortImage";
-import { GLASS, claySurface } from "@/constants/designSystem";
+import { AnimatedPressable } from "@/components/ui/AnimatedPressable";
+import { AppIcon } from "@/components/ui/AppIcon";
+import { AUTH_FONT } from "@/constants/authPremium";
 import { EXP } from "@/constants/experienceTheme";
 import type { ResortRecord } from "@/types/resortExperience";
-import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
-import type { ReactNode } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import type { ComponentProps } from "react";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 type Props = {
   resort: ResortRecord;
   onPress: () => void;
 };
 
-function Pill({
-  label,
-  tone = "muted",
-}: {
+type Amenity = {
+  key: string;
   label: string;
-  tone?: "gold" | "muted" | "violet";
-}) {
-  const bg =
-    tone === "gold"
-      ? EXP.goldSoft
-      : tone === "violet"
-        ? EXP.resorts.soft
-        : "rgba(241,245,249,0.85)";
-  const color =
-    tone === "gold" ? "#92400E" : tone === "violet" ? EXP.resorts.mid : EXP.muted;
-  return (
-    <View
-      style={{
-        borderRadius: 999,
-        backgroundColor: bg,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: "rgba(255,255,255,0.65)",
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-      }}
-    >
-      <Text style={{ fontSize: 11, fontWeight: "700", color }}>{label}</Text>
-    </View>
-  );
+  icon: ComponentProps<typeof MaterialCommunityIcons>["name"];
+};
+
+function resolveAmenities(resort: ResortRecord): Amenity[] {
+  const source = [
+    ...resort.experienceTypes,
+    resort.category ?? "",
+    ...resort.roomTypes,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  const catalog: Amenity[] = [
+    { key: "pool", label: "Pool", icon: "pool" },
+    { key: "beach", label: "Beachfront", icon: "beach" },
+    { key: "spa", label: "Spa", icon: "spa-outline" },
+    { key: "wifi", label: "Free Wi-Fi", icon: "wifi" },
+    { key: "restaurant", label: "Dining", icon: "silverware-fork-knife" },
+    { key: "view", label: "Views", icon: "image-filter-hdr" },
+  ];
+
+  const matched = catalog.filter((item) => {
+    if (item.key === "beach") {
+      return /beach|sea|coast|ocean|shore/.test(source);
+    }
+    if (item.key === "pool") return /pool|swim/.test(source);
+    if (item.key === "spa") return /spa|wellness|ayurveda/.test(source);
+    if (item.key === "wifi") return /wifi|wi-fi|internet/.test(source);
+    if (item.key === "restaurant") {
+      return /dining|restaurant|culinary|food/.test(source);
+    }
+    if (item.key === "view") return /view|mountain|lake|valley/.test(source);
+    return false;
+  });
+
+  if (matched.length >= 2) return matched.slice(0, 4);
+
+  const fallback: Amenity[] = [
+    { key: "pool", label: "Pool", icon: "pool" },
+    { key: "spa", label: "Spa", icon: "spa-outline" },
+    { key: "wifi", label: "Free Wi-Fi", icon: "wifi" },
+  ];
+  if (/goa|beach|coast|andaman|lakshadweep/i.test(`${resort.state} ${resort.location}`)) {
+    fallback.unshift({ key: "beach", label: "Beachfront", icon: "beach" });
+  }
+  return fallback.slice(0, 4);
 }
 
-function GlassChip({
-  children,
-  style,
-}: {
-  children: ReactNode;
-  style?: object;
-}) {
-  return (
-    <View style={[{ borderRadius: 999, overflow: "hidden" }, style]}>
-      {Platform.OS !== "web" ? (
-        <BlurView intensity={36} tint="light" style={StyleSheet.absoluteFill} />
-      ) : null}
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: "rgba(255,255,255,0.55)" },
-        ]}
-      />
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 4,
-          paddingHorizontal: 10,
-          paddingVertical: 6,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: GLASS.border,
-          borderRadius: 999,
-        }}
-      >
-        {children}
-      </View>
-    </View>
-  );
+function formatPrice(label: string | null): string | null {
+  if (!label) return null;
+  const cleaned = label.replace(/\s*\/\s*night/i, "").trim();
+  if (/₹|rs\.?/i.test(cleaned)) return `${cleaned} / night`;
+  return `₹${cleaned} / night`;
 }
 
 export function ResortCard({ resort, onPress }: Props) {
+  const [saved, setSaved] = useState(false);
   const thumb = resort.imageUrls[0];
   const rating =
     resort.tripadvisorRating != null
       ? resort.tripadvisorRating.toFixed(1)
       : null;
+  const amenities = resolveAmenities(resort);
+  const price = formatPrice(resort.estimatedPriceLabel);
+  const locationLine = [resort.location || resort.region, resort.state]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <AnimatedPressable
       onPress={onPress}
       haptic
-      scaleTo={0.97}
+      scaleTo={0.985}
       accessibilityRole="button"
-      accessibilityLabel={`${resort.name}, ${resort.location}`}
-      style={{
-        marginBottom: 16,
-        overflow: "hidden",
-        ...claySurface(24),
-      }}
+      accessibilityLabel={`${resort.name}, ${locationLine}`}
+      style={styles.card}
     >
-      <View style={{ position: "relative" }}>
-        <ResortImage uri={thumb} height={178} />
-        <LinearGradient
-          colors={["rgba(15,23,42,0.05)", "transparent", "rgba(15,23,42,0.55)"]}
-          locations={[0, 0.45, 1]}
-          style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
-        />
-        {resort.rank != null && resort.rank <= 10 ? (
-          <View style={{ position: "absolute", left: 12, top: 12 }}>
-            <GlassChip>
-              <Ionicons name="trophy" size={12} color={EXP.gold} />
-              <Text style={{ color: EXP.ink, fontSize: 11, fontWeight: "800" }}>
-                Top {resort.rank}
-              </Text>
-            </GlassChip>
-          </View>
-        ) : null}
-        {rating ? (
-          <View style={{ position: "absolute", right: 12, top: 12 }}>
-            <GlassChip>
-              <Ionicons name="star" size={12} color="#F59E0B" />
-              <Text style={{ color: EXP.ink, fontSize: 11, fontWeight: "800" }}>
-                {rating}
-              </Text>
-            </GlassChip>
-          </View>
-        ) : null}
-        {resort.estimatedPriceLabel ? (
-          <View style={{ position: "absolute", left: 12, bottom: 12, maxWidth: "70%" }}>
-            <View
-              style={{
-                borderRadius: 14,
-                overflow: "hidden",
-                borderWidth: StyleSheet.hairlineWidth,
-                borderColor: GLASS.border,
-              }}
-            >
-              {Platform.OS !== "web" ? (
-                <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
-              ) : null}
-              <View
-                style={[
-                  StyleSheet.absoluteFill,
-                  { backgroundColor: "rgba(255,255,255,0.62)" },
-                ]}
-              />
-              <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
-                <Text style={{ color: EXP.muted, fontSize: 10, fontWeight: "700" }}>
-                  EST. / NIGHT
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    color: EXP.resorts.mid,
-                    fontSize: 14,
-                    fontWeight: "800",
-                    marginTop: 1,
-                  }}
-                >
-                  {/₹|rs\.?/i.test(resort.estimatedPriceLabel)
-                    ? resort.estimatedPriceLabel
-                    : `₹${resort.estimatedPriceLabel}`}
-                </Text>
-              </View>
-            </View>
+      <View style={styles.media}>
+        <ResortImage uri={thumb} height={168} borderRadius={18} />
+        {resort.rank != null && resort.rank > 0 && resort.rank <= 20 ? (
+          <View style={styles.rankBadge}>
+            <AppIcon name="trophy-outline" size={12} color={EXP.goldDeep} />
+            <Text style={[styles.rankText, { fontFamily: AUTH_FONT.bold }]}>
+              Top {resort.rank}
+            </Text>
           </View>
         ) : null}
       </View>
 
-      <View style={{ padding: 14, gap: 8 }}>
-        <Text
-          numberOfLines={2}
-          style={{
-            color: EXP.ink,
-            fontSize: 17,
-            fontWeight: "800",
-            lineHeight: 22,
-          }}
-        >
-          {resort.name}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          <Ionicons name="location-outline" size={14} color={EXP.muted} />
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <Text
+            numberOfLines={2}
+            style={[styles.title, { fontFamily: AUTH_FONT.bold }]}
+          >
+            {resort.name}
+          </Text>
+          <Pressable
+            onPress={() => setSaved((v) => !v)}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={saved ? "Remove favorite" : "Save favorite"}
+            style={styles.heartBtn}
+          >
+            <AppIcon
+              name={saved ? "heart" : "heartOutline"}
+              size={20}
+              color={saved ? "#E11D48" : EXP.muted}
+            />
+          </Pressable>
+        </View>
+
+        <View style={styles.metaRow}>
+          <AppIcon name="map-marker-outline" size={14} color={EXP.muted} />
           <Text
             numberOfLines={1}
-            style={{
-              flex: 1,
-              color: EXP.muted,
-              fontSize: 12,
-              fontWeight: "600",
-            }}
+            style={[styles.metaText, { fontFamily: AUTH_FONT.medium }]}
           >
-            {resort.location}
-            {resort.region ? ` · ${resort.region}` : ""} · {resort.state}
+            {locationLine}
           </Text>
         </View>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-          {resort.priceTier ? (
-            <Pill
-              label={
-                resort.priceTier === "High"
-                  ? "Premium"
-                  : resort.priceTier === "Mid"
-                    ? "Mid-range"
-                    : resort.priceTier === "Low"
-                      ? "Budget"
-                      : resort.priceTier
-              }
-              tone="gold"
-            />
-          ) : null}
-          {resort.category ? <Pill label={resort.category} tone="violet" /> : null}
-          {resort.experienceTypes.slice(0, 2).map((t) => (
-            <Pill key={t} label={t} />
+
+        {rating ? (
+          <View style={styles.metaRow}>
+            <AppIcon name="star" size={14} color={EXP.gold} />
+            <Text style={[styles.ratingValue, { fontFamily: AUTH_FONT.bold }]}>
+              {rating}
+            </Text>
+            <Text style={[styles.reviewText, { fontFamily: AUTH_FONT.regular }]}>
+              Tripadvisor
+            </Text>
+          </View>
+        ) : null}
+
+        <View style={styles.amenityRow}>
+          {amenities.map((item) => (
+            <View key={item.key} style={styles.amenityChip}>
+              <MaterialCommunityIcons
+                name={item.icon}
+                size={13}
+                color={EXP.primary}
+              />
+              <Text
+                style={[styles.amenityLabel, { fontFamily: AUTH_FONT.medium }]}
+              >
+                {item.label}
+              </Text>
+            </View>
           ))}
+        </View>
+
+        <View style={styles.footer}>
+          <View style={styles.priceCol}>
+            {price ? (
+              <>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.price, { fontFamily: AUTH_FONT.bold }]}
+                >
+                  {price}
+                </Text>
+                <Text
+                  style={[styles.priceHint, { fontFamily: AUTH_FONT.regular }]}
+                >
+                  Includes taxes
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.priceHint, { fontFamily: AUTH_FONT.medium }]}>
+                Price on request
+              </Text>
+            )}
+          </View>
+          <View style={styles.cta}>
+            <Text style={[styles.ctaLabel, { fontFamily: AUTH_FONT.bold }]}>
+              View details
+            </Text>
+          </View>
         </View>
       </View>
     </AnimatedPressable>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    marginBottom: 16,
+    borderRadius: 24,
+    backgroundColor: EXP.white,
+    borderWidth: 1,
+    borderColor: EXP.line,
+    overflow: "hidden",
+    shadowColor: "#1B4D3E",
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  media: {
+    padding: 12,
+    paddingBottom: 0,
+  },
+  rankBadge: {
+    position: "absolute",
+    left: 22,
+    top: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  rankText: {
+    fontSize: 11,
+    color: EXP.ink,
+  },
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
+    gap: 8,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  title: {
+    flex: 1,
+    fontSize: 17,
+    lineHeight: 22,
+    color: EXP.ink,
+  },
+  heartBtn: {
+    paddingTop: 2,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: 12,
+    color: EXP.muted,
+  },
+  ratingValue: {
+    fontSize: 13,
+    color: EXP.ink,
+  },
+  reviewText: {
+    fontSize: 12,
+    color: EXP.muted,
+  },
+  amenityRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 2,
+  },
+  amenityChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  amenityLabel: {
+    fontSize: 11,
+    color: EXP.muted,
+  },
+  footer: {
+    marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  priceCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  price: {
+    fontSize: 16,
+    color: EXP.ink,
+  },
+  priceHint: {
+    marginTop: 2,
+    fontSize: 11,
+    color: EXP.muted,
+  },
+  cta: {
+    backgroundColor: EXP.primary,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  ctaLabel: {
+    color: "#fff",
+    fontSize: 13,
+  },
+});

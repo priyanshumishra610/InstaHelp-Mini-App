@@ -1,41 +1,29 @@
-import { GlassTabBarBackground } from "@/components/navigation/GlassTabBarBackground";
-import { GlassTabBarButton } from "@/components/navigation/GlassTabBarButton";
+import { FloatingTabBar } from "@/components/navigation/FloatingTabBar";
 import { GlassTabIcon } from "@/components/navigation/GlassTabIcon";
-import {
-  slideSceneInterpolator,
-  slideTransitionSpec,
-} from "@/components/navigation/tabSlideTransition";
-import { TAB_BAR_BASE_HEIGHT, HomeHubFab } from "@/components/home/HomeHubFab";
-import { InAppTutorialOverlay } from "@/components/onboarding/InAppTutorialOverlay";
-import { TutorialTarget } from "@/components/onboarding/TutorialTarget";
-import { RADIUS } from "@/constants/designSystem";
+import { PostRequestTabButton } from "@/components/navigation/PostRequestTabButton";
+import { RequestFormSheet } from "@/components/home/RequestFormSheet";
+import { TAB_BAR_ICON_SIZE } from "@/constants/tabBar";
+/* TUTORIAL_DISABLED — GuidedTourOverlay: see src/constants/tutorialFeature.ts
+import { GuidedTourOverlay } from "@/components/onboarding/guided/GuidedTourOverlay";
+*/
+import { TUTORIAL_ENABLED } from "@/constants/tutorialFeature";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useAppTheme } from "@/hooks/useAppTheme";
 import { useSmartLocalNotifications } from "@/hooks/useSmartLocalNotifications";
 import { useAuth } from "@/providers/AuthProvider";
+import {
+  useGuidedTourStepId,
+  useGuidedTourStore,
+} from "@/store/guidedTourStore";
 import { useOnboardingStore } from "@/store/onboardingStore";
 import { ensureProfile, useProfileStore } from "@/store/profileStore";
-import { useTutorialStore } from "@/store/tutorialStore";
-import type { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
+import { useRequestFormStore } from "@/store/requestFormStore";
 import { Redirect, Tabs, router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-function TutorialTabButton({
-  tutorialId,
-  ...props
-}: BottomTabBarButtonProps & { tutorialId: string }) {
-  return (
-    <TutorialTarget id={tutorialId} style={{ flex: 1, alignSelf: "stretch" }}>
-      <GlassTabBarButton {...props} />
-    </TutorialTarget>
-  );
-}
 
 export default function TabsLayout() {
-  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { isReady } = useAuth();
   const phone = useAuthPhone();
@@ -54,13 +42,26 @@ export default function TabsLayout() {
     if (phone) ensureProfile(phone);
   }, [phone]);
 
-  useSmartLocalNotifications(notificationInterests, profileName, notificationPersona);
+  useSmartLocalNotifications(
+    notificationInterests,
+    profileName,
+    notificationPersona,
+    3000,
+  );
 
   const pendingInAppTutorial = useOnboardingStore((s) => s.pendingInAppTutorial);
   const appTutorialCompleted = useOnboardingStore((s) => s.appTutorialCompleted);
   const setPendingInAppTutorial = useOnboardingStore((s) => s.setPendingInAppTutorial);
-  const startTutorial = useTutorialStore((s) => s.startTutorial);
-  const tutorialActive = useTutorialStore((s) => s.active);
+  const startTour = useGuidedTourStore((s) => s.startTour);
+  const tourActive = useGuidedTourStore((s) => s.active);
+  const tourFormDemoActive = useGuidedTourStore((s) => s.tourFormDemoActive);
+  const tourStep = useGuidedTourStepId();
+  const formVisible = useRequestFormStore((s) => s.visible);
+  const openForm = useRequestFormStore((s) => s.open);
+  const closeForm = useRequestFormStore((s) => s.close);
+  const initialService = useRequestFormStore((s) => s.initialService);
+  const initialSource = useRequestFormStore((s) => s.initialSource);
+  const initialDescription = useRequestFormStore((s) => s.initialDescription);
 
   const [onboardingHydrated, setOnboardingHydrated] = useState(() =>
     useOnboardingStore.persist.hasHydrated(),
@@ -75,18 +76,19 @@ export default function TabsLayout() {
     });
   }, []);
 
-  // First install / first home visit: always start the interactive tour once.
+  // TUTORIAL_DISABLED — first-run guided tour auto-start (see tutorialFeature.ts)
   useEffect(() => {
+    if (!TUTORIAL_ENABLED) return;
     if (!isReady || !onboardingHydrated) return;
     if (destination !== "/(tabs)") return;
-    if (appTutorialCompleted || tutorialActive) return;
+    if (appTutorialCompleted || tourActive) return;
 
     const timer = setTimeout(() => {
       const onboarding = useOnboardingStore.getState();
       if (onboarding.appTutorialCompleted) return;
-      if (useTutorialStore.getState().active) return;
+      if (useGuidedTourStore.getState().active) return;
       onboarding.setPendingInAppTutorial(false);
-      useTutorialStore.getState().startTutorial();
+      useGuidedTourStore.getState().startTour();
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -97,9 +99,21 @@ export default function TabsLayout() {
     onboardingHydrated,
     pendingInAppTutorial,
     setPendingInAppTutorial,
-    startTutorial,
-    tutorialActive,
+    startTour,
+    tourActive,
   ]);
+
+  useEffect(() => {
+    if (tourFormDemoActive) {
+      openForm();
+    }
+  }, [tourFormDemoActive, openForm]);
+
+  useEffect(() => {
+    if (tourStep !== "request-form" && tourFormDemoActive) {
+      closeForm();
+    }
+  }, [tourStep, tourFormDemoActive, closeForm]);
 
   if (!isReady) {
     return null;
@@ -109,49 +123,25 @@ export default function TabsLayout() {
     return <Redirect href={destination ?? "/(auth)/phone"} />;
   }
 
-  const floatGap = 10;
-  const bottomInset = Math.max(insets.bottom, 8) + floatGap;
-  const tabBarHeight = TAB_BAR_BASE_HEIGHT + bottomInset;
-
   return (
     <View className="relative flex-1">
       <Tabs
+        tabBar={(props) => <FloatingTabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          animation: "shift",
-          sceneStyleInterpolator: slideSceneInterpolator,
-          transitionSpec: slideTransitionSpec,
+          animation: "none",
           tabBarActiveTintColor: colors.accent,
           tabBarInactiveTintColor: colors.inkMuted,
-          tabBarBackground: () => <GlassTabBarBackground />,
-          tabBarButton: (props) => <GlassTabBarButton {...props} />,
           tabBarStyle: {
             position: "absolute",
-            left: 22,
-            right: 22,
-            bottom: bottomInset,
-            height: TAB_BAR_BASE_HEIGHT,
-            paddingBottom: 4,
-            paddingTop: 4,
-            paddingHorizontal: 6,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 0,
             borderTopWidth: 0,
-            backgroundColor: "transparent",
-            borderRadius: RADIUS.pill,
             elevation: 0,
-            shadowOpacity: 0,
+            backgroundColor: "transparent",
             overflow: "visible",
-          },
-          sceneStyle: {
-            paddingBottom: tabBarHeight + 10,
-          },
-          tabBarLabelStyle: {
-            fontSize: 10,
-            fontWeight: "600",
-            letterSpacing: 0.1,
-            marginTop: 1,
-          },
-          tabBarItemStyle: {
-            paddingTop: 0,
           },
         }}
       >
@@ -160,7 +150,7 @@ export default function TabsLayout() {
           options={{
             title: "Home",
             tabBarIcon: ({ color, focused }) => (
-              <GlassTabIcon name="home" color={color} focused={focused} size={20} />
+              <GlassTabIcon name="home" color={color} focused={focused} size={TAB_BAR_ICON_SIZE} />
             ),
           }}
         />
@@ -179,31 +169,36 @@ export default function TabsLayout() {
         />
         <Tabs.Screen
           name="experiences"
-          listeners={{
-            tabPress: () => {
-              useTutorialStore.getState().advanceOnTarget("tab-experiences");
-            },
-          }}
           options={{
             title: "Experiences",
-            tabBarButton: (props) => (
-              <TutorialTabButton {...props} tutorialId="tab-experiences" />
-            ),
             tabBarIcon: ({ color, focused }) => (
               <GlassTabIcon
                 name="experiences"
                 color={color}
                 focused={focused}
-                size={20}
+                size={TAB_BAR_ICON_SIZE}
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="post-request"
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+            },
+          }}
+          options={{
+            title: "New request",
+            tabBarButton: (props) => <PostRequestTabButton {...props} />,
+            tabBarIcon: () => null,
+            tabBarLabel: () => null,
           }}
         />
         <Tabs.Screen
           name="shop"
           listeners={({ navigation }) => ({
             tabPress: (e) => {
-              useTutorialStore.getState().advanceOnTarget("tab-shop");
               const shopRoute = navigation
                 .getState()
                 .routes.find((r) => r.name === "shop");
@@ -219,11 +214,8 @@ export default function TabsLayout() {
           })}
           options={{
             title: "Shop",
-            tabBarButton: (props) => (
-              <TutorialTabButton {...props} tutorialId="tab-shop" />
-            ),
             tabBarIcon: ({ color, focused }) => (
-              <GlassTabIcon name="shop" color={color} focused={focused} size={20} />
+              <GlassTabIcon name="shop" color={color} focused={focused} size={TAB_BAR_ICON_SIZE} />
             ),
           }}
         />
@@ -235,18 +227,10 @@ export default function TabsLayout() {
         />
         <Tabs.Screen
           name="profile"
-          listeners={{
-            tabPress: () => {
-              useTutorialStore.getState().advanceOnTarget("tab-profile");
-            },
-          }}
           options={{
             title: "Profile",
-            tabBarButton: (props) => (
-              <TutorialTabButton {...props} tutorialId="tab-profile" />
-            ),
             tabBarIcon: ({ color, focused }) => (
-              <GlassTabIcon name="profile" color={color} focused={focused} size={20} />
+              <GlassTabIcon name="profile" color={color} focused={focused} size={TAB_BAR_ICON_SIZE} />
             ),
           }}
         />
@@ -258,8 +242,22 @@ export default function TabsLayout() {
           }}
         />
       </Tabs>
-      <HomeHubFab />
-      <InAppTutorialOverlay />
+      <RequestFormSheet
+        visible={formVisible}
+        onClose={closeForm}
+        initialService={initialService}
+        initialSource={initialSource}
+        initialDescription={initialDescription}
+        onBrowseExplore={(suggestion) => {
+          closeForm();
+          router.push({
+            pathname: "/(tabs)",
+            params: { search: suggestion.search },
+          });
+        }}
+        tourDemo={tourFormDemoActive}
+      />
+      {/* TUTORIAL_DISABLED — <GuidedTourOverlay /> (tutorialFeature.ts) */}
     </View>
   );
 }

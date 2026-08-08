@@ -1,15 +1,17 @@
-import {
-  subscribeVendors,
-  VENDOR_EXPLORE_FETCH_LIMIT,
-  type VendorQueryFilters,
-} from "@/firebase/vendors";
-import { useFirestoreCatalog } from "@/firebase/config";
 import { getVendorCatalog } from "@/services/vendors/getVendorCatalog";
-import type { VendorCatalogSort } from "@/services/vendors/vendorCatalogTypes";
+import type {
+  VendorCatalogQuery,
+  VendorCatalogSort,
+} from "@/services/vendors/vendorCatalogTypes";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InteractionManager } from "react-native";
 
-export type UseVendorsOptions = VendorQueryFilters & {
+export type UseVendorsOptions = Omit<
+  VendorCatalogQuery,
+  "sort" | "userLocation"
+> & {
+  city?: string | null;
   sort: VendorCatalogSort;
   userLocation: { lat: number; lng: number } | null;
   enabled?: boolean;
@@ -25,7 +27,7 @@ export type UseVendorsResult = {
   loadMore: () => void;
   refresh: () => void;
   retry: () => void;
-  source: "firestore" | "local_json";
+  source: "local_json";
 };
 
 function queryLocalCatalog(options: UseVendorsOptions) {
@@ -47,7 +49,6 @@ function queryLocalCatalog(options: UseVendorsOptions) {
 }
 
 export function useVendors(options: UseVendorsOptions): UseVendorsResult {
-  const firestore = useFirestoreCatalog();
   const enabled = options.enabled !== false;
 
   const [vendors, setVendors] = useState<VendorRecord[]>([]);
@@ -59,6 +60,7 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
+  const hasLoadedOnce = useRef(false);
 
   const refresh = useCallback(() => {
     setRefreshing(true);
@@ -73,13 +75,8 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
     setRetryKey((k) => k + 1);
   }, []);
 
-  useEffect(() => {
-    if (!enabled) {
-      setLoading(false);
-      return;
-    }
-
-    const applyLocalCatalog = () => {
+  const applyQuery = useCallback(() => {
+    try {
       const { vendors: local, hasMore: more } = queryLocalCatalog(
         optionsRef.current,
       );
@@ -88,46 +85,42 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       setLoading(false);
       setRefreshing(false);
       setError(null);
-    };
+      hasLoadedOnce.current = true;
+    } catch (e) {
+      setError(e instanceof Error ? e : new Error("Catalog query failed"));
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-    if (!firestore) {
-      applyLocalCatalog();
+  useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
       return;
     }
 
-    setLoading((cur) => (refreshing ? cur : true));
+    let cancelled = false;
 
-    const unsub = subscribeVendors(
-      {
-        ...optionsRef.current,
-        pageCount: 1,
-        pageSize: VENDOR_EXPLORE_FETCH_LIMIT,
-      },
-      (rows) => {
-        if (rows.length === 0) {
-          applyLocalCatalog();
-          return;
-        }
-        setVendors(rows);
-        setHasMore(rows.length >= VENDOR_EXPLORE_FETCH_LIMIT);
-        setLoading(false);
-        setRefreshing(false);
-        setError(null);
-      },
-      (err) => {
-        const { vendors: local } = queryLocalCatalog(optionsRef.current);
-        setVendors(local);
-        setHasMore(false);
-        setLoading(false);
-        setRefreshing(false);
-        setError(local.length ? null : err);
-      },
-    );
+    const run = () => {
+      if (cancelled) return;
+      applyQuery();
+    };
 
-    return () => unsub();
+    if (!hasLoadedOnce.current) {
+      run();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const task = InteractionManager.runAfterInteractions(run);
+    return () => {
+      cancelled = true;
+      task.cancel();
+    };
   }, [
     enabled,
-    firestore,
+    applyQuery,
     retryKey,
     options.search,
     options.areaKey,
@@ -142,8 +135,6 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
     refreshing,
   ]);
 
-  const source = firestore ? "firestore" : "local_json";
-
   return useMemo(
     () => ({
       vendors,
@@ -155,18 +146,8 @@ export function useVendors(options: UseVendorsOptions): UseVendorsResult {
       loadMore,
       refresh,
       retry,
-      source,
+      source: "local_json" as const,
     }),
-    [
-      vendors,
-      loading,
-      refreshing,
-      error,
-      hasMore,
-      loadMore,
-      refresh,
-      retry,
-      source,
-    ],
+    [vendors, loading, refreshing, error, hasMore, loadMore, refresh, retry],
   );
 }

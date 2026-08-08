@@ -1,4 +1,5 @@
 import { ExploreServiceSuggestion } from "@/components/home/ExploreServiceSuggestion";
+import { TOUR_FORM_DEMO_TEXT } from "@/components/onboarding/guided/steps/RequestFormStep";
 import { GlowButton } from "@/components/ui/GlowButton";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { DateTimeSlotPicker } from "@/components/ui/DateTimeSlotPicker";
@@ -12,7 +13,8 @@ import {
   AUTH_PRIMARY,
   AUTH_PRIMARY_LIGHT,
 } from "@/constants/authPremium";
-import { HERO_BACKDROP, HERO_LAVENDER, HERO_LAVENDER_MIST } from "@/constants/theme";
+import { PERF_MODE } from "@/constants/performance";
+import { HERO_BACKDROP, HERO_LAVENDER } from "@/constants/theme";
 import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useProfileQuery } from "@/hooks/queries/useProfile";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -22,7 +24,6 @@ import {
   matchFormToExplore,
   type ExploreFormSuggestion,
 } from "@/services/vendors/matchFormToExplore";
-import { openWhatsApp } from "@/utils/whatsapp";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -62,6 +63,8 @@ const SERVICE_OPTIONS: SelectOption[] = [
   { value: "tutor", label: "Tutor" },
   { value: "salon", label: "Salon at home" },
   { value: "errand", label: "Errand / pickup" },
+  { value: "resort_stay", label: "Resort / stay" },
+  { value: "holiday_package", label: "Holiday package" },
   { value: "custom", label: "Something else" },
 ];
 
@@ -71,6 +74,7 @@ const SOURCE_OPTIONS: SelectOption[] = [
   { value: "search", label: "Google search" },
   { value: "ad", label: "Saw an ad" },
   { value: "notification", label: "InstaHelp notification" },
+  { value: "experiences", label: "Experiences tab" },
   { value: "concierge", label: "Concierge referral" },
   { value: "other", label: "Somewhere else" },
 ];
@@ -87,7 +91,9 @@ type Props = {
   onClose: () => void;
   initialService?: string;
   initialSource?: string;
+  initialDescription?: string;
   onBrowseExplore?: (suggestion: ExploreFormSuggestion) => void;
+  tourDemo?: boolean;
 };
 
 function SectionLabel({ children }: { children: string }) {
@@ -103,7 +109,9 @@ export function RequestFormSheet({
   onClose,
   initialService,
   initialSource,
+  initialDescription,
   onBrowseExplore,
+  tourDemo = false,
 }: Props) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -183,7 +191,35 @@ export function RequestFormSheet({
     ) {
       setSource(initialSource);
     }
-  }, [visible, initialService, initialSource]);
+    if (initialDescription?.trim()) {
+      setDescription(initialDescription.trim());
+    }
+  }, [visible, initialService, initialSource, initialDescription]);
+
+  useEffect(() => {
+    if (!visible || !tourDemo || PERF_MODE) return;
+    let cancelled = false;
+
+    async function runDemo() {
+      setDescription("");
+      for (let i = 1; i <= TOUR_FORM_DEMO_TEXT.length; i += 1) {
+        if (cancelled) return;
+        await new Promise((resolve) => setTimeout(resolve, 55));
+        setDescription(TOUR_FORM_DEMO_TEXT.slice(0, i));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      for (let i = TOUR_FORM_DEMO_TEXT.length; i >= 0; i -= 1) {
+        if (cancelled) return;
+        await new Promise((resolve) => setTimeout(resolve, 35));
+        setDescription(TOUR_FORM_DEMO_TEXT.slice(0, i));
+      }
+    }
+
+    void runDemo();
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, tourDemo]);
 
   const validate = () => {
     const next: Record<string, string> = {};
@@ -239,24 +275,6 @@ export function RequestFormSheet({
       return;
     }
 
-    const wa = [
-      "New InstaHelp request",
-      "",
-      `Name: ${name.trim()}`,
-      `Phone: ${phoneInput.trim()}`,
-      `Service: ${resolvedServiceLabel}`,
-      addressTrimmed ? `Address: ${addressTrimmed}` : null,
-      "",
-      `Details: ${description.trim()}`,
-      preferredTime.trim() ? `Preferred time: ${preferredTime.trim()}` : null,
-      "",
-      sourceLabel ? `Found us via: ${sourceLabel}` : null,
-      paidLabel ? `Previously paid: ${paidLabel}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    await openWhatsApp(wa);
     setDescription("");
     setPreferredTime("Today, ASAP");
     setSource("");
@@ -271,7 +289,7 @@ export function RequestFormSheet({
   return (
     <Modal
       visible
-      animationType="slide"
+      animationType={PERF_MODE ? "none" : "slide"}
       transparent
       onRequestClose={onClose}
     >
@@ -302,7 +320,7 @@ export function RequestFormSheet({
                   Get it done today
                 </Text>
                 <Text style={[styles.subtitle, { fontFamily: AUTH_FONT.regular }]}>
-                  Tell us your task — we handle the rest via WhatsApp.
+                  Tell us your task — we handle the rest.
                 </Text>
               </View>
               <Pressable

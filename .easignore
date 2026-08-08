@@ -1,7 +1,61 @@
-# Native dirs are gitignored; let EAS run prebuild on the server.
+# EAS upload archive — target ~3 MB for fast compression/upload.
+# Inspect: npx eas-cli build:inspect --platform android --profile preview --stage archive --output /tmp/eas-inspect
+
+# Native dirs — EAS runs prebuild on the server
 /android
 /ios
 
+# Monorepo / backend (~850 MB)
+cms
+cms/**
+/functions
+/functions/**
+/dist
+/dist/**
+/docs
+/docs/**
+/scripts
+/scripts/**
+
+# Dependencies (EAS installs fresh on the builder)
+node_modules
+node_modules/**
 node_modules.corrupt-*/
+node_modules */
+node_modules 2
+
+# Git / backups — MUST exclude or upload bloats to 60+ MB
+.git
+.git/**
+.git.corrupt-backup-*/
+
+# Local / IDE / scratch
+.expo
+.expo/**
+.cursor
+.cursor/**
+web-build
+.kotlin
+*.tsbuildinfo
+.DS_Store
 release_updates.txt
+
+# Env files (use EAS Environment Variables instead)
+.env
+.env*.local
+
+# Build-time CSV sources (compiled into src/data — not needed on device)
 assets/affiliate_shop_v2.csv
+assets/App Hardcode list - All-Vendors.csv
+assets/Resort list.csv
+assets/holidays-data.js
+
+# Unused / macOS-protected scratch images (~35 MB)
+assets/images/WhatsApp Image 2026-05-10 at 16.39.44.jpeg
+assets/images/Gemini_Generated_Image_*
+assets/images/InstaHelp (1).png
+assets/images/app-icon.jpeg
+assets/images/adaptive-icon.png
+assets/images/icon.png
+assets/images/10.svg
+assets/images/xxhdpi 2.png

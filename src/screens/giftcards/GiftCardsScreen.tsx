@@ -18,6 +18,7 @@ import { GiftCardsSkeleton } from "@/components/giftcards/GiftCardsSkeleton";
 import { PopularBrandsRow } from "@/components/giftcards/PopularBrandsRow";
 import { RecentlyViewedSection } from "@/components/giftcards/RecentlyViewedSection";
 import { RecommendedSection } from "@/components/giftcards/RecommendedSection";
+import { PerfAnimatedView } from "@/components/ui/PerfAnimatedView";
 import { Screen } from "@/components/ui/Screen";
 import { ACCENT } from "@/constants/theme";
 import { useGiftCardsStore, type RecentlyViewedGiftCard } from "@/store/giftCardsStore";
@@ -26,7 +27,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { FadeInDown } from "react-native-reanimated";
 
 function pushHubble(params: Record<string, string | undefined>) {
   const compact: Record<string, string> = {};
@@ -41,21 +42,12 @@ export function GiftCardsScreen() {
   const recordView = useGiftCardsStore((s) => s.recordView);
   const clearRecentlyViewed = useGiftCardsStore((s) => s.clearRecentlyViewed);
 
-  const [booting, setBooting] = useState(true);
+  const [booting, setBooting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setBooting(false), 420);
-    return () => clearTimeout(t);
-  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setBooting(true);
-    setTimeout(() => {
-      setBooting(false);
-      setRefreshing(false);
-    }, 520);
+    setRefreshing(false);
   }, []);
 
   const openFromHero = useCallback((slide: GiftCardHeroSlide) => {
@@ -138,7 +130,7 @@ export function GiftCardsScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
         }
       >
-        <Animated.View entering={FadeInDown.duration(260)} className="px-4 pt-2">
+        <PerfAnimatedView entering={FadeInDown.duration(260)} className="px-4 pt-2">
           <LinearGradient
             colors={["#f0f6ff", "#ffffff"]}
             start={{ x: 0, y: 0 }}
@@ -182,7 +174,7 @@ export function GiftCardsScreen() {
               </View>
             ) : null}
           </LinearGradient>
-        </Animated.View>
+        </PerfAnimatedView>
 
         {booting ? (
           <GiftCardsSkeleton />

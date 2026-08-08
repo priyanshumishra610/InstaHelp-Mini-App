@@ -132,22 +132,28 @@ export function GlassSurface({
   return content;
 }
 
-/** List-safe card surface — solid white so content stays bright and readable. */
-export function glassCardStyle(radius: number = RADIUS.xl): ViewStyle {
+/** List-safe card surface — theme-aware so content stays readable in dark mode. */
+export function glassCardStyle(
+  radius: number = RADIUS.xl,
+  opts?: { backgroundColor?: string; borderColor?: string; isDark?: boolean },
+): ViewStyle {
+  const isDark = opts?.isDark ?? false;
   return {
     borderRadius: radius,
     overflow: "hidden",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: opts?.backgroundColor ?? (isDark ? "#27272A" : "#FFFFFF"),
     borderWidth: 1,
-    borderColor: "rgba(28,25,23,0.08)",
+    borderColor:
+      opts?.borderColor ??
+      (isDark ? "rgba(255,255,255,0.1)" : "rgba(28,25,23,0.08)"),
     ...Platform.select({
       ios: {
         shadowColor: "#1C1917",
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
+        shadowOpacity: isDark ? 0.28 : 0.05,
         shadowRadius: 10,
       },
-      android: { elevation: 2 },
+      android: { elevation: isDark ? 3 : 2 },
       default: {},
     }),
   };

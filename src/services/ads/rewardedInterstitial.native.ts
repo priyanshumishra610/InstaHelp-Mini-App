@@ -4,7 +4,8 @@ import { initializeMobileAds } from "@/services/ads/initializeMobileAds";
 import { useAdRewardsStore } from "@/store/adRewardsStore";
 
 type MobileAdsModule = typeof import("react-native-google-mobile-ads");
-type RewardedInterstitialAd = import("react-native-google-mobile-ads").RewardedInterstitialAd;
+type RewardedInterstitialAd =
+  import("react-native-google-mobile-ads").RewardedInterstitialAd;
 
 export type ShowRewardedAdResult =
   | { ok: true; amount: number; remainingToday: number }
@@ -18,6 +19,10 @@ export type ShowRewardedAdResult =
         | "error";
       message?: string;
     };
+
+const LOAD_TIMEOUT_MS = 20_000;
+const FRIENDLY_UNAVAILABLE =
+  "No ad available right now. Please try again in a moment.";
 
 let cachedModule: MobileAdsModule | null | undefined;
 
@@ -53,7 +58,8 @@ export function canWatchRewardedAdToday(): boolean {
 }
 
 let cachedAd: RewardedInterstitialAd | null = null;
-let loadingPromise: Promise<boolean> | null = null;
+let ensurePromise: Promise<RewardedInterstitialAd | null> | null = null;
+let showInFlight = false;
 
 function createAd(mod: MobileAdsModule): RewardedInterstitialAd {
   return mod.RewardedInterstitialAd.createForAdRequest(
@@ -64,33 +70,97 @@ function createAd(mod: MobileAdsModule): RewardedInterstitialAd {
   );
 }
 
+function isAdReady(ad: RewardedInterstitialAd | null): ad is RewardedInterstitialAd {
+  return ad != null && ad.loaded === true;
+}
+
+function clearCachedAd(): void {
+  cachedAd = null;
+}
+
 function loadAdInstance(
   mod: MobileAdsModule,
   ad: RewardedInterstitialAd,
 ): Promise<boolean> {
+  if (ad.loaded) return Promise.resolve(true);
+
   return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      unsubLoaded();
+      unsubError();
+      resolve(ok);
+    };
+
     const unsubLoaded = ad.addAdEventListener(
       mod.RewardedAdEventType.LOADED,
-      () => {
-        cleanup();
-        resolve(true);
-      },
+      () => finish(true),
     );
     const unsubError = ad.addAdEventListener(mod.AdEventType.ERROR, (error) => {
-      cleanup();
       if (__DEV__) {
         console.warn("[AdMob] rewarded interstitial load error", error);
       }
-      resolve(false);
+      finish(false);
     });
 
-    function cleanup() {
-      unsubLoaded();
-      unsubError();
-    }
+    const timeout = setTimeout(() => {
+      if (__DEV__) {
+        console.warn("[AdMob] rewarded interstitial load timed out");
+      }
+      finish(false);
+    }, LOAD_TIMEOUT_MS);
 
-    ad.load();
+    try {
+      ad.load();
+    } catch (error) {
+      if (__DEV__) {
+        console.warn("[AdMob] rewarded interstitial load threw", error);
+      }
+      finish(false);
+    }
   });
+}
+
+async function loadFreshAd(
+  mod: MobileAdsModule,
+): Promise<RewardedInterstitialAd | null> {
+  const ad = createAd(mod);
+  cachedAd = ad;
+  const loaded = await loadAdInstance(mod, ad);
+
+  if (!loaded || !isAdReady(ad)) {
+    cachedAd = null;
+    return null;
+  }
+
+  return ad;
+}
+
+/**
+ * Ensures a loaded ad is in cache. Creates/reloads as needed.
+ * Never leaves a failed ad instance cached as "ready".
+ * Concurrent callers share one in-flight load.
+ */
+function ensureLoadedAd(
+  mod: MobileAdsModule,
+): Promise<RewardedInterstitialAd | null> {
+  if (isAdReady(cachedAd)) {
+    return Promise.resolve(cachedAd);
+  }
+
+  if (ensurePromise) {
+    return ensurePromise;
+  }
+
+  ensurePromise = loadFreshAd(mod).finally(() => {
+    ensurePromise = null;
+  });
+
+  return ensurePromise;
 }
 
 const UNSUPPORTED: ShowRewardedAdResult = {
@@ -100,25 +170,23 @@ const UNSUPPORTED: ShowRewardedAdResult = {
     "Ads need a development build. Expo Go does not include Google Mobile Ads.",
 };
 
+const NOT_LOADED: ShowRewardedAdResult = {
+  ok: false,
+  reason: "not_loaded",
+  message: FRIENDLY_UNAVAILABLE,
+};
+
 export async function preloadRewardedInterstitial(): Promise<void> {
   const mod = loadAdsModule();
   if (!mod) return;
   if (!canWatchRewardedAdToday()) return;
+  if (showInFlight) return;
+
   try {
     await initializeMobileAds();
-    if (loadingPromise) {
-      await loadingPromise;
-      return;
-    }
-    const ad = createAd(mod);
-    cachedAd = ad;
-    loadingPromise = loadAdInstance(mod, ad).finally(() => {
-      loadingPromise = null;
-    });
-    await loadingPromise;
+    await ensureLoadedAd(mod);
   } catch (error) {
-    cachedAd = null;
-    loadingPromise = null;
+    clearCachedAd();
     if (__DEV__) {
       console.warn("[AdMob] preload skipped", error);
     }
@@ -141,36 +209,31 @@ export async function showRewardedInterstitialForCredits(): Promise<ShowRewarded
     };
   }
 
+  if (showInFlight) {
+    return NOT_LOADED;
+  }
+
   try {
     await initializeMobileAds();
   } catch {
     return UNSUPPORTED;
   }
 
-  let ad = cachedAd;
+  const ad = await ensureLoadedAd(mod);
   if (!ad) {
-    ad = createAd(mod);
-    cachedAd = ad;
-    const loaded = await loadAdInstance(mod, ad);
-    if (!loaded) {
-      cachedAd = null;
-      return {
-        ok: false,
-        reason: "not_loaded",
-        message: "No ad available right now. Try again in a moment.",
-      };
-    }
-  } else if (loadingPromise) {
-    const loaded = await loadingPromise;
-    if (!loaded) {
-      cachedAd = null;
-      return {
-        ok: false,
-        reason: "not_loaded",
-        message: "No ad available right now. Try again in a moment.",
-      };
-    }
+    // Kick off a background preload for the next attempt.
+    void preloadRewardedInterstitial();
+    return NOT_LOADED;
   }
+
+  // Final guard: never call native show() unless JS marks the ad loaded.
+  if (!ad.loaded) {
+    clearCachedAd();
+    void preloadRewardedInterstitial();
+    return NOT_LOADED;
+  }
+
+  showInFlight = true;
 
   return new Promise((resolve) => {
     let earned = false;
@@ -180,15 +243,16 @@ export async function showRewardedInterstitialForCredits(): Promise<ShowRewarded
     const finish = (result: ShowRewardedAdResult) => {
       if (settled) return;
       settled = true;
+      showInFlight = false;
       unsubEarned();
       unsubClosed();
       unsubError();
-      cachedAd = null;
+      clearCachedAd();
       void preloadRewardedInterstitial();
       resolve(result);
     };
 
-    const unsubEarned = ad!.addAdEventListener(
+    const unsubEarned = ad.addAdEventListener(
       mod.RewardedAdEventType.EARNED_REWARD,
       () => {
         earned = true;
@@ -209,7 +273,7 @@ export async function showRewardedInterstitialForCredits(): Promise<ShowRewarded
       },
     );
 
-    const unsubClosed = ad!.addAdEventListener(mod.AdEventType.CLOSED, () => {
+    const unsubClosed = ad.addAdEventListener(mod.AdEventType.CLOSED, () => {
       setTimeout(() => {
         if (settled) return;
         if (earned && claimResult) {
@@ -224,22 +288,32 @@ export async function showRewardedInterstitialForCredits(): Promise<ShowRewarded
       }, 200);
     });
 
-    const unsubError = ad!.addAdEventListener(mod.AdEventType.ERROR, (error) => {
+    const unsubError = ad.addAdEventListener(mod.AdEventType.ERROR, () => {
       finish({
         ok: false,
         reason: "error",
-        message: error?.message ?? "Ad failed to show.",
+        message: FRIENDLY_UNAVAILABLE,
       });
     });
 
     try {
-      ad!.show();
-    } catch (error) {
+      // Re-check right before show — load state can flip between await and now.
+      if (!ad.loaded) {
+        finish(NOT_LOADED);
+        return;
+      }
+      void ad.show().catch(() => {
+        finish({
+          ok: false,
+          reason: "error",
+          message: FRIENDLY_UNAVAILABLE,
+        });
+      });
+    } catch {
       finish({
         ok: false,
         reason: "error",
-        message:
-          error instanceof Error ? error.message : "Ad failed to show.",
+        message: FRIENDLY_UNAVAILABLE,
       });
     }
   });

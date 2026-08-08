@@ -3,7 +3,9 @@ import { AUTH_FONT, AUTH_PRIMARY, AUTH_PRIMARY_LIGHT } from "@/constants/authPre
 import { TAB_BAR_BASE_HEIGHT } from "@/constants/tabBar";
 import { HERO_LAVENDER_MIST, LAVENDER_GLOW } from "@/constants/theme";
 import { useHomeHubStore } from "@/store/homeHubStore";
+/* TUTORIAL_DISABLED — tutorialFeature.ts
 import { useTutorialStore } from "@/store/tutorialStore";
+*/
 import { LinearGradient } from "expo-linear-gradient";
 import { usePathname, useRouter } from "expo-router";
 import { Platform, StyleSheet, Text, View } from "react-native";
@@ -32,7 +34,11 @@ export function HomeHubFab({ offsetTabBar = true }: Props) {
     if (!onHome) {
       router.push("/(tabs)");
     }
-    useTutorialStore.getState().advanceOnTarget(TUTORIAL_TARGET);
+    /* TUTORIAL_DISABLED
+    if (TUTORIAL_ENABLED) {
+      useTutorialStore.getState().advanceOnTarget(TUTORIAL_TARGET);
+    }
+    */
     open();
   };
 
@@ -74,30 +80,38 @@ export function HomeHubFab({ offsetTabBar = true }: Props) {
 }
 
 const styles = StyleSheet.create({
-  lavenderHalo: Platform.select({
-    ios: {
-      shadowColor: LAVENDER_GLOW,
-      shadowOpacity: 0.28,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 12 },
-    },
-    android: { elevation: 12 },
-    default: {},
-  }) ?? {},
-  glow: Platform.select({
-    ios: {
-      shadowColor: AUTH_PRIMARY,
-      shadowOpacity: 0.38,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 8 },
-    },
-    android: { elevation: 8 },
-    default: {},
-  }) ?? {},
+  lavenderHalo: {
+    alignSelf: "flex-start",
+    ...Platform.select({
+      ios: {
+        shadowColor: LAVENDER_GLOW,
+        shadowOpacity: 0.28,
+        shadowRadius: 24,
+        shadowOffset: { width: 0, height: 12 },
+      },
+      android: { elevation: 12 },
+      default: {},
+    }),
+  },
+  glow: {
+    alignSelf: "flex-start",
+    ...Platform.select({
+      ios: {
+        shadowColor: AUTH_PRIMARY,
+        shadowOpacity: 0.38,
+        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 8 },
+      },
+      android: { elevation: 8 },
+      default: {},
+    }),
+  },
   rim: {
+    alignSelf: "flex-start",
     borderRadius: 999,
     padding: 1.5,
     backgroundColor: HERO_LAVENDER_MIST,
+    overflow: "hidden",
   },
   fill: {
     flexDirection: "row",
@@ -106,12 +120,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 18,
     paddingVertical: 14,
-    overflow: "hidden",
   },
   label: {
+    flexShrink: 0,
     fontSize: 13,
+    lineHeight: 18,
     color: "#FFFFFF",
     letterSpacing: 0.2,
+    ...Platform.select({
+      android: { includeFontPadding: false },
+      default: {},
+    }),
   },
   badge: {
     minWidth: 20,

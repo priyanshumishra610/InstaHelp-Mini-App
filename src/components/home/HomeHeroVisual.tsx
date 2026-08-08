@@ -2,15 +2,11 @@ import { RADIUS } from "@/constants/designSystem";
 import { AUTH_PRIMARY } from "@/constants/authPremium";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { MotiView } from "moti";
-import { useEffect, useRef } from "react";
 import {
   Platform,
   ScrollView,
   StyleSheet,
   View,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from "react-native";
 
 const ICONS: Array<{
@@ -33,96 +29,36 @@ const ICONS: Array<{
 
 const CHIP = 36;
 const GAP = 10;
-const LOOP = [...ICONS, ...ICONS];
 
 function ServiceChip({
   icon,
   tint,
-  index,
 }: {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   tint: string;
-  index: number;
 }) {
   return (
-    <MotiView
-      from={{ opacity: 0, translateY: 8, scale: 0.9 }}
-      animate={{ opacity: 1, translateY: 0, scale: 1 }}
-      transition={{ type: "spring", damping: 16, stiffness: 260, delay: 80 + (index % ICONS.length) * 45 }}
-    >
-      <MotiView
-        animate={{
-          translateY: [0, -4, 0],
-          rotate: ["-3deg", "3deg", "-3deg"],
-        }}
-        transition={{
-          type: "timing",
-          duration: 2600 + (index % 5) * 240,
-          loop: true,
-        }}
-      >
-        <View style={styles.chip}>
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
-          <View style={styles.chipRim} />
-          <MaterialCommunityIcons name={icon} size={16} color={AUTH_PRIMARY} />
-        </View>
-      </MotiView>
-    </MotiView>
+    <View style={styles.chip}>
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
+      <View style={styles.chipRim} />
+      <MaterialCommunityIcons name={icon} size={16} color={AUTH_PRIMARY} />
+    </View>
   );
 }
 
-/** Horizontally scrolling glass service icons with gentle auto-drift. */
+/** Static horizontal service icon row — no auto-scroll or looping animation. */
 export function HomeHeroVisual() {
-  const scrollRef = useRef<ScrollView>(null);
-  const offsetRef = useRef(0);
-  const userScrolling = useRef(false);
-  const loopWidth = ICONS.length * (CHIP + GAP);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (userScrolling.current) return;
-      offsetRef.current += 0.6;
-      if (offsetRef.current >= loopWidth) {
-        offsetRef.current = 0;
-        scrollRef.current?.scrollTo({ x: 0, animated: false });
-        return;
-      }
-      scrollRef.current?.scrollTo({ x: offsetRef.current, animated: false });
-    }, 28);
-    return () => clearInterval(timer);
-  }, [loopWidth]);
-
-  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    offsetRef.current = e.nativeEvent.contentOffset.x;
-    if (offsetRef.current >= loopWidth) {
-      offsetRef.current = 0;
-      scrollRef.current?.scrollTo({ x: 0, animated: false });
-    }
-  };
-
   return (
     <View style={styles.shell} pointerEvents="box-none">
       <ScrollView
-        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         decelerationRate="fast"
         snapToInterval={CHIP + GAP}
         contentContainerStyle={styles.scrollContent}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        onScrollBeginDrag={() => {
-          userScrolling.current = true;
-        }}
-        onScrollEndDrag={() => {
-          userScrolling.current = false;
-        }}
-        onMomentumScrollEnd={() => {
-          userScrolling.current = false;
-        }}
       >
-        {LOOP.map(({ icon, tint }, index) => (
-          <ServiceChip key={`${icon}-${index}`} icon={icon} tint={tint} index={index} />
+        {ICONS.map(({ icon, tint }) => (
+          <ServiceChip key={icon} icon={icon} tint={tint} />
         ))}
       </ScrollView>
       <LinearGradient

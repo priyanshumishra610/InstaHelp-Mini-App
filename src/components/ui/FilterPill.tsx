@@ -1,8 +1,7 @@
 import { AppIcon } from "@/components/ui/AppIcon";
 import { BorderTrail } from "@/components/motion/BorderTrail";
 import { SPRING } from "@/constants/designSystem";
-import { GLASS } from "@/constants/designSystem";
-import { ACCENT, INK } from "@/constants/theme";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import type { AppIconKey } from "@/constants/icons";
 import { MotiView } from "moti";
 import { memo } from "react";
@@ -39,7 +38,7 @@ function isLightAccent(hex: string) {
 
 /**
  * Soft pill + Motion-Primitives Border Trail when active.
- * Active chips use brand ink by default (white label on dark fill).
+ * Active chips use brand ink by default (readable label on fill).
  */
 function FilterPillInner({
   label,
@@ -47,14 +46,18 @@ function FilterPillInner({
   icon,
   onPress,
   compact = false,
-  activeColor = ACCENT,
+  activeColor,
   minimal = false,
 }: FilterPillProps) {
+  const { colors, isDark } = useAppTheme();
   const scale = useSharedValue(1);
-  const resolvedActiveColor = minimal ? ACCENT : activeColor;
+  const resolvedActiveColor = activeColor ?? colors.accent;
   const lightActive = isLightAccent(resolvedActiveColor);
-  const activeFg = lightActive ? "#0A0A0A" : "#FFFFFF";
-  const idleIcon = minimal ? INK : ACCENT;
+  const activeFg = lightActive ? "#0A0A0A" : isDark ? colors.canvas : "#FFFFFF";
+  const idleIcon = colors.ink;
+  const idleBg = isDark ? colors.surface : minimal ? "rgba(255,255,255,0.72)" : colors.surface;
+  const idleBorder = colors.line;
+  const idleText = colors.inkMuted;
 
   const pressStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -79,53 +82,27 @@ function FilterPillInner({
       >
         <MotiView
           animate={{
-            backgroundColor: active
-              ? resolvedActiveColor
-              : minimal
-                ? GLASS.fillStrong
-                : "#FFFFFF",
-            borderColor: active
-              ? resolvedActiveColor
-              : minimal
-                ? GLASS.border
-                : "#E5E5E5",
+            backgroundColor: active ? resolvedActiveColor : idleBg,
+            borderColor: active ? resolvedActiveColor : idleBorder,
           }}
           transition={{ type: "timing", duration: 200 }}
           className={`flex-row items-center gap-1.5 rounded-full border ${pad}`}
           style={
             active
-              ? minimal
-                ? {
-                    shadowColor: ACCENT,
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.28,
-                    shadowRadius: 12,
-                    elevation: 3,
-                  }
-                : {
-                    shadowColor: lightActive ? "#000000" : resolvedActiveColor,
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: lightActive ? 0.1 : 0.22,
-                    shadowRadius: 6,
-                    elevation: 2,
-                  }
-              : minimal
-                ? {
-                    shadowColor: ACCENT,
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.06,
-                    shadowRadius: 8,
-                    elevation: 1,
-                  }
-                : {
-                    shadowColor: "#A3A3A3",
-                    shadowOffset: { width: 2, height: 3 },
-                    shadowOpacity: 0.18,
-                    shadowRadius: 6,
-                    elevation: 2,
-                    borderTopColor: "#FFFFFF",
-                    borderLeftColor: "#FAFAFA",
-                  }
+              ? {
+                  shadowColor: lightActive ? "#000000" : resolvedActiveColor,
+                  shadowOffset: { width: 0, height: minimal ? 6 : 3 },
+                  shadowOpacity: lightActive ? 0.1 : minimal ? 0.28 : 0.22,
+                  shadowRadius: minimal ? 12 : 6,
+                  elevation: minimal ? 3 : 2,
+                }
+              : {
+                  shadowColor: colors.ink,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: isDark ? 0.18 : 0.06,
+                  shadowRadius: 8,
+                  elevation: 1,
+                }
           }
         >
           {!minimal && icon ? (
@@ -140,7 +117,7 @@ function FilterPillInner({
             numberOfLines={1}
             className={`font-semibold ${compact ? "text-[12px]" : "text-[13px]"}`}
             style={{
-              color: active ? activeFg : minimal ? "#44403C" : "#292524",
+              color: active ? activeFg : idleText,
             }}
           >
             {label}

@@ -1,7 +1,6 @@
 import { AppComicTutorial } from "@/components/onboarding/AppComicTutorial";
 import { useAuthDestination } from "@/hooks/auth/useAuthNavigation";
 import { useOnboardingStore } from "@/store/onboardingStore";
-import { useSplashTransitionStore } from "@/store/splashTransitionStore";
 import { useRouter } from "expo-router";
 import { useCallback } from "react";
 
@@ -17,7 +16,6 @@ type Props = {
 export function AppTutorialScreen({ replay = false }: Props) {
   const router = useRouter();
   const destination = useAuthDestination();
-  const splashDestination = useSplashTransitionStore((s) => s.destination);
   const setPendingInAppTutorial = useOnboardingStore(
     (s) => s.setPendingInAppTutorial,
   );
@@ -35,7 +33,7 @@ export function AppTutorialScreen({ replay = false }: Props) {
     // Keep the interactive in-app tour queued for the first home visit.
     setPendingInAppTutorial(true);
 
-    const target = splashDestination ?? destination ?? "/(auth)/phone";
+    const target = destination ?? "/(auth)/phone";
     if (target === "/(auth)/phone") {
       router.replace({ pathname: "/(auth)/phone", params: { fromSplash: "1" } });
       return;
@@ -50,7 +48,6 @@ export function AppTutorialScreen({ replay = false }: Props) {
     replay,
     router,
     setPendingInAppTutorial,
-    splashDestination,
   ]);
 
   return <AppComicTutorial onComplete={finish} onSkip={finish} />;

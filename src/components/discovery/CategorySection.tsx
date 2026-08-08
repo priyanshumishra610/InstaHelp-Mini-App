@@ -1,4 +1,5 @@
 import { ServiceChip } from "@/components/discovery/ServiceChip";
+import { PERF_MODE } from "@/constants/performance";
 import type { DiscoveryCategory, DiscoveryService } from "@/types/discovery";
 import { ACCENT } from "@/constants/theme";
 import { discoverySelection } from "@/utils/discoveryHaptics";
@@ -46,13 +47,14 @@ function CategorySectionComponent({
   const visibleServices = filterServices(category.services, filterQuery);
   const chevronRotation = useSharedValue(expanded ? 180 : 0);
 
-  useEffect(() => {
-    chevronRotation.value = withTiming(expanded ? 180 : 0, { duration: 220 });
-  }, [chevronRotation, expanded]);
-
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${chevronRotation.value}deg` }],
   }));
+
+  useEffect(() => {
+    if (PERF_MODE) return;
+    chevronRotation.value = withTiming(expanded ? 180 : 0, { duration: 220 });
+  }, [chevronRotation, expanded]);
 
   const handleToggle = useCallback(() => {
     discoverySelection();
@@ -72,10 +74,17 @@ function CategorySectionComponent({
 
   const isRow = category.layout === "row";
 
+  const SectionRoot = PERF_MODE ? View : Animated.View;
+  const ExpandRoot = PERF_MODE ? View : Animated.View;
+
   return (
-    <Animated.View
-      layout={Layout.springify().damping(20).stiffness(280)}
-      entering={FadeInDown.duration(380).delay(40 + index * 35)}
+    <SectionRoot
+      {...(!PERF_MODE
+        ? {
+            layout: Layout.springify().damping(20).stiffness(280),
+            entering: FadeInDown.duration(380).delay(40 + index * 35),
+          }
+        : {})}
       onLayout={handleLayout}
       className="mt-6"
     >
@@ -90,9 +99,19 @@ function CategorySectionComponent({
             <Text className="text-[15px] font-bold tracking-tight text-neutral-900">
               {category.title}
             </Text>
-            <Animated.View style={chevronStyle}>
-              <Ionicons name="chevron-down" size={14} color="#737373" />
-            </Animated.View>
+            {PERF_MODE ? (
+              <View
+                style={{
+                  transform: [{ rotate: expanded ? "180deg" : "0deg" }],
+                }}
+              >
+                <Ionicons name="chevron-down" size={14} color="#737373" />
+              </View>
+            ) : (
+              <Animated.View style={chevronStyle}>
+                <Ionicons name="chevron-down" size={14} color="#737373" />
+              </Animated.View>
+            )}
           </View>
           <Text className="mt-0.5 text-[11px] leading-4 text-neutral-500">
             {category.subtitle}
@@ -110,7 +129,11 @@ function CategorySectionComponent({
       </View>
 
       {expanded ? (
-        <Animated.View layout={Layout.springify().damping(22).stiffness(300)}>
+        <ExpandRoot
+          {...(!PERF_MODE
+            ? { layout: Layout.springify().damping(22).stiffness(300) }
+            : {})}
+        >
           {isRow ? (
             <ScrollView
               horizontal
@@ -139,7 +162,7 @@ function CategorySectionComponent({
               ))}
             </View>
           )}
-        </Animated.View>
+        </ExpandRoot>
       ) : (
         <Pressable
           onPress={handleToggle}
@@ -165,7 +188,7 @@ function CategorySectionComponent({
           ) : null}
         </Pressable>
       )}
-    </Animated.View>
+    </SectionRoot>
   );
 }
 

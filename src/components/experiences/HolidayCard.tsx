@@ -1,9 +1,10 @@
 import { ResortImage } from "@/components/experiences/ResortImage";
+import { AppIcon } from "@/components/ui/AppIcon";
+import { AUTH_FONT } from "@/constants/authPremium";
 import { EXP } from "@/constants/experienceTheme";
 import type { HolidayPackage } from "@/types/experienceCatalog";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   item: HolidayPackage;
@@ -18,126 +19,56 @@ export function HolidayCard({ item, onPress }: Props) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Enquire about ${item.title}`}
-      style={{
-        marginBottom: 16,
-        borderRadius: 24,
-        overflow: "hidden",
-        backgroundColor: EXP.white,
-        borderWidth: 1,
-        borderColor: EXP.line,
-        shadowColor: "#042F2E",
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 3,
-      }}
+      style={styles.card}
     >
-      <View style={{ position: "relative" }}>
-        <ResortImage uri={thumb} height={176} />
+      <View style={styles.media}>
+        <ResortImage uri={thumb} height={168} borderRadius={18} />
         <LinearGradient
-          colors={["transparent", "rgba(4,47,46,0.15)", "rgba(4,47,46,0.88)"]}
-          locations={[0.35, 0.65, 1]}
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            top: 0,
-            justifyContent: "flex-end",
-            padding: 14,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
-              marginBottom: 8,
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "rgba(255,255,255,0.18)",
-                borderRadius: 999,
-                paddingHorizontal: 10,
-                paddingVertical: 5,
-              }}
-            >
-              <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>
-                {item.duration}
-              </Text>
-            </View>
-            {item.budgetTier ? (
-              <View
-                style={{
-                  backgroundColor: EXP.goldSoft,
-                  borderRadius: 999,
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                }}
-              >
-                <Text
-                  style={{ color: "#92400E", fontSize: 11, fontWeight: "800" }}
-                >
-                  {item.budgetTier}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-          <Text
-            numberOfLines={2}
-            style={{
-              color: "#fff",
-              fontSize: 18,
-              fontWeight: "800",
-              lineHeight: 23,
-            }}
-          >
-            {item.title}
+          colors={["transparent", "rgba(15,51,41,0.55)"]}
+          locations={[0.45, 1]}
+          style={styles.mediaWash}
+        />
+        <View style={styles.durationBadge}>
+          <Text style={[styles.durationText, { fontFamily: AUTH_FONT.bold }]}>
+            {item.duration}
           </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-              marginTop: 4,
-            }}
-          >
-            <Ionicons name="location-outline" size={13} color="rgba(255,255,255,0.85)" />
-            <Text
-              numberOfLines={1}
-              style={{
-                color: "rgba(255,255,255,0.85)",
-                fontSize: 12,
-                fontWeight: "600",
-                flex: 1,
-              }}
-            >
-              {item.destination}
+        </View>
+        {item.budgetTier ? (
+          <View style={styles.tierBadge}>
+            <Text style={[styles.tierText, { fontFamily: AUTH_FONT.bold }]}>
+              {item.budgetTier}
             </Text>
           </View>
-        </LinearGradient>
+        ) : null}
       </View>
 
-      <View style={{ paddingHorizontal: 14, paddingVertical: 14, gap: 10 }}>
+      <View style={styles.body}>
+        <Text
+          numberOfLines={2}
+          style={[styles.title, { fontFamily: AUTH_FONT.bold }]}
+        >
+          {item.title}
+        </Text>
+
+        <View style={styles.metaRow}>
+          <AppIcon name="map-marker-outline" size={14} color={EXP.muted} />
+          <Text
+            numberOfLines={1}
+            style={[styles.metaText, { fontFamily: AUTH_FONT.medium }]}
+          >
+            {item.destination}
+          </Text>
+        </View>
+
         {item.highlights.length > 0 ? (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+          <View style={styles.highlightRow}>
             {item.highlights.slice(0, 3).map((h) => (
-              <View
-                key={h}
-                style={{
-                  backgroundColor: EXP.holidays.soft,
-                  borderRadius: 999,
-                  paddingHorizontal: 10,
-                  paddingVertical: 5,
-                }}
-              >
+              <View key={h} style={styles.highlightChip}>
                 <Text
-                  style={{
-                    color: EXP.holidays.from,
-                    fontSize: 11,
-                    fontWeight: "700",
-                  }}
+                  style={[
+                    styles.highlightText,
+                    { fontFamily: AUTH_FONT.semibold },
+                  ]}
                 >
                   {h}
                 </Text>
@@ -146,54 +77,146 @@ export function HolidayCard({ item, onPress }: Props) {
           </View>
         ) : null}
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <View>
-            <Text
-              style={{
-                color: EXP.muted,
-                fontSize: 11,
-                fontWeight: "700",
-                letterSpacing: 0.6,
-                textTransform: "uppercase",
-              }}
-            >
+        <View style={styles.footer}>
+          <View style={styles.priceCol}>
+            <Text style={[styles.fromLabel, { fontFamily: AUTH_FONT.semibold }]}>
               From
             </Text>
-            <Text
-              style={{
-                color: EXP.holidays.mid,
-                fontSize: 16,
-                fontWeight: "800",
-                marginTop: 2,
-              }}
-            >
+            <Text style={[styles.price, { fontFamily: AUTH_FONT.bold }]}>
               {item.priceFrom.replace(/^From\s+/i, "")}
             </Text>
           </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              backgroundColor: EXP.holidays.from,
-              borderRadius: 14,
-              paddingHorizontal: 14,
-              paddingVertical: 10,
-            }}
-          >
-            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800" }}>
+          <View style={styles.cta}>
+            <Text style={[styles.ctaLabel, { fontFamily: AUTH_FONT.bold }]}>
               Enquire
             </Text>
-            <Ionicons name="logo-whatsapp" size={16} color="#fff" />
+            <AppIcon name="arrowForward" size={15} color="#fff" />
           </View>
         </View>
       </View>
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    marginBottom: 16,
+    borderRadius: 24,
+    overflow: "hidden",
+    backgroundColor: EXP.white,
+    borderWidth: 1,
+    borderColor: EXP.line,
+    shadowColor: "#1B4D3E",
+    shadowOpacity: 0.07,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  media: {
+    padding: 12,
+    paddingBottom: 0,
+  },
+  mediaWash: {
+    ...StyleSheet.absoluteFillObject,
+    margin: 12,
+    marginBottom: 0,
+    borderRadius: 18,
+  },
+  durationBadge: {
+    position: "absolute",
+    left: 22,
+    top: 22,
+    backgroundColor: "rgba(255,255,255,0.92)",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  durationText: {
+    color: EXP.ink,
+    fontSize: 11,
+  },
+  tierBadge: {
+    position: "absolute",
+    right: 22,
+    top: 22,
+    backgroundColor: EXP.goldSoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  tierText: {
+    color: "#92400E",
+    fontSize: 11,
+  },
+  body: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 14,
+    gap: 8,
+  },
+  title: {
+    fontSize: 17,
+    lineHeight: 22,
+    color: EXP.ink,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: 12,
+    color: EXP.muted,
+  },
+  highlightRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+  highlightChip: {
+    backgroundColor: EXP.primarySoft,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  highlightText: {
+    color: EXP.primary,
+    fontSize: 11,
+  },
+  footer: {
+    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  priceCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  fromLabel: {
+    color: EXP.muted,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  price: {
+    color: EXP.ink,
+    fontSize: 16,
+    marginTop: 2,
+  },
+  cta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: EXP.primary,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  ctaLabel: {
+    color: "#fff",
+    fontSize: 13,
+  },
+});

@@ -61,14 +61,6 @@ export function appWebHostLabel(): string {
   }
 }
 
-export const FIREBASE_API_KEY = getPublicEnv("EXPO_PUBLIC_FIREBASE_API_KEY");
-export const FIREBASE_PROJECT_ID = getPublicEnv(
-  "EXPO_PUBLIC_FIREBASE_PROJECT_ID",
-);
-export const FIREBASE_IS_CONFIGURED = Boolean(
-  FIREBASE_API_KEY && FIREBASE_PROJECT_ID,
-);
-
 export type ShopCatalogSource = "bundled_csv" | "live";
 
 /** Shop product catalog: live (default) | bundled_csv (offline fallback). */

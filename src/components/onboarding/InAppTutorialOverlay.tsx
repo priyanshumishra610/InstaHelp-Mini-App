@@ -4,7 +4,6 @@ import {
   IN_APP_TUTORIAL_STEPS,
   type TutorialPanelPlacement,
 } from "@/constants/inAppTutorialSteps";
-import { AUTH_FONT } from "@/constants/authPremium";
 import { TAB_BAR_BASE_HEIGHT } from "@/constants/tabBar";
 import {
   useTutorialStore,
@@ -132,9 +131,6 @@ export function InAppTutorialOverlay() {
           stepIndex={stepIndex}
           totalSteps={IN_APP_TUTORIAL_STEPS.length}
           pose={step.guidePose}
-          titleFont={AUTH_FONT.bold}
-          bodyFont={AUTH_FONT.medium}
-          labelFont={AUTH_FONT.semibold}
           nextLabel={nextCta}
           isLast={isLast}
           isWelcome={isWelcome}

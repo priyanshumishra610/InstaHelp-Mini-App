@@ -1,7 +1,7 @@
 import { CategorySection } from "@/components/discovery/CategorySection";
-import { DiscoverySkeleton } from "@/components/discovery/DiscoverySkeleton";
 import { ServiceChip } from "@/components/discovery/ServiceChip";
 import { OfferBannerCarousel } from "@/components/offers/OfferBannerCarousel";
+import { PerfAnimatedView } from "@/components/ui/PerfAnimatedView";
 import {
   DISCOVERY_CATEGORIES,
   getPopularServices,
@@ -26,7 +26,7 @@ import {
   View,
   type ScrollView as ScrollViewType,
 } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 export type DiscoverySectionHandle = {
   scrollToCategory: (categoryId: string) => void;
@@ -57,7 +57,7 @@ function MicroCarousel({
   if (!services.length) return null;
 
   return (
-    <Animated.View entering={FadeInUp.duration(400).delay(80)} className="mt-7">
+    <PerfAnimatedView entering={FadeInUp.duration(400).delay(80)} className="mt-7">
       <Text className="text-[13px] font-bold text-neutral-900">{title}</Text>
       <Text className="mt-0.5 text-[11px] text-neutral-500">{subtitle}</Text>
       <FlatList
@@ -76,7 +76,7 @@ function MicroCarousel({
           </View>
         )}
       />
-    </Animated.View>
+    </PerfAnimatedView>
   );
 }
 
@@ -89,7 +89,6 @@ function DiscoverySectionComponent({
   onActiveNavIdChange,
   onRegisterScrollToCategory,
 }: Props) {
-  const [loading, setLoading] = useState(true);
   const [filterQuery, setFilterQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
     () => new Set(["home-personal", "personal-care"]),
@@ -100,11 +99,6 @@ function DiscoverySectionComponent({
   const recentlyViewed = useDiscoveryStore((s) => s.recentlyViewed);
   const clearRecentlyViewed = useDiscoveryStore((s) => s.clearRecentlyViewed);
   const recordView = useDiscoveryStore((s) => s.recordView);
-
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 520);
-    return () => clearTimeout(t);
-  }, []);
 
   const popular = useMemo(() => getPopularServices(), []);
   const recommended = useMemo(() => getRecommendedServices(), []);
@@ -191,17 +185,13 @@ function DiscoverySectionComponent({
     ).length;
   }, [filterQuery]);
 
-  if (loading) {
-    return <DiscoverySkeleton />;
-  }
-
   return (
     <View
       onLayout={(e) => {
         discoveryTop.current = e.nativeEvent.layout.y;
       }}
     >
-      <Animated.View
+      <PerfAnimatedView
         entering={FadeInDown.duration(450).delay(40)}
         className="mt-10"
       >
@@ -211,11 +201,11 @@ function DiscoverySectionComponent({
         <Text className="mt-1.5 text-[13px] leading-[19px] text-neutral-500">
           Everything you need, connected beautifully.
         </Text>
-      </Animated.View>
+      </PerfAnimatedView>
 
       <OfferBannerCarousel offers={weeklyOffers} onOfferPress={handleOfferPress} />
 
-      <Animated.View entering={FadeInUp.duration(400).delay(90)} className="mt-5">
+      <PerfAnimatedView entering={FadeInUp.duration(400).delay(90)} className="mt-5">
         <View className="flex-row items-center rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2">
           <Ionicons name="search-outline" size={16} color="#a3a3a3" />
           <TextInput
@@ -245,7 +235,7 @@ function DiscoverySectionComponent({
             {filteredCategoryCount} categor{filteredCategoryCount === 1 ? "y" : "ies"} match
           </Text>
         ) : null}
-      </Animated.View>
+      </PerfAnimatedView>
 
       <ScrollView
         horizontal

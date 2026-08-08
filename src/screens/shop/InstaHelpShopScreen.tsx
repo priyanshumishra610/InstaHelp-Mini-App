@@ -527,12 +527,12 @@ const styles = StyleSheet.create({
     borderRadius: WEB_SHOP.radiusPill,
     paddingHorizontal: 16,
     paddingVertical: 9,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "transparent",
   },
   filterChipActive: {
-    backgroundColor: WEB_SHOP.yellow,
-    borderColor: "rgba(0,0,0,0.06)",
+    backgroundColor: WEB_SHOP.white,
+    borderColor: WEB_SHOP.accent,
   },
   filterChipText: {
     fontSize: 13,
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     color: WEB_SHOP.gray700,
   },
   filterChipTextActive: {
-    color: WEB_SHOP.black,
+    color: WEB_SHOP.accent,
     fontWeight: "700",
   },
   main: {
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   ctaBtnText: {
     fontSize: 14,
     fontWeight: "700",
-    color: WEB_SHOP.black,
+    color: WEB_SHOP.white,
   },
   disclaimer: {
     marginTop: -8,

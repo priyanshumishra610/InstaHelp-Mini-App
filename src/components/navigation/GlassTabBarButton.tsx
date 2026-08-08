@@ -5,9 +5,7 @@ import { MotiView } from "moti";
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, View, type View as RNView } from "react-native";
 
-/**
- * Tab item that drives the shared sliding active pill + press feedback.
- */
+/** Tab item with sliding active pill + press feedback. */
 export function GlassTabBarButton({
   children,
   style,
@@ -77,8 +75,8 @@ export function GlassTabBarButton({
 const styles = StyleSheet.create({
   pressable: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: 0,
+    margin: 0,
   },
   slotOuter: {
     flex: 1,
@@ -86,10 +84,9 @@ const styles = StyleSheet.create({
   },
   slot: {
     flex: 1,
-    alignSelf: "stretch",
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: 2,
-    marginVertical: 4,
+    padding: 0,
+    margin: 0,
   },
 });

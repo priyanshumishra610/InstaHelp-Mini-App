@@ -1,66 +1,109 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { AUTH_PRIMARY, AUTH_PRIMARY_LIGHT } from "@/constants/authPremium";
+import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
 import { StyleSheet, View } from "react-native";
 
-const ICONS: Array<keyof typeof MaterialCommunityIcons.glyphMap> = [
-  "bed-king-outline",
-  "palm-tree",
-  "airplane-takeoff",
-];
-
+/** Soft tropical resort silhouette behind the Experiences hero copy. */
 export function ExperiencesHeroVisual() {
   return (
-    <View style={styles.row} pointerEvents="none">
-      {ICONS.map((icon, index) => (
-        <MotiView
-          key={icon}
-          from={{ opacity: 0, translateY: 6 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: "timing", duration: 400, delay: 200 + index * 80 }}
-        >
-          <MotiView
-            from={{ translateY: 2 }}
-            animate={{ translateY: -2 }}
-            transition={{
-              type: "timing",
-              duration: 2600 + index * 180,
-              loop: true,
-            }}
-          >
-            <View style={styles.chip}>
-              <MaterialCommunityIcons name={icon} size={15} color={AUTH_PRIMARY} />
-            </View>
-          </MotiView>
-        </MotiView>
-      ))}
+    <View style={styles.root} pointerEvents="none">
+      <LinearGradient
+        colors={["rgba(250,248,244,0)", "rgba(232,242,238,0.55)", "rgba(246,235,215,0.4)"]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.wash}
+      />
+      <MotiView
+        from={{ opacity: 0, translateY: 8 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: "timing", duration: 520, delay: 120 }}
+        style={styles.scene}
+      >
+        <View style={styles.sun} />
+        <MaterialCommunityIcons
+          name="palm-tree"
+          size={46}
+          color="rgba(27,77,62,0.18)"
+          style={styles.palmLeft}
+        />
+        <MaterialCommunityIcons
+          name="palm-tree"
+          size={38}
+          color="rgba(27,77,62,0.14)"
+          style={styles.palmRight}
+        />
+        <View style={styles.building}>
+          <View style={styles.roof} />
+          <View style={styles.facade} />
+        </View>
+        <MaterialCommunityIcons
+          name="waves"
+          size={28}
+          color="rgba(27,77,62,0.12)"
+          style={styles.waves}
+        />
+      </MotiView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    marginTop: 10,
-    marginBottom: 4,
-    height: 36,
+  root: {
+    width: 128,
+    height: 96,
+    overflow: "hidden",
   },
-  chip: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  wash: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 24,
+  },
+  scene: {
+    flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.72)",
+    justifyContent: "flex-end",
+    paddingBottom: 6,
+  },
+  sun: {
+    position: "absolute",
+    top: 10,
+    right: 22,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(232,184,74,0.55)",
+  },
+  palmLeft: {
+    position: "absolute",
+    left: 4,
+    bottom: 10,
+  },
+  palmRight: {
+    position: "absolute",
+    right: 8,
+    bottom: 16,
+  },
+  building: {
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  roof: {
+    width: 48,
+    height: 10,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    backgroundColor: "rgba(27,77,62,0.16)",
+  },
+  facade: {
+    width: 40,
+    height: 28,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+    backgroundColor: "rgba(27,77,62,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(23,23,23,0.12)",
-    shadowColor: AUTH_PRIMARY_LIGHT,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: "rgba(27,77,62,0.08)",
+  },
+  waves: {
+    marginTop: 2,
+    opacity: 0.9,
   },
 });

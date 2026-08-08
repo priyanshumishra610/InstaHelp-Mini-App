@@ -19,7 +19,9 @@ import { useAuthPhone } from "@/hooks/auth/useAuthPhone";
 import { useAuth } from "@/providers/AuthProvider";
 import { useSignOut } from "@/hooks/auth/useSignOut";
 import { useProfileStore } from "@/store/profileStore";
-import { useTutorialStore } from "@/store/tutorialStore";
+import { TourAnchor } from "@/components/onboarding/guided/TourAnchor";
+import { TUTORIAL_ENABLED } from "@/constants/tutorialFeature";
+import { useGuidedTourStore, useGuidedTourStepId } from "@/store/guidedTourStore";
 import type { Booking } from "@/types/booking";
 import type {
   ProfilePreferredContact,
@@ -49,7 +51,6 @@ import {
   Text,
   View,
 } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PLACEHOLDER_ADDRESS = "Add your home address in Profile";
@@ -188,6 +189,17 @@ export function ProfileScreen() {
   const [savingLocation, setSavingLocation] = useState(false);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const tourStep = useGuidedTourStepId();
+  const tourActive = useGuidedTourStore((s) => s.active);
+
+  useEffect(() => {
+    if (!TUTORIAL_ENABLED) return;
+    if (!tourActive || tourStep !== "profile-bookmarks") return;
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: 420, animated: true });
+    }, 420);
+    return () => clearTimeout(timer);
+  }, [tourActive, tourStep]);
 
   const persistIfWeCan = async (next: UserProfile) => {
     setProfileLocal(next);
@@ -371,7 +383,7 @@ export function ProfileScreen() {
         contentContainerStyle={{ paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInUp.duration(380)}>
+        <View>
           <View className="mb-3">
             <Text className="text-[11px] font-medium uppercase tracking-[0.16em] text-neutral-400">
               Account
@@ -383,7 +395,7 @@ export function ProfileScreen() {
               Your details and preferences.
             </Text>
           </View>
-        </Animated.View>
+        </View>
 
         <ProfileHeroSection
           displayName={displayName}
@@ -405,10 +417,7 @@ export function ProfileScreen() {
           addresses={addressCount}
         />
 
-        <Animated.View
-          entering={FadeInUp.duration(400).delay(140)}
-          className="mt-8"
-        >
+        <View className="mt-8">
           <View className="mb-2.5 flex-row items-center justify-between">
             <Text className="text-[11px] font-bold uppercase tracking-[0.14em] text-neutral-500">
               Your information
@@ -486,10 +495,9 @@ export function ProfileScreen() {
               ? ` ${favoriteCount} favorite service${favoriteCount === 1 ? "" : "s"} selected.`
               : ""}
           </Text>
-        </Animated.View>
+        </View>
 
-        <Animated.View
-          entering={FadeInUp.duration(400).delay(190)}
+        <View
           className="mt-8"
         >
           <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
@@ -589,13 +597,10 @@ export function ProfileScreen() {
               </View>
             </View>
           </View>
-        </Animated.View>
+        </View>
 
         {/* QUICK ACTIONS — grouped list */}
-        <Animated.View
-          entering={FadeInUp.duration(420).delay(180)}
-          className="mt-8"
-        >
+        <View className="mt-8">
           <Text className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
             Quick actions
           </Text>
@@ -658,13 +663,10 @@ export function ProfileScreen() {
             <RowHairline />
             <ActionRow title="Refer a friend" onPress={shareApp} />
           </View>
-        </Animated.View>
+        </View>
 
         {/* ADDRESSES */}
-        <Animated.View
-          entering={FadeInUp.duration(420).delay(240)}
-          className="mt-8"
-        >
+        <View className="mt-8">
           <View className="mb-2.5 flex-row items-center justify-between">
             <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
               Saved addresses
@@ -736,55 +738,53 @@ export function ProfileScreen() {
               ))
             )}
           </View>
-        </Animated.View>
+        </View>
 
         {/* FAVORITES */}
-        <Animated.View
-          entering={FadeInUp.duration(420).delay(300)}
-          className="mt-8"
-        >
-          <View className="mb-2.5 flex-row items-center justify-between">
-            <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
-              Favorite services
+        <TourAnchor id="tour-profile-favorites">
+          <View
+            className="mt-8"
+          >
+            <View className="mb-2.5 flex-row items-center justify-between">
+              <Text className="text-[11px] font-bold uppercase tracking-[0.12em] text-neutral-500">
+                Favorite services
+              </Text>
+              <Text className="text-[11px] font-semibold text-neutral-400">
+                {favoriteCount} selected
+              </Text>
+            </View>
+            <Text className="mb-3 text-xs text-neutral-500">
+              Tap to select services you book most often.
             </Text>
-            <Text className="text-[11px] font-semibold text-neutral-400">
-              {favoriteCount} selected
-            </Text>
-          </View>
-          <Text className="mb-3 text-xs text-neutral-500">
-            Tap to select services you book most often.
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {FAVORITES.map((f) => {
-              const on = Boolean(profile?.favorites?.includes(f.id));
-              return (
-                <Pressable
-                  key={f.id}
-                  onPress={() => toggleFavorite(f.id)}
-                  className={`rounded-full px-4 py-2 active:opacity-90 ${
-                    on
-                      ? "bg-neutral-900"
-                      : "border border-neutral-200 bg-white"
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-medium ${
-                      on ? "text-white" : "text-neutral-600"
+            <View className="flex-row flex-wrap gap-2">
+              {FAVORITES.map((f) => {
+                const on = Boolean(profile?.favorites?.includes(f.id));
+                return (
+                  <Pressable
+                    key={f.id}
+                    onPress={() => toggleFavorite(f.id)}
+                    className={`rounded-full px-4 py-2 active:opacity-90 ${
+                      on
+                        ? "bg-neutral-900"
+                        : "border border-neutral-200 bg-white"
                     }`}
                   >
-                    {f.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      className={`text-xs font-medium ${
+                        on ? "text-white" : "text-neutral-600"
+                      }`}
+                    >
+                      {f.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </Animated.View>
+        </TourAnchor>
 
         {/* SETTINGS & LEGAL */}
-        <Animated.View
-          entering={FadeInUp.duration(420).delay(360)}
-          className="mt-8"
-        >
+        <View className="mt-8">
           <Text
             className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em]"
             style={{ color: colors.inkMuted }}
@@ -806,19 +806,21 @@ export function ProfileScreen() {
                 : { elevation: 3 }),
             }}
           >
+            {/* TUTORIAL_DISABLED — replay walkthrough (tutorialFeature.ts)
             <SettingsRow
               label="App tutorial"
-              value="Interactive tour"
+              value="Interactive walkthrough"
               ink={colors.ink}
               muted={colors.inkMuted}
               onPress={() => {
                 router.replace("/(tabs)");
                 setTimeout(() => {
-                  useTutorialStore.getState().startTutorial();
+                  useGuidedTourStore.getState().startTour();
                 }, 400);
               }}
             />
             <SettingsHairline color={colors.lineLight} />
+            */}
             <SettingsRow
               label="Appearance"
               value={`${schemeLabel} · ${accentLabel}`}
@@ -871,13 +873,10 @@ export function ProfileScreen() {
               last
             />
           </View>
-        </Animated.View>
+        </View>
 
         {/* SIGN OUT */}
-        <Animated.View
-          entering={FadeInUp.duration(420).delay(420)}
-          className="mt-8 items-center pb-2"
-        >
+        <View className="mt-8 items-center pb-2">
           <Pressable
             onPress={confirmSignOut}
             accessibilityRole="button"
@@ -890,7 +889,7 @@ export function ProfileScreen() {
           <Text className="mt-2 text-center text-[11px] text-neutral-400">
             Signed in as {phone ?? "—"}
           </Text>
-        </Animated.View>
+        </View>
       </ScrollView>
 
       <EditProfileDetailsModal

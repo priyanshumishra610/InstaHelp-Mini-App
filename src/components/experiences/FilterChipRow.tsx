@@ -1,5 +1,9 @@
+import { AppIcon } from "@/components/ui/AppIcon";
+import { AUTH_FONT } from "@/constants/authPremium";
 import { EXP } from "@/constants/experienceTheme";
-import { Pressable, ScrollView, Text } from "react-native";
+import type { ComponentProps } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export type FilterChip = {
   id: string | null;
@@ -8,70 +12,135 @@ export type FilterChip = {
 
 type Props = {
   label?: string;
+  labelIcon?: ComponentProps<typeof MaterialCommunityIcons>["name"];
   chips: FilterChip[];
   selected: string | null;
   onSelect: (id: string | null) => void;
   activeColor?: string;
+  onExpand?: () => void;
 };
 
 export function FilterChipRow({
   label,
+  labelIcon,
   chips,
   selected,
   onSelect,
-  activeColor = EXP.resorts.to,
+  activeColor = EXP.primary,
+  onExpand,
 }: Props) {
   return (
-    <>
+    <View style={styles.block}>
       {label ? (
-        <Text
-          style={{
-            marginTop: 16,
-            marginBottom: 8,
-            fontSize: 11,
-            fontWeight: "800",
-            letterSpacing: 1.4,
-            textTransform: "uppercase",
-            color: EXP.muted,
-          }}
-        >
-          {label}
-        </Text>
+        <View style={styles.labelRow}>
+          {labelIcon ? (
+            <AppIcon name={labelIcon} size={14} color={EXP.muted} />
+          ) : null}
+          <Text style={[styles.label, { fontFamily: AUTH_FONT.semibold }]}>
+            {label}
+          </Text>
+        </View>
       ) : null}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8, paddingRight: 8 }}
-        style={label ? undefined : { marginTop: 14 }}
-      >
-        {chips.map((chip) => {
-          const on = selected === chip.id;
-          return (
-            <Pressable
-              key={`${chip.id ?? "all"}-${chip.label}`}
-              onPress={() => onSelect(on && chip.id != null ? null : chip.id)}
-              style={{
-                borderRadius: 999,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
-                backgroundColor: on ? activeColor : EXP.white,
-                borderWidth: 1,
-                borderColor: on ? activeColor : EXP.line,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "700",
-                  color: on ? "#fff" : EXP.ink,
-                }}
+      <View style={styles.chipsRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsContent}
+          style={styles.chipsScroll}
+        >
+          {chips.map((chip) => {
+            const on = selected === chip.id;
+            return (
+              <Pressable
+                key={`${chip.id ?? "all"}-${chip.label}`}
+                onPress={() => onSelect(on && chip.id != null ? null : chip.id)}
+                style={[
+                  styles.chip,
+                  on
+                    ? { backgroundColor: activeColor, borderColor: activeColor }
+                    : styles.chipIdle,
+                ]}
               >
-                {chip.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </>
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    {
+                      fontFamily: AUTH_FONT.semibold,
+                      color: on ? "#fff" : EXP.ink,
+                    },
+                  ]}
+                >
+                  {chip.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        {onExpand ? (
+          <Pressable
+            onPress={onExpand}
+            accessibilityRole="button"
+            accessibilityLabel={`More ${label ?? "filters"}`}
+            style={({ pressed }) => [
+              styles.expandBtn,
+              pressed && { opacity: 0.75 },
+            ]}
+          >
+            <AppIcon name="chevron-down" size={18} color={EXP.muted} />
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  block: {
+    marginTop: 14,
+  },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  label: {
+    fontSize: 13,
+    color: EXP.ink,
+  },
+  chipsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  chipsScroll: {
+    flex: 1,
+  },
+  chipsContent: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  chip: {
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderWidth: 1,
+  },
+  chipIdle: {
+    backgroundColor: EXP.white,
+    borderColor: EXP.line,
+  },
+  chipLabel: {
+    fontSize: 12,
+  },
+  expandBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: EXP.line,
+    backgroundColor: EXP.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

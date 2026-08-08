@@ -1,8 +1,9 @@
+import { PerfAnimatedView } from "@/components/ui/PerfAnimatedView";
 import { EXP } from "@/constants/experienceTheme";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Text, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { FadeInDown } from "react-native-reanimated";
 
 type Tone = "resorts" | "holidays" | "countries";
 
@@ -42,7 +43,7 @@ export function ExperienceHero({
   const cfg = TONE[tone];
 
   return (
-    <Animated.View entering={FadeInDown.duration(380)}>
+    <PerfAnimatedView entering={FadeInDown.duration(380)}>
       <LinearGradient
         colors={cfg.colors}
         start={{ x: 0, y: 0 }}
@@ -157,6 +158,6 @@ export function ExperienceHero({
           </View>
         </View>
       </LinearGradient>
-    </Animated.View>
+    </PerfAnimatedView>
   );
 }

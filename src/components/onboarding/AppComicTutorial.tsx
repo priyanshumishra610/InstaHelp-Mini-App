@@ -1,4 +1,3 @@
-import { AUTH_FONT } from "@/constants/authPremium";
 import { TutorialStickOnly } from "@/components/onboarding/TutorialGuideCharacter";
 import type { GuidePose } from "@/components/onboarding/TutorialGuideCharacter";
 import { Ionicons } from "@expo/vector-icons";
@@ -111,9 +110,9 @@ export function AppComicTutorial({ onComplete, onSkip }: Props) {
   return (
     <View style={[styles.root, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
       <View style={styles.topBar}>
-        <Text style={[styles.brandText, { fontFamily: AUTH_FONT.bold }]}>InstaHelp</Text>
+        <Text style={styles.brandText}>InstaHelp</Text>
         <Pressable onPress={onSkip} hitSlop={12} accessibilityRole="button">
-          <Text style={[styles.skip, { fontFamily: AUTH_FONT.semibold }]}>Skip</Text>
+          <Text style={styles.skip}>Skip</Text>
         </Pressable>
       </View>
 
@@ -138,11 +137,7 @@ export function AppComicTutorial({ onComplete, onSkip }: Props) {
         renderItem={({ item }) => (
           <View style={{ width: PANEL_W + 12, paddingRight: 12 }}>
             <View style={styles.card}>
-              <Text
-                style={[styles.stepLabel, { color: item.accent, fontFamily: AUTH_FONT.bold }]}
-              >
-                STEP {item.step}
-              </Text>
+              <Text style={[styles.stepLabel, { color: item.accent }]}>STEP {item.step}</Text>
               <View style={styles.castRow}>
                 <TutorialStickOnly
                   pose={item.pose}
@@ -153,20 +148,14 @@ export function AppComicTutorial({ onComplete, onSkip }: Props) {
                 />
                 <View style={styles.speechCol}>
                   <View style={[styles.speech, { backgroundColor: item.bubbleBg }]}>
-                    <Text style={[styles.bubbleText, { fontFamily: AUTH_FONT.semibold }]}>
-                      {item.bubble}
-                    </Text>
+                    <Text style={styles.bubbleText}>{item.bubble}</Text>
                   </View>
-                  <Text
-                    style={[styles.stickName, { color: item.accent, fontFamily: AUTH_FONT.bold }]}
-                  >
-                    Stick
-                  </Text>
+                  <Text style={[styles.stickName, { color: item.accent }]}>Stick</Text>
                 </View>
               </View>
             </View>
-            <Text style={[styles.panelTitle, { fontFamily: AUTH_FONT.bold }]}>{item.title}</Text>
-            <Text style={[styles.panelBody, { fontFamily: AUTH_FONT.regular }]}>{item.body}</Text>
+            <Text style={styles.panelTitle}>{item.title}</Text>
+            <Text style={styles.panelBody}>{item.body}</Text>
           </View>
         )}
       />
@@ -194,9 +183,7 @@ export function AppComicTutorial({ onComplete, onSkip }: Props) {
             pressed && styles.ctaPressed,
           ]}
         >
-          <Text style={[styles.ctaText, { fontFamily: AUTH_FONT.bold }]}>
-            {isLast ? "Get started" : "Next"}
-          </Text>
+          <Text style={styles.ctaText}>{isLast ? "Get started" : "Next"}</Text>
           <Ionicons name={isLast ? "arrow-forward" : "chevron-forward"} size={18} color="#FFFFFF" />
         </Pressable>
       </View>
@@ -218,11 +205,13 @@ const styles = StyleSheet.create({
   },
   brandText: {
     fontSize: 16,
+    fontWeight: "700",
     color: "#171717",
     letterSpacing: -0.3,
   },
   skip: {
     fontSize: 14,
+    fontWeight: "600",
     color: "#78716C",
   },
   listContent: {
@@ -241,6 +230,7 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontSize: 10,
+    fontWeight: "700",
     letterSpacing: 1.4,
     marginBottom: 12,
   },
@@ -261,17 +251,20 @@ const styles = StyleSheet.create({
   bubbleText: {
     fontSize: 14,
     lineHeight: 20,
+    fontWeight: "600",
     color: "#171717",
   },
   stickName: {
     marginTop: 6,
     marginLeft: 4,
     fontSize: 11,
+    fontWeight: "700",
   },
   panelTitle: {
     marginTop: 18,
     fontSize: 22,
     lineHeight: 28,
+    fontWeight: "800",
     letterSpacing: -0.4,
     color: "#171717",
   },
@@ -313,6 +306,7 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontSize: 15,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
 });

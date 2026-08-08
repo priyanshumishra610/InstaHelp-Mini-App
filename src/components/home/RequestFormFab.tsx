@@ -1,9 +1,10 @@
 import { DraggableFab } from "@/components/home/DraggableFab";
 import { AUTH_FONT } from "@/constants/authPremium";
-import { useTutorialStore } from "@/store/tutorialStore";
+import { guidedTourStepId } from "@/constants/guidedTourSteps";
+import { useGuidedTourStore } from "@/store/guidedTourStore";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
-const TUTORIAL_TARGET = "new-request-fab";
+const TUTORIAL_TARGET = "tour-new-request";
 
 type Props = {
   onPress: () => void;
@@ -13,7 +14,13 @@ type Props = {
 /** Floating entry to the concierge request form (home). Drag to reposition. */
 export function RequestFormFab({ onPress, offsetTabBar = true }: Props) {
   const handlePress = () => {
-    useTutorialStore.getState().advanceOnTarget(TUTORIAL_TARGET);
+    const store = useGuidedTourStore.getState();
+    if (
+      store.active &&
+      guidedTourStepId(store.stepIndex) === "new-request"
+    ) {
+      store.nextStep();
+    }
     onPress();
   };
 
@@ -21,7 +28,8 @@ export function RequestFormFab({ onPress, offsetTabBar = true }: Props) {
     <DraggableFab
       id="new-request"
       tutorialId={TUTORIAL_TARGET}
-      defaultAnchor="bottom-left"
+      defaultAnchor="bottom-right"
+      defaultLift={62}
       offsetTabBar={offsetTabBar}
       entranceDelayMs={220}
       accessibilityLabel="Start a new service request"
@@ -41,10 +49,11 @@ const styles = StyleSheet.create({
   button: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
     gap: 8,
     borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     backgroundColor: "#171717",
     ...Platform.select({
       ios: {
@@ -64,8 +73,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   label: {
+    flexShrink: 0,
     fontSize: 13,
+    lineHeight: 18,
     color: "#FFFFFF",
     letterSpacing: 0.15,
+    ...Platform.select({
+      android: { includeFontPadding: false },
+      default: {},
+    }),
   },
 });

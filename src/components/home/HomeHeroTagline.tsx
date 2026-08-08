@@ -1,5 +1,6 @@
 import { TypewriterText } from "@/components/ui/TypewriterText";
-import { AUTH_FONT, AUTH_PRIMARY } from "@/constants/authPremium";
+import { AUTH_FONT } from "@/constants/authPremium";
+import { useAppTheme } from "@/hooks/useAppTheme";
 import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 
@@ -11,6 +12,7 @@ type Props = {
 
 /** Types once on load — no cycling. */
 export function HomeHeroTagline({ startDelayMs = 480 }: Props) {
+  const { colors } = useAppTheme();
   const [done, setDone] = useState(false);
 
   return (
@@ -20,11 +22,14 @@ export function HomeHeroTagline({ startDelayMs = 480 }: Props) {
         startDelayMs={startDelayMs}
         charDurationMs={34}
         showCursor={!done}
-        cursorColor={AUTH_PRIMARY}
+        cursorColor={colors.ink}
         cursorHeight={14}
         cursorWidth={2}
         cursorOffset={3}
-        textStyle={[styles.text, { fontFamily: AUTH_FONT.regular }]}
+        textStyle={[
+          styles.text,
+          { fontFamily: AUTH_FONT.regular, color: colors.inkMuted },
+        ]}
         onComplete={() => setDone(true)}
       />
     </View>
@@ -42,7 +47,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 13,
     lineHeight: 18,
-    color: "#6B7280",
     textAlign: "center",
   },
 });

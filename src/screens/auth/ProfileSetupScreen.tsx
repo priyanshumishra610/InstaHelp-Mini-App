@@ -102,9 +102,11 @@ export function ProfileSetupScreen() {
   const canContinue = nameOk && ageOk && emailOk && Boolean(phone);
 
   const enterApp = useCallback(() => {
+    /* TUTORIAL_DISABLED — tutorialFeature.ts
     if (!useOnboardingStore.getState().appTutorialCompleted) {
       useOnboardingStore.getState().setPendingInAppTutorial(true);
     }
+    */
     router.replace("/(tabs)");
   }, [router]);
 

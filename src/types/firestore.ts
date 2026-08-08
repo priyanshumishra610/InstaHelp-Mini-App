@@ -1,5 +1,7 @@
-import type { Timestamp } from "firebase/firestore";
 import type { VendorSponsorTier } from "@/types/vendorMarketplace";
+
+/** ISO string or epoch ms — kept generic after Firebase removal. */
+export type CatalogTimestamp = string | number | null;
 
 /** Firestore `vendors/{id}` document shape (admin-friendly field names). */
 export type FirestoreVendorDoc = {
@@ -37,8 +39,8 @@ export type FirestoreVendorDoc = {
   listingBoost: number;
   operationalStatus: string | null;
   state?: string;
-  createdAt: Timestamp | null;
-  updatedAt: Timestamp | null;
+  createdAt: CatalogTimestamp;
+  updatedAt: CatalogTimestamp;
 };
 
 export type FirestoreCategoryDoc = {

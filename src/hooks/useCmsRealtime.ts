@@ -13,13 +13,14 @@ type ContentUpdateMessage = {
  */
 export function useCmsRealtime(
   onUpdate?: (module: string) => void,
+  enabled = true,
 ): void {
   const wsRef = useRef<WebSocket | null>(null);
   const onUpdateRef = useRef(onUpdate);
   onUpdateRef.current = onUpdate;
 
   useEffect(() => {
-    if (!CMS_IS_CONFIGURED) return;
+    if (!enabled || !CMS_IS_CONFIGURED) return;
 
     const wsUrl = CMS_API_URL.replace(/^http/, "ws") + "/ws/content";
 
@@ -55,5 +56,5 @@ export function useCmsRealtime(
       clearTimeout(reconnectTimer);
       wsRef.current?.close();
     };
-  }, []);
+  }, [enabled]);
 }

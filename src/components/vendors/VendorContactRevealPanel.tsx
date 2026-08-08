@@ -1,10 +1,15 @@
+import { GlowButton } from "@/components/ui/GlowButton";
+import { AppIcon } from "@/components/ui/AppIcon";
 import { VENDOR_REVEAL_CREDIT_COST } from "@/constants/vendorMarketplace";
+import { AUTH_FONT } from "@/constants/authPremium";
+import { COLORS, RADIUS, SPACE, cardShadow } from "@/constants/designSystem";
+import { ACCENT, ACCENT_TINT } from "@/constants/theme";
 import { vendorDisplayName } from "@/services/vendors/vendorQueryHelpers";
 import type { VendorRecord } from "@/types/vendorMarketplace";
 import { maskPhoneForDisplay, normalizePhoneDigits } from "@/utils/vendorPhone";
 import { dialPhone, emailVendor, openVendorWhatsApp } from "@/utils/vendorContactActions";
-import { Ionicons } from "@expo/vector-icons";
-import { Pressable, Text, View } from "react-native";
+import type { AppIconKey } from "@/constants/icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Props = {
   vendor: VendorRecord;
@@ -12,20 +17,100 @@ type Props = {
   revealCostLabel?: string;
   usesPlanReveal?: boolean;
   onReveal: () => void;
+  /** card = scroll section · footer = sticky bottom bar */
+  mode?: "card" | "footer";
 };
 
 function InfoRow({
   label,
   value,
+  last,
+  onPress,
 }: {
   label: string;
   value: string;
+  last?: boolean;
+  onPress?: () => void;
 }) {
+  const content = (
+    <>
+      <Text style={[styles.infoLabel, { fontFamily: AUTH_FONT.medium }]}>{label}</Text>
+      <Text
+        style={[
+          styles.infoValue,
+          { fontFamily: AUTH_FONT.semibold },
+          onPress && styles.infoValueLink,
+        ]}
+        selectable
+      >
+        {value}
+      </Text>
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={[styles.infoRow, last && styles.infoRowLast]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={[styles.infoRow, last && styles.infoRowLast]}>{content}</View>;
+}
+
+function ActionButton({
+  label,
+  icon,
+  onPress,
+  variant = "primary",
+  disabled,
+}: {
+  label: string;
+  icon: AppIconKey;
+  onPress: () => void;
+  variant?: "primary" | "outline" | "whatsapp";
+  disabled?: boolean;
+}) {
+  const isPrimary = variant === "primary";
+  const isWhatsapp = variant === "whatsapp";
+
   return (
-    <View className="border-b border-neutral-100 py-3 last:border-b-0">
-      <Text className="text-[12px] text-neutral-500">{label}</Text>
-      <Text className="mt-0.5 text-[15px] text-neutral-900">{value}</Text>
-    </View>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [
+        styles.actionBtn,
+        isPrimary && styles.actionBtnPrimary,
+        isWhatsapp && styles.actionBtnWhatsapp,
+        variant === "outline" && styles.actionBtnOutline,
+        pressed && styles.actionBtnPressed,
+        disabled && styles.actionBtnDisabled,
+      ]}
+    >
+      <AppIcon
+        name={icon}
+        size={18}
+        color={isPrimary ? "#FFFFFF" : isWhatsapp ? "#16A34A" : COLORS.ink}
+      />
+      <Text
+        style={[
+          styles.actionLabel,
+          { fontFamily: AUTH_FONT.semibold },
+          isPrimary && styles.actionLabelPrimary,
+          isWhatsapp && styles.actionLabelWhatsapp,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -35,32 +120,26 @@ export function VendorContactRevealPanel({
   revealCostLabel,
   usesPlanReveal,
   onReveal,
+  mode = "card",
 }: Props) {
   const name = vendorDisplayName(vendor);
   const digits = normalizePhoneDigits(vendor.phone);
-  const revealLabel =
-    revealCostLabel ?? `${VENDOR_REVEAL_CREDIT_COST} credits`;
+  const revealLabel = revealCostLabel ?? `${VENDOR_REVEAL_CREDIT_COST} credits`;
 
-  if (unlocked) {
-    return (
-      <View className="rounded-2xl bg-neutral-50 p-4">
-        <InfoRow label="Phone" value={vendor.phone ?? "Not available"} />
-        {vendor.email ? <InfoRow label="Email" value={vendor.email} /> : null}
-        <InfoRow
-          label="Address"
-          value={vendor.address || `${vendor.areaLabel}, Bengaluru`}
-        />
-
-        <View className="mt-4 flex-row gap-2">
-          <Pressable
+  if (mode === "footer") {
+    if (unlocked) {
+      return (
+        <View style={styles.footerRow}>
+          <ActionButton
+            label="Call"
+            icon="phone"
             onPress={() => dialPhone(vendor.phone)}
             disabled={!digits}
-            className="flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-neutral-900 py-3 active:opacity-90 disabled:opacity-40"
-          >
-            <Ionicons name="call" size={18} color="#ffffff" />
-            <Text className="text-[14px] font-semibold text-white">Call</Text>
-          </Pressable>
-          <Pressable
+            variant="primary"
+          />
+          <ActionButton
+            label="WhatsApp"
+            icon="whatsapp"
             onPress={() =>
               openVendorWhatsApp(
                 vendor.phone,
@@ -68,62 +147,267 @@ export function VendorContactRevealPanel({
               )
             }
             disabled={digits.length < 8}
-            className="flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white py-3 active:bg-neutral-50 disabled:opacity-40"
-          >
-            <Ionicons name="logo-whatsapp" size={18} color="#16a34a" />
-            <Text className="text-[14px] font-semibold text-neutral-800">
-              WhatsApp
-            </Text>
-          </Pressable>
+            variant="whatsapp"
+          />
         </View>
-        {vendor.email ? (
-          <Pressable
-            onPress={() =>
-              emailVendor(vendor.email, `Inquiry via InstaHelp — ${name}`)
-            }
-            className="mt-2 flex-row items-center justify-center gap-2 rounded-xl border border-neutral-200 py-3 active:bg-neutral-50"
-          >
-            <Ionicons name="mail-outline" size={18} color="#171717" />
-            <Text className="text-[14px] font-semibold text-neutral-800">
-              Email
+      );
+    }
+
+    return (
+      <View style={styles.footerLocked}>
+        <View style={styles.footerLockedMeta}>
+          <View style={styles.lockIconWrap}>
+            <AppIcon name="lock" size={16} color={ACCENT} />
+          </View>
+          <View style={styles.footerLockedText}>
+            <Text style={[styles.footerLockedTitle, { fontFamily: AUTH_FONT.semibold }]}>
+              Contact locked
             </Text>
-          </Pressable>
+            <Text style={[styles.footerLockedHint, { fontFamily: AUTH_FONT.regular }]}>
+              {maskPhoneForDisplay(vendor.phone)}
+            </Text>
+          </View>
+        </View>
+        <GlowButton
+          label={`Reveal · ${revealLabel}`}
+          onPress={onReveal}
+          fullWidth
+          accessibilityLabel="Reveal vendor contact"
+        />
+      </View>
+    );
+  }
+
+  if (unlocked) {
+    return (
+      <View style={[styles.card, cardShadow("card")]}>
+        <View style={styles.cardHeader}>
+          <AppIcon name="checkCircle" size={18} color={COLORS.success} chip chipColor={COLORS.successSoft} />
+          <Text style={[styles.cardTitle, { fontFamily: AUTH_FONT.bold }]}>
+            Contact unlocked
+          </Text>
+        </View>
+
+        <InfoRow
+          label="Phone"
+          value={vendor.phone ?? "Not available"}
+          onPress={digits ? () => dialPhone(vendor.phone) : undefined}
+        />
+        {vendor.email ? (
+          <InfoRow
+            label="Email"
+            value={vendor.email}
+            onPress={() => emailVendor(vendor.email, `Inquiry via InstaHelp — ${name}`)}
+          />
         ) : null}
+        <InfoRow
+          label="Address"
+          value={vendor.address || `${vendor.areaLabel}, Bengaluru`}
+          last
+        />
+
+        <Text style={[styles.cardHint, { fontFamily: AUTH_FONT.regular }]}>
+          Use Call or WhatsApp in the bar below to reach this vendor.
+        </Text>
       </View>
     );
   }
 
   return (
-    <View className="rounded-2xl bg-neutral-50 p-4">
-      <View className="items-center py-2">
-        <Ionicons name="lock-closed-outline" size={24} color="#171717" />
-        <Text className="mt-2 text-[16px] font-semibold text-neutral-900">
+    <View style={[styles.card, cardShadow("card")]}>
+      <View style={styles.lockedCenter}>
+        <View style={styles.lockBadge}>
+          <AppIcon name="lock" size={22} color={ACCENT} />
+        </View>
+        <Text style={[styles.lockedTitle, { fontFamily: AUTH_FONT.bold }]}>
           Contact locked
         </Text>
-        <Text className="mt-1 text-center text-[13px] leading-5 text-neutral-500">
+        <Text style={[styles.lockedBody, { fontFamily: AUTH_FONT.regular }]}>
           {usesPlanReveal
             ? `Use your Explore plan to unlock call and WhatsApp (${revealLabel}).`
             : `Use ${revealLabel} to unlock call and WhatsApp for this vendor.`}
         </Text>
       </View>
 
-      <View className="mt-3 rounded-xl border border-neutral-200/80 bg-white px-3 py-2.5">
-        <Text className="text-center text-[15px] font-medium tracking-wide text-neutral-700">
+      <View style={styles.maskedPhoneBox}>
+        <Text style={[styles.maskedPhone, { fontFamily: AUTH_FONT.medium }]}>
           {maskPhoneForDisplay(vendor.phone)}
         </Text>
       </View>
 
-      <Pressable
+      <GlowButton
+        label={`Reveal contact · ${revealLabel}`}
         onPress={onReveal}
-        accessibilityRole="button"
+        fullWidth
         accessibilityLabel="Reveal vendor contact"
-        className="mt-4 flex-row items-center justify-center gap-2 rounded-xl bg-neutral-900 py-3.5 active:opacity-90"
-      >
-        <Ionicons name="lock-open-outline" size={18} color="#ffffff" />
-        <Text className="text-[14px] font-semibold text-white">
-          Reveal contact · {revealLabel}
-        </Text>
-      </Pressable>
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: RADIUS.lg,
+    backgroundColor: COLORS.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(23,23,23,0.08)",
+    padding: SPACE.md,
+    gap: SPACE.sm,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 4,
+  },
+  cardTitle: {
+    fontSize: 16,
+    color: COLORS.ink,
+    letterSpacing: -0.2,
+  },
+  infoRow: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(23,23,23,0.08)",
+    paddingVertical: 12,
+  },
+  infoRowLast: {
+    borderBottomWidth: 0,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: COLORS.inkMuted,
+  },
+  infoValue: {
+    marginTop: 2,
+    fontSize: 15,
+    color: COLORS.ink,
+    lineHeight: 21,
+  },
+  infoValueLink: {
+    color: ACCENT,
+  },
+  cardHint: {
+    marginTop: 4,
+    fontSize: 12,
+    lineHeight: 17,
+    color: COLORS.inkSubtle,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: RADIUS.md,
+    paddingVertical: 13,
+  },
+  actionBtnPrimary: {
+    backgroundColor: ACCENT,
+  },
+  actionBtnWhatsapp: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(22,163,74,0.25)",
+  },
+  actionBtnOutline: {
+    backgroundColor: COLORS.lineLight,
+    borderWidth: 1,
+    borderColor: "rgba(23,23,23,0.08)",
+    marginTop: 2,
+  },
+  actionBtnPressed: {
+    opacity: 0.88,
+  },
+  actionBtnDisabled: {
+    opacity: 0.45,
+  },
+  actionLabel: {
+    fontSize: 14,
+    color: COLORS.ink,
+  },
+  actionLabelPrimary: {
+    color: "#FFFFFF",
+  },
+  actionLabelWhatsapp: {
+    color: "#16A34A",
+  },
+  lockedCenter: {
+    alignItems: "center",
+    paddingVertical: 8,
+    gap: 8,
+  },
+  lockBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: ACCENT_TINT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  lockedTitle: {
+    fontSize: 17,
+    color: COLORS.ink,
+    letterSpacing: -0.2,
+  },
+  lockedBody: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: COLORS.inkMuted,
+    textAlign: "center",
+    paddingHorizontal: 8,
+  },
+  maskedPhoneBox: {
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    borderColor: "rgba(23,23,23,0.08)",
+    backgroundColor: COLORS.lineLight,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  maskedPhone: {
+    textAlign: "center",
+    fontSize: 15,
+    letterSpacing: 1.2,
+    color: COLORS.inkMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  footerRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  footerLocked: {
+    gap: 12,
+  },
+  footerLockedMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  lockIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: ACCENT_TINT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerLockedText: {
+    flex: 1,
+    gap: 2,
+  },
+  footerLockedTitle: {
+    fontSize: 14,
+    color: COLORS.ink,
+  },
+  footerLockedHint: {
+    fontSize: 12,
+    color: COLORS.inkMuted,
+    letterSpacing: 0.8,
+    fontVariant: ["tabular-nums"],
+  },
+});
